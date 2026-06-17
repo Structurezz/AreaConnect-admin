@@ -17,6 +17,7 @@ import Analytics from './pages/Analytics';
 import Revenue from './pages/Revenue';
 import AdminUsers from './pages/Users';
 import Operations from './pages/Operations';
+import PitchDeck from './pages/PitchDeck';
 
 function RequireAdmin({ children }) {
   const { user, loading } = useAuth();
@@ -53,6 +54,7 @@ function AppRoutes() {
       <Route path="/revenue" element={<RequireAdmin><Revenue /></RequireAdmin>} />
       <Route path="/users" element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
       <Route path="/operations" element={<RequireAdmin><Operations /></RequireAdmin>} />
+      <Route path="/pitch-deck" element={<RequireAdmin><PitchDeck /></RequireAdmin>} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

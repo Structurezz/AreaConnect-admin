@@ -103,6 +103,16 @@ export const planAPI = {
   updateSubscription: (id, data) => api.patch(`/plans/subscriptions/${id}`, data),
 };
 
+// Pitch deck & prospects
+export const pitchAPI = {
+  getProspects: (params) => api.get('/pitch/prospects', { params }),
+  getStats:     ()       => api.get('/pitch/prospects/stats'),
+  updateProspect: (id, data) => api.patch(`/pitch/prospects/${id}`, data),
+  deleteProspect: (id)       => api.delete(`/pitch/prospects/${id}`),
+  seed:         ()       => api.post('/pitch/prospects/seed'),
+  sendEmails:   (data)   => api.post('/pitch/prospects/email', data),
+};
+
 // Alerts
 export const alertAPI = {
   getAll: (params) => api.get('/alerts', { params }),
