@@ -97,10 +97,10 @@ const SLIDES = [
     title: 'Pricing Plans',
     subtitle: 'Flexible pricing for estates of every size',
     plans: [
-      { name: 'Free',         price: '₦0',        cycle: '/month', color: '#6B7280', residents: '30',   highlight: false, features: ['Resident management', 'Basic visitor log', 'Community announcements', '1 admin user'] },
-      { name: 'Growth',       price: '₦15,000',   cycle: '/month', color: '#10B981', residents: '100',  highlight: true,  features: ['All Free features', 'Payment tracking & invoices', 'Full security module', 'Analytics dashboard', '3 admin users'] },
-      { name: 'Professional', price: '₦35,000',   cycle: '/month', color: '#8B5CF6', residents: '300',  highlight: false, features: ['All Growth features', 'Advanced analytics', 'API access', 'Email receipts & reminders', '10 admin users'] },
-      { name: 'Enterprise',   price: 'Custom',     cycle: '',       color: '#F59E0B', residents: '∞',    highlight: false, features: ['All Professional features', 'White-label branding', 'SLA & dedicated support', 'Custom integrations', 'Unlimited admins'] },
+      { name: 'Starter',    price: '₦20,000',  cycle: '/month', color: '#941e36', residents: '50',  highlight: false, features: ['Resident & unit management', 'Visitor management', 'Announcements & alerts', 'Security portal', 'Custom branding'] },
+      { name: 'Growth',     price: '₦47,000',  cycle: '/month', color: '#483bf7', residents: '150', highlight: true,  features: ['All Starter features', 'Payment system & invoices', 'Community chat & events', 'Polls & voting', 'Nkechi AI', 'Priority support'] },
+      { name: 'Premium',    price: '₦80,000',  cycle: '/month', color: '#3baff7', residents: '300', highlight: false, features: ['All Growth features', 'Marketplace', 'Resident lounge', 'Music player', 'White-label', 'API access'] },
+      { name: 'Enterprise', price: '₦100,000', cycle: '/month', color: '#f73b3b', residents: '500', highlight: false, features: ['All Premium features', 'Up to 500 residents', '1,000 visitors/month', 'Full API access', 'Priority support'] },
     ],
   },
   {
@@ -159,7 +159,7 @@ const SLIDES = [
     title: 'Let\'s Transform Your Estate',
     subtitle: 'Join hundreds of Nigerian estates running on AreaConnect',
     ctas: [
-      { label: 'Start Free 14-Day Trial', href: 'https://estatemanager.areaconnect.pro/register', primary: true },
+      { label: 'Get Started', href: 'https://area-connector.areaconnect.pro/register', primary: true },
       { label: 'Schedule a Demo',         href: 'mailto:hello@areaconnect.pro',                    primary: false },
     ],
     contact: {
@@ -459,6 +459,7 @@ export default function PitchDeck() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
   const [statusChanging, setStatusChanging] = useState(null);
+  const [generating, setGenerating] = useState(false);
 
   const loadProspects = async () => {
     setLoading(true);
@@ -515,6 +516,24 @@ export default function PitchDeck() {
       toast.error(err?.response?.data?.message || 'Failed to send emails');
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleGenerate = async (count = 25) => {
+    setGenerating(true);
+    try {
+      const res = await pitchAPI.generate({ count });
+      const { added, total } = res.data;
+      if (added === 0) {
+        toast('No new prospects generated — all were duplicates. Try again.');
+      } else {
+        toast.success(`Added ${added} new prospects! Total: ${total}`);
+      }
+      loadProspects();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Generation failed');
+    } finally {
+      setGenerating(false);
     }
   };
 
@@ -658,6 +677,12 @@ export default function PitchDeck() {
                 <RefreshCw size={13} /> Refresh
               </button>
 
+              <button onClick={() => handleGenerate(25)} disabled={generating}
+                style={{ height:36, fontSize:13, padding:'0 14px', borderRadius:8, background:'linear-gradient(135deg,#8B5CF6,#7C3AED)', color:'#fff', fontWeight:600, border:'none', cursor: generating ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', gap:6, opacity: generating ? 0.7 : 1 }}>
+                {generating ? <RefreshCw size={13} className="animate-spin" /> : <Zap size={13} />}
+                {generating ? 'Generating…' : 'AI Generate 25 More'}
+              </button>
+
               {selected.size > 0 && (
                 <button onClick={() => handleSendEmails(selected)} disabled={sending}
                   className="btn-primary flex items-center gap-1.5" style={{ height:36, fontSize:13 }}>
@@ -682,7 +707,7 @@ export default function PitchDeck() {
                         {selected.size === prospects.length && prospects.length > 0 ? <CheckSquare size={15} style={{ color:'#6366F1' }} /> : <Square size={15} />}
                       </button>
                     </th>
-                    {['Name & Company','City','Type','Status','Last Emailed','Actions'].map(h => (
+                    {['Name & Company','City','Type','Website','Status','Last Emailed','Actions'].map(h => (
                       <th key={h} style={{ padding:'10px 12px', textAlign:'left', fontSize:11, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'0.06em', whiteSpace:'nowrap' }}>{h}</th>
                     ))}
                   </tr>
@@ -711,6 +736,15 @@ export default function PitchDeck() {
                         <td style={{ padding:'10px 12px', color:'#64748B' }}>{p.city || '—'}</td>
                         <td style={{ padding:'10px 12px' }}>
                           <span style={{ background:tc.bg, color:tc.color, fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20 }}>{tc.label}</span>
+                        </td>
+                        <td style={{ padding:'10px 12px' }}>
+                          {p.website
+                            ? <a href={p.website} target="_blank" rel="noreferrer"
+                                style={{ fontSize:11, color:'#6366F1', fontWeight:600, textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
+                                <Globe size={11} />
+                                {p.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '').slice(0, 22)}
+                              </a>
+                            : <span style={{ fontSize:11, color:'#CBD5E1' }}>—</span>}
                         </td>
                         <td style={{ padding:'10px 12px' }}>
                           <select

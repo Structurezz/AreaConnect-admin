@@ -111,6 +111,7 @@ export const pitchAPI = {
   deleteProspect: (id)       => api.delete(`/pitch/prospects/${id}`),
   seed:         ()       => api.post('/pitch/prospects/seed'),
   sendEmails:   (data)   => api.post('/pitch/prospects/email', data),
+  generate:     (data)   => api.post('/pitch/prospects/generate', data),
 };
 
 // Alerts
