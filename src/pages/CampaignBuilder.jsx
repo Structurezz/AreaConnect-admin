@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Save, ArrowLeft, Eye, Mail, Megaphone, Sparkles, X,
@@ -80,8 +80,15 @@ const setDeep = (obj, path, value) => {
 export default function CampaignBuilder() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const isEdit = Boolean(id);
-  const [form, setForm] = useState(empty);
+  const initialType = searchParams.get('type');
+  const [form, setForm] = useState(() => {
+    if (!isEdit && initialType === 'email') {
+      return { ...empty, placements: ['email'] };
+    }
+    return empty;
+  });
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [previewMode, setPreviewMode] = useState('desktop');
@@ -208,7 +215,7 @@ export default function CampaignBuilder() {
       } else {
         await campaignAPI.create(payload);
         toast.success('Campaign created');
-        navigate('/campaigns');
+        navigate(initialType === 'email' ? '/email-campaigns' : '/campaigns');
       }
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to save');
@@ -227,7 +234,7 @@ export default function CampaignBuilder() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
           <button
-            onClick={() => navigate('/campaigns')}
+            onClick={() => navigate(initialType === 'email' ? '/email-campaigns' : '/campaigns')}
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold"
             style={{ background: '#F1F5F9', color: '#475569' }}
           >
