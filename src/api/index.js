@@ -122,3 +122,14 @@ export const alertAPI = {
   resolve: (id) => api.patch(`/alerts/${id}/resolve`),
   broadcast: (data) => api.post('/alerts/broadcast', data),
 };
+
+// Campaigns
+export const campaignAPI = {
+  list:      (params) => api.get('/campaigns', { params }),
+  get:       (id)     => api.get(`/campaigns/${id}`),
+  create:    (data)   => api.post('/campaigns', data),
+  update:    (id, d)  => api.patch(`/campaigns/${id}`, d),
+  setStatus: (id, s)  => api.patch(`/campaigns/${id}/status`, { status: s }),
+  remove:    (id)     => api.delete(`/campaigns/${id}`),
+  sendEmail: (id)     => api.post(`/campaigns/${id}/send-email`),
+};

@@ -18,6 +18,8 @@ import Revenue from './pages/Revenue';
 import AdminUsers from './pages/Users';
 import Operations from './pages/Operations';
 import PitchDeck from './pages/PitchDeck';
+import Campaigns from './pages/Campaigns';
+import CampaignBuilder from './pages/CampaignBuilder';
 
 function RequireAdmin({ children }) {
   const { user, loading } = useAuth();
@@ -55,6 +57,9 @@ function AppRoutes() {
       <Route path="/users" element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
       <Route path="/operations" element={<RequireAdmin><Operations /></RequireAdmin>} />
       <Route path="/pitch-deck" element={<RequireAdmin><PitchDeck /></RequireAdmin>} />
+      <Route path="/campaigns" element={<RequireAdmin><Campaigns /></RequireAdmin>} />
+      <Route path="/campaigns/new" element={<RequireAdmin><CampaignBuilder /></RequireAdmin>} />
+      <Route path="/campaigns/:id" element={<RequireAdmin><CampaignBuilder /></RequireAdmin>} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

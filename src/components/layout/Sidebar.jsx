@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Building2, Plus, LogOut,
   CreditCard, Users, BarChart2, TrendingUp,
-  Settings, AlertTriangle, Presentation,
+  Settings, AlertTriangle, Presentation, Megaphone,
 } from 'lucide-react';
 
 const NAV = [
@@ -34,6 +34,7 @@ const NAV = [
   {
     section: 'Growth',
     links: [
+      { to: '/campaigns',     icon: Megaphone,      label: 'Campaigns' },
       { to: '/pitch-deck',    icon: Presentation,   label: 'Pitch Deck' },
     ],
   },
