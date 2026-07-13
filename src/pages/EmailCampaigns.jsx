@@ -3,9 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Mail, Plus, Send, Edit3, Trash2, Search, Play, Pause,
-  Users, CheckCircle2, Clock, Sparkles,
+  Users, CheckCircle2, Clock, Sparkles, Wand2,
 } from 'lucide-react';
 import { campaignAPI } from '../api';
+import QuickEmailGenerator from '../components/QuickEmailGenerator';
 
 const STATUS_STYLES = {
   draft:  { bg: '#F1F5F9', color: '#475569', label: 'Draft' },
@@ -27,6 +28,7 @@ export default function EmailCampaigns() {
   const [loading, setLoading] = useState(true);
   const [q, setQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [showGenerator, setShowGenerator] = useState(false);
   const navigate = useNavigate();
 
   const load = async () => {
@@ -108,7 +110,7 @@ export default function EmailCampaigns() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Link
               to="/campaigns"
               className="px-3 py-2.5 rounded-xl text-sm font-semibold"
@@ -118,13 +120,27 @@ export default function EmailCampaigns() {
             </Link>
             <Link
               to="/campaigns/new?type=email"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white transition-transform hover:scale-[1.02]"
-              style={{ background: 'linear-gradient(135deg,#EC4899 0%,#F472B6 100%)', textDecoration: 'none' }}
+              className="inline-flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold"
+              style={{ background: '#fff', color: '#0F172A', border: '1px solid #E2E8F0', textDecoration: 'none' }}
             >
-              <Plus size={16} /> New Email Campaign
+              <Plus size={14} /> Manual
             </Link>
+            <button
+              onClick={() => setShowGenerator(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white transition-transform hover:scale-[1.02]"
+              style={{ background: 'linear-gradient(135deg,#EC4899 0%,#F472B6 100%)' }}
+            >
+              <Wand2 size={16} /> Generate Campaign Email
+            </button>
           </div>
         </div>
+
+        {showGenerator && (
+          <QuickEmailGenerator
+            onClose={() => setShowGenerator(false)}
+            onPublished={() => { setShowGenerator(false); load(); }}
+          />
+        )}
 
         {/* Stat tiles */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
