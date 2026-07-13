@@ -16,9 +16,9 @@ const PLACEMENTS = [
 ];
 
 const APPS = [
-  { key: 'residents',     label: 'Residents' },
-  { key: 'estatemanager', label: 'Estate Managers' },
-  { key: 'both',          label: 'Both' },
+  { key: 'resident',       label: 'Residents' },
+  { key: 'estate_manager', label: 'Estate Managers' },
+  { key: 'both',           label: 'Both' },
 ];
 
 const SEGMENTS = [
@@ -39,7 +39,7 @@ const empty = {
     existingUserBeyondDays: 7,
     roles: [],
     estateIds: [],
-    app: 'residents',
+    app: 'resident',
   },
   content: {
     badge: '',
@@ -106,10 +106,14 @@ export default function CampaignBuilder() {
         const res = await campaignAPI.get(id);
         const c = res.data?.data;
         if (!c) throw new Error();
+        const audience = { ...empty.audience, ...(c.audience || {}) };
+        // Normalize legacy app keys to the role-aligned values used by the UI.
+        if (audience.app === 'residents') audience.app = 'resident';
+        else if (audience.app === 'estatemanager') audience.app = 'estate_manager';
         setForm({
           ...empty,
           ...c,
-          audience: { ...empty.audience, ...(c.audience || {}) },
+          audience,
           content: { ...empty.content, ...(c.content || {}), theme: { ...empty.content.theme, ...(c.content?.theme || {}) } },
           email: { ...empty.email, ...(c.email || {}) },
           schedule: {

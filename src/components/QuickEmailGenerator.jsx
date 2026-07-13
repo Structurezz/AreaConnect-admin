@@ -11,20 +11,20 @@ const SEGMENTS = [
 ];
 
 const APPS = [
-  { key: 'residents',     label: 'Residents' },
-  { key: 'estatemanager', label: 'Managers' },
-  { key: 'both',          label: 'Both' },
+  { key: 'resident',       label: 'Residents' },
+  { key: 'estate_manager', label: 'Managers' },
+  { key: 'both',           label: 'Both' },
 ];
 
 const THEMES = [
-  { name: 'Residents Indigo',    forApp: 'residents',     primaryColor: '#6366F1', accentColor: '#818CF8', backgroundColor: '#0F172A', textColor: '#FFFFFF' },
-  { name: 'Managers Green',      forApp: 'estatemanager', primaryColor: '#10B981', accentColor: '#34D399', backgroundColor: '#FFFFFF', textColor: '#0F172A' },
+  { name: 'Residents Indigo',    forApp: 'resident',       primaryColor: '#6366F1', accentColor: '#818CF8', backgroundColor: '#0F172A', textColor: '#FFFFFF' },
+  { name: 'Managers Green',      forApp: 'estate_manager', primaryColor: '#10B981', accentColor: '#34D399', backgroundColor: '#FFFFFF', textColor: '#0F172A' },
   { name: 'Tribely Pink',        primaryColor: '#EC4899', accentColor: '#F472B6', backgroundColor: '#0F172A', textColor: '#FFFFFF' },
   { name: 'Sunset',              primaryColor: '#F59E0B', accentColor: '#FBBF24', backgroundColor: '#7C2D12', textColor: '#FFFFFF' },
   { name: 'Ocean',               primaryColor: '#0EA5E9', accentColor: '#38BDF8', backgroundColor: '#0C4A6E', textColor: '#FFFFFF' },
 ];
 
-const APP_DEFAULT_THEME_IDX = { residents: 0, estatemanager: 1, both: 0 };
+const APP_DEFAULT_THEME_IDX = { resident: 0, estate_manager: 1, both: 0 };
 
 export default function QuickEmailGenerator({ onClose, onPublished }) {
   const [prompt, setPrompt] = useState('');
@@ -33,8 +33,8 @@ export default function QuickEmailGenerator({ onClose, onPublished }) {
   const [segment, setSegment] = useState('new_users');
   const [days, setDays] = useState(7);
   const [roles, setRoles] = useState([]);
-  const [app, setApp] = useState('residents');
-  const [themeIdx, setThemeIdx] = useState(APP_DEFAULT_THEME_IDX.residents);
+  const [app, setApp] = useState('resident');
+  const [themeIdx, setThemeIdx] = useState(APP_DEFAULT_THEME_IDX.resident);
   const [themeManual, setThemeManual] = useState(false);
 
   useEffect(() => {
@@ -381,7 +381,7 @@ function EmailPreview({ theme, email }) {
 }
 
 function segmentToAudienceString(segment, app, days) {
-  const appLabel = app === 'residents' ? 'residents' : app === 'estatemanager' ? 'estate managers' : 'members';
+  const appLabel = app === 'resident' ? 'residents' : app === 'estate_manager' ? 'estate managers' : 'members';
   if (segment === 'new_users') return `${appLabel} whose accounts are less than ${days} days old on AreaConnect`;
   if (segment === 'existing_users') return `${appLabel} who have been on AreaConnect for at least ${days} days`;
   if (segment === 'by_role') return `AreaConnect ${appLabel} in specific roles`;
