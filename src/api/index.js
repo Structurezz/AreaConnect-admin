@@ -132,4 +132,5 @@ export const campaignAPI = {
   setStatus: (id, s)  => api.patch(`/campaigns/${id}/status`, { status: s }),
   remove:    (id)     => api.delete(`/campaigns/${id}`),
   sendEmail: (id)     => api.post(`/campaigns/${id}/send-email`),
+  generateEmail: (payload) => api.post('/campaigns/generate-email', payload),
 };

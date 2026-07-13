@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import {
   Save, ArrowLeft, Eye, Mail, Megaphone, Sparkles, X,
-  Monitor, Smartphone,
+  Monitor, Smartphone, Wand2, Loader2,
 } from 'lucide-react';
 import { campaignAPI } from '../api';
 
@@ -86,6 +86,11 @@ export default function CampaignBuilder() {
   const [saving, setSaving] = useState(false);
   const [previewMode, setPreviewMode] = useState('desktop');
   const [previewTab, setPreviewTab] = useState('modal');
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiTone, setAiTone] = useState('warm, confident, briefly witty');
+  const [aiOverwriteAd, setAiOverwriteAd] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     if (!isEdit) return;
@@ -124,6 +129,57 @@ export default function CampaignBuilder() {
       const has = f.placements.includes(p);
       return { ...f, placements: has ? f.placements.filter(x => x !== p) : [...f.placements, p] };
     });
+  };
+
+  const runAI = async () => {
+    if (!aiPrompt.trim()) return toast.error('Describe what the campaign should say');
+    setAiLoading(true);
+    try {
+      const res = await campaignAPI.generateEmail({
+        goal: aiPrompt,
+        audience: form.audience.segment === 'new_users' ? 'new residents on AreaConnect' : 'residents on AreaConnect',
+        tone: aiTone,
+        theme: form.content.theme,
+        brand: { name: 'AreaConnect', logoUrl: '' },
+        ctaText: form.content.ctaText,
+        ctaUrl: form.content.ctaUrl,
+        includeAd: true,
+      });
+
+      const { email, ad } = res.data?.data || {};
+      if (!email) throw new Error('No email in response');
+
+      setForm(f => {
+        const next = { ...f };
+        next.email = {
+          ...f.email,
+          subject: email.subject || f.email.subject,
+          preheader: email.preheader || f.email.preheader,
+          htmlBody: email.htmlBody || f.email.htmlBody,
+        };
+        if (!f.placements.includes('email')) next.placements = [...f.placements, 'email'];
+
+        if (ad && (aiOverwriteAd || !f.content.headline)) {
+          next.content = {
+            ...f.content,
+            badge:       ad.badge       || f.content.badge,
+            headline:    ad.headline    || f.content.headline,
+            subheadline: ad.subheadline || f.content.subheadline,
+            body:        ad.body        || f.content.body,
+            ctaText:     ad.ctaText     || f.content.ctaText,
+          };
+        }
+        return next;
+      });
+
+      toast.success('Content generated');
+      setAiOpen(false);
+      setPreviewTab('email');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Generation failed');
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const submit = async (nextStatus) => {
@@ -180,6 +236,13 @@ export default function CampaignBuilder() {
 
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setAiOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
+              style={{ background: '#0F172A', color: '#fff' }}
+            >
+              <Wand2 size={14} /> Generate with AI
+            </button>
+            <button
               onClick={() => submit('draft')}
               disabled={saving}
               className="px-4 py-2 rounded-xl text-sm font-semibold"
@@ -197,6 +260,60 @@ export default function CampaignBuilder() {
             </button>
           </div>
         </div>
+
+        {aiOpen && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16, backdropFilter: 'blur(6px)' }} onClick={() => !aiLoading && setAiOpen(false)}>
+            <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, background: '#fff', borderRadius: 20, padding: 28, boxShadow: '0 24px 60px rgba(0,0,0,0.3)' }}>
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#EC4899,#F472B6)' }}>
+                  <Wand2 size={16} color="#fff" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold" style={{ color: '#0F172A', letterSpacing: '-0.01em' }}>Generate with Gemini</h3>
+                  <p className="text-xs" style={{ color: '#64748B' }}>Uses your theme colors and AreaConnect logo automatically.</p>
+                </div>
+              </div>
+
+              <Field label="What is this campaign about?">
+                <textarea
+                  value={aiPrompt}
+                  onChange={e => setAiPrompt(e.target.value)}
+                  rows={3}
+                  placeholder="Welcome new residents and show them how to book a visitor, pay dues, and join the Lounge."
+                  className="input"
+                  autoFocus
+                />
+              </Field>
+              <Field label="Tone">
+                <input value={aiTone} onChange={e => setAiTone(e.target.value)} className="input" />
+              </Field>
+
+              <label className="inline-flex items-center gap-2 text-sm mt-2" style={{ color: '#0F172A' }}>
+                <input type="checkbox" checked={aiOverwriteAd} onChange={e => setAiOverwriteAd(e.target.checked)} />
+                Also overwrite the ad copy (headline, badge, body, CTA)
+              </label>
+
+              <div className="flex items-center gap-2 mt-6">
+                <button
+                  onClick={() => setAiOpen(false)}
+                  disabled={aiLoading}
+                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold"
+                  style={{ background: '#F1F5F9', color: '#475569' }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={runAI}
+                  disabled={aiLoading}
+                  className="flex-[2] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white"
+                  style={{ background: 'linear-gradient(135deg,#EC4899,#F472B6)' }}
+                >
+                  {aiLoading ? <><Loader2 size={14} className="animate-spin" /> Generating…</> : <><Sparkles size={14} /> Generate</>}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_460px]">
           {/* ─── Form ─── */}
