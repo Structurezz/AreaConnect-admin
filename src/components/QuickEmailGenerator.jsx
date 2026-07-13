@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Wand2, Loader2, Sparkles, X, RefreshCw, Send, Users, Palette } from 'lucide-react';
 import { campaignAPI } from '../api';
@@ -17,12 +17,14 @@ const APPS = [
 ];
 
 const THEMES = [
-  { name: 'Tribely Pink',    primaryColor: '#EC4899', accentColor: '#F472B6', backgroundColor: '#0F172A', textColor: '#FFFFFF' },
-  { name: 'AreaConnect Navy', primaryColor: '#6366F1', accentColor: '#818CF8', backgroundColor: '#0F172A', textColor: '#FFFFFF' },
-  { name: 'Emerald',         primaryColor: '#10B981', accentColor: '#34D399', backgroundColor: '#064E3B', textColor: '#FFFFFF' },
-  { name: 'Sunset',          primaryColor: '#F59E0B', accentColor: '#FBBF24', backgroundColor: '#7C2D12', textColor: '#FFFFFF' },
-  { name: 'Ocean',           primaryColor: '#0EA5E9', accentColor: '#38BDF8', backgroundColor: '#0C4A6E', textColor: '#FFFFFF' },
+  { name: 'Residents Indigo',    forApp: 'residents',     primaryColor: '#6366F1', accentColor: '#818CF8', backgroundColor: '#0F172A', textColor: '#FFFFFF' },
+  { name: 'Managers Green',      forApp: 'estatemanager', primaryColor: '#10B981', accentColor: '#34D399', backgroundColor: '#FFFFFF', textColor: '#0F172A' },
+  { name: 'Tribely Pink',        primaryColor: '#EC4899', accentColor: '#F472B6', backgroundColor: '#0F172A', textColor: '#FFFFFF' },
+  { name: 'Sunset',              primaryColor: '#F59E0B', accentColor: '#FBBF24', backgroundColor: '#7C2D12', textColor: '#FFFFFF' },
+  { name: 'Ocean',               primaryColor: '#0EA5E9', accentColor: '#38BDF8', backgroundColor: '#0C4A6E', textColor: '#FFFFFF' },
 ];
+
+const APP_DEFAULT_THEME_IDX = { residents: 0, estatemanager: 1, both: 0 };
 
 export default function QuickEmailGenerator({ onClose, onPublished }) {
   const [prompt, setPrompt] = useState('');
@@ -32,7 +34,14 @@ export default function QuickEmailGenerator({ onClose, onPublished }) {
   const [days, setDays] = useState(7);
   const [roles, setRoles] = useState([]);
   const [app, setApp] = useState('residents');
-  const [themeIdx, setThemeIdx] = useState(0);
+  const [themeIdx, setThemeIdx] = useState(APP_DEFAULT_THEME_IDX.residents);
+  const [themeManual, setThemeManual] = useState(false);
+
+  useEffect(() => {
+    if (themeManual) return;
+    const idx = APP_DEFAULT_THEME_IDX[app];
+    if (idx != null) setThemeIdx(idx);
+  }, [app, themeManual]);
   const [sendOnSignup, setSendOnSignup] = useState(true);
 
   const [generated, setGenerated] = useState(null);
@@ -222,7 +231,7 @@ export default function QuickEmailGenerator({ onClose, onPublished }) {
                 {THEMES.map((t, i) => (
                   <button
                     key={t.name}
-                    onClick={() => setThemeIdx(i)}
+                    onClick={() => { setThemeManual(true); setThemeIdx(i); }}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold"
                     style={{ background: themeIdx === i ? '#0F172A' : '#fff', color: themeIdx === i ? '#fff' : '#475569', border: '1px solid #E2E8F0' }}
                   >
@@ -231,6 +240,9 @@ export default function QuickEmailGenerator({ onClose, onPublished }) {
                   </button>
                 ))}
               </div>
+              {!themeManual && (
+                <p className="text-[11px] mt-1.5" style={{ color: '#94A3B8' }}>Auto-selected to match audience app. Pick another to override.</p>
+              )}
             </div>
 
             {/* Tone */}
