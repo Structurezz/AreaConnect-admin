@@ -247,7 +247,13 @@ export default function DefaultTracks() {
         </div>
       ) : (
         <div className="glass-card overflow-hidden">
-          <div className="divide-y" style={{ borderColor: 'rgba(15,23,42,0.05)' }}>
+          <div className="px-4 py-2 flex items-center justify-between text-[11px] font-semibold"
+            style={{ color: '#64748B', background: '#F8FAFC', borderBottom: '1px solid rgba(15,23,42,0.05)' }}>
+            <span>Showing {filtered.length} of {tracks.length}</span>
+            <span>Scroll inside this list</span>
+          </div>
+          <div className="divide-y overflow-y-auto"
+            style={{ borderColor: 'rgba(15,23,42,0.05)', maxHeight: 'calc(100vh - 420px)', minHeight: 320 }}>
             {filtered.map((t) => (
               <div key={t._id}
                 className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50">
