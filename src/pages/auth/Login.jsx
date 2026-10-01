@@ -4,8 +4,6 @@ import { useAuth } from '../../context/AuthContext';
 import { Building2, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const DEMO = { label: 'Super Admin', email: 'admin@estate-demo.com', password: 'Admin@123' };
-
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPw, setShowPw] = useState(false);
@@ -45,36 +43,6 @@ export default function Login() {
           </div>
           <h1 className="text-3xl font-bold mb-1" style={{ color: '#0F172A' }}>Admin Portal</h1>
           <p className="text-sm" style={{ color: '#94A3B8' }}>Super Administrator Access</p>
-        </div>
-
-        {/* Demo account card */}
-        <div className="glass-card p-4 mb-6">
-          <p
-            className="text-xs font-medium mb-3 uppercase tracking-wider"
-            style={{ color: '#94A3B8' }}
-          >
-            Demo Account
-          </p>
-          <button
-            onClick={() => { setForm({ email: DEMO.email, password: DEMO.password }); setError(''); }}
-            className="w-full text-xs text-left p-2.5 rounded-lg transition-all"
-            style={{
-              background: '#F8FAFC',
-              border: '1px solid #E2E8F0',
-              color: '#0F172A',
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.background = '#F1F5F9';
-              e.currentTarget.style.borderColor = 'rgba(16,185,129,0.30)';
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.background = '#F8FAFC';
-              e.currentTarget.style.borderColor = '#E2E8F0';
-            }}
-          >
-            <div className="font-semibold" style={{ color: '#0F172A' }}>{DEMO.label}</div>
-            <div style={{ color: '#94A3B8' }}>{DEMO.email}</div>
-          </button>
         </div>
 
         {/* Login form */}

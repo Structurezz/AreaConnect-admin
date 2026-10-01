@@ -91,6 +91,15 @@ export const adminAPI = {
   getPlatformStats: () => api.get('/estates/platform-stats'),
 };
 
+// Resident Lounge default tracks (super admin)
+export const defaultTrackAPI = {
+  getAll:  ()           => api.get('/lounge/defaults'),
+  create:  (data)       => api.post('/lounge/defaults', data),
+  update:  (id, data)   => api.patch(`/lounge/defaults/${id}`, data),
+  delete:  (id)         => api.delete(`/lounge/defaults/${id}`),
+  reseed:  ()           => api.post('/lounge/defaults/reseed'),
+};
+
 // Plans & Subscriptions (admin)
 export const planAPI = {
   getAll: () => api.get('/plans'),

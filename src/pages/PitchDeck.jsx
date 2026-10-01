@@ -730,6 +730,7 @@ export default function PitchDeck() {
                         </td>
                         <td style={{ padding:'10px 12px' }}>
                           <div style={{ fontWeight:600, color:'#0F172A' }}>{p.name}</div>
+                          {p.title && <div style={{ fontSize:10, fontWeight:700, color:'#8B5CF6', marginTop:1, textTransform:'uppercase', letterSpacing:'0.04em' }}>{p.title}</div>}
                           <div style={{ fontSize:11, color:'#64748B', marginTop:1 }}>{p.company}</div>
                           <div style={{ fontSize:11, color:'#94A3B8' }}>{p.email}</div>
                         </td>

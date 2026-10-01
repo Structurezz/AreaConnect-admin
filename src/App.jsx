@@ -21,6 +21,7 @@ import PitchDeck from './pages/PitchDeck';
 import Campaigns from './pages/Campaigns';
 import CampaignBuilder from './pages/CampaignBuilder';
 import EmailCampaigns from './pages/EmailCampaigns';
+import DefaultTracks from './pages/DefaultTracks';
 
 function RequireAdmin({ children }) {
   const { user, loading } = useAuth();
@@ -62,6 +63,7 @@ function AppRoutes() {
       <Route path="/campaigns/new" element={<RequireAdmin><CampaignBuilder /></RequireAdmin>} />
       <Route path="/campaigns/:id" element={<RequireAdmin><CampaignBuilder /></RequireAdmin>} />
       <Route path="/email-campaigns" element={<RequireAdmin><EmailCampaigns /></RequireAdmin>} />
+      <Route path="/lounge-defaults" element={<RequireAdmin><DefaultTracks /></RequireAdmin>} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
