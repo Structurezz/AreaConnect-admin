@@ -42,8 +42,17 @@ export function useLiveAudio({ roomType, roomId, role, enabled = true, meta = {}
 
   const getLocalStream = useCallback(async () => {
     if (localStreamRef.current) return localStreamRef.current;
+    // noiseSuppression off: it over-attenuates soft voices and makes the
+    // host sound faint on listeners' ends. AGC + echo cancellation are
+    // kept — they normalize level without crushing the signal.
     const stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: false,
+        autoGainControl: true,
+        channelCount: 1,
+        sampleRate: 48000,
+      },
       video: false,
     });
     localStreamRef.current = stream;
