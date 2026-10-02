@@ -132,6 +132,21 @@ export const alertAPI = {
   broadcast: (data) => api.post('/alerts/broadcast', data),
 };
 
+// Podcast — full admin control
+export const podcastAPI = {
+  listShows:    (params) => api.get('/podcast/shows', { params }),
+  getShow:      (id) => api.get(`/podcast/shows/${id}`),
+  createShow:   (data) => api.post('/podcast/shows', data),
+  updateShow:   (id, data) => api.patch(`/podcast/shows/${id}`, data),
+  goLive:       (id) => api.post(`/podcast/shows/${id}/go-live`),
+  endLive:      (id, data) => api.post(`/podcast/shows/${id}/end`, data),
+  invite:       (id, data) => api.post(`/podcast/shows/${id}/invite`, data),
+  revokeInvite: (id, inviteId) => api.post(`/podcast/shows/${id}/invites/${inviteId}/revoke`),
+  getLive:      () => api.get('/podcast/live'),
+  getUpcoming:  () => api.get('/podcast/upcoming'),
+  listEpisodes: () => api.get('/podcast/episodes'),
+};
+
 // Campaigns
 export const campaignAPI = {
   list:      (params) => api.get('/campaigns', { params }),

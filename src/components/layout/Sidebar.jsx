@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Building2, Plus, LogOut,
   CreditCard, Users, BarChart2, TrendingUp,
-  Settings, AlertTriangle, Presentation, Megaphone, Mail, Music,
+  Settings, AlertTriangle, Presentation, Megaphone, Mail, Music, Radio,
 } from 'lucide-react';
 
 const NAV = [
@@ -30,6 +30,7 @@ const NAV = [
       { to: '/plans',           icon: CreditCard,     label: 'Plans & Pricing' },
       { to: '/subscriptions',   icon: Settings,        label: 'Subscriptions' },
       { to: '/lounge-defaults', icon: Music,           label: 'Lounge Playlist' },
+      { to: '/podcast',         icon: Radio,           label: 'Podcast Studio' },
     ],
   },
   {
