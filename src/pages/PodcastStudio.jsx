@@ -2,11 +2,12 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Radio, Mic, MicOff, Users, Plus, Calendar, X, Hand, Check, UserX,
   Save, Loader2, Share2, Trash2, Edit3, Play, Pause, Headphones, Link as LinkIcon,
-  Copy, ChevronRight, Crown, Volume2,
+  Copy, ChevronRight, Crown, Volume2, Heart, MessageSquare, Send,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { podcastAPI } from '../api';
 import { useAuth }    from '../context/AuthContext';
+import { useSocket }  from '../context/SocketContext';
 import { useLiveAudio } from '../hooks/useLiveAudio';
 import BoostedRemoteAudio from '../components/BoostedRemoteAudio';
 
@@ -165,10 +166,18 @@ function InviteModal({ show, onInvited, onClose }) {
 
 function LiveStudio({ show, onEnded, onBack }) {
   const { user } = useAuth();
+  const { subscribe, emit } = useSocket() || {};
   const [elapsed, setElapsed] = useState(0);
   const startRef = useRef(show.startedAt ? new Date(show.startedAt).getTime() : Date.now());
   const [peak, setPeak] = useState(show.peakListeners || 0);
   const [ending, setEnding] = useState(false);
+
+  // Twitch-style engagement state
+  const [chat, setChat]     = useState([]);
+  const [likes, setLikes]   = useState(0);
+  const [hostInput, setHostInput] = useState('');
+  const [reactionBurst, setReactionBurst] = useState([]);  // ephemeral emojis
+  const chatBoxRef = useRef(null);
 
   const voiceBlobRef = useRef(null);
   const recorderRef = useRef(null);
@@ -182,6 +191,32 @@ function LiveStudio({ show, onEnded, onBack }) {
 
   // Peak + elapsed
   useEffect(() => { if (live.listenerCount > peak) setPeak(live.listenerCount); }, [live.listenerCount, peak]);
+
+  // Chat / likes / reactions
+  useEffect(() => {
+    if (!subscribe) return;
+    const u1 = subscribe('podcast:chat', (msg) => {
+      if (String(msg.showId) !== String(show._id)) return;
+      setChat(prev => [...prev.slice(-99), msg]);
+    });
+    const u2 = subscribe('podcast:like',     () => setLikes(n => n + 1));
+    const u3 = subscribe('podcast:reaction', ({ emoji, at }) => {
+      const id = `${at}-${Math.random().toString(36).slice(2, 6)}`;
+      setReactionBurst(prev => [...prev.slice(-19), { id, emoji, x: 20 + Math.random() * 60 }]);
+      setTimeout(() => setReactionBurst(prev => prev.filter(r => r.id !== id)), 3400);
+    });
+    return () => { u1 && u1(); u2 && u2(); u3 && u3(); };
+  }, [subscribe, show._id]);
+
+  // Autoscroll chat
+  useEffect(() => { if (chatBoxRef.current) chatBoxRef.current.scrollTop = chatBoxRef.current.scrollHeight; }, [chat.length]);
+
+  const sendHostChat = () => {
+    const text = hostInput.trim();
+    if (!text || !emit) return;
+    emit('podcast:chat:send', { showId: show._id, text, userId: user?._id, userName: user?.name || 'Host', userPhoto: user?.profilePhoto });
+    setHostInput('');
+  };
   useEffect(() => {
     const id = setInterval(() => setElapsed(Date.now() - startRef.current), 1000);
     return () => clearInterval(id);
@@ -360,7 +395,86 @@ function LiveStudio({ show, onEnded, onBack }) {
         </div>
       </div>
 
-      <style>{`@keyframes ping { 75%, 100% { transform: scale(2.4); opacity: 0; } }`}</style>
+      {/* ── Audience panel: live chat + reactions + likes ─────────────────── */}
+      <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 220px', gap: 14 }} className="studio-audience">
+        {/* Chat */}
+        <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 14, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <MessageSquare size={14} color="#C4B5FD"/>
+            <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Live chat</span>
+            <span style={{ fontSize: 11, color: '#94A3B8' }}>· {chat.length}</span>
+          </div>
+          <div ref={chatBoxRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, paddingRight: 4 }}>
+            {chat.length === 0 && (
+              <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, textAlign: 'center', padding: '28px 0', fontStyle: 'italic' }}>
+                Audience chat will appear here as listeners type.
+              </div>
+            )}
+            {chat.map(m => (
+              <div key={m.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '6px 8px', borderRadius: 10, background: 'rgba(0,0,0,0.3)' }}>
+                {m.userPhoto ? (
+                  <img src={m.userPhoto} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}/>
+                ) : (
+                  <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>
+                    {(m.userName?.[0] || 'L').toUpperCase()}
+                  </div>
+                )}
+                <div style={{ fontSize: 13, color: '#fff', lineHeight: 1.4, minWidth: 0, flex: 1 }}>
+                  <span style={{ fontWeight: 700, color: '#C4B5FD', marginRight: 6 }}>{m.userName || 'Listener'}</span>
+                  <span style={{ wordBreak: 'break-word' }}>{m.text}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+            <input value={hostInput} onChange={e => setHostInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') sendHostChat(); }}
+              placeholder="Reply to the room…"
+              style={{ flex: 1, padding: '9px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)', color: '#fff', fontSize: 13, outline: 'none' }}/>
+            <button onClick={sendHostChat} disabled={!hostInput.trim()}
+              style={{ padding: '0 14px', borderRadius: 10, border: 'none', cursor: hostInput.trim() ? 'pointer' : 'default',
+                background: hostInput.trim() ? `linear-gradient(135deg, ${BRAND}, ${BRAND_DARK})` : 'rgba(255,255,255,0.08)',
+                color: '#fff', fontWeight: 700, fontSize: 13, opacity: hostInput.trim() ? 1 : 0.5,
+                display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <Send size={13}/>
+            </button>
+          </div>
+        </div>
+
+        {/* Right rail: counters + reaction stream */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ background: 'rgba(244,63,94,0.14)', border: '1px solid rgba(244,63,94,0.3)', borderRadius: 16, padding: 14, textAlign: 'center' }}>
+            <Heart size={16} color="#F43F5E" fill="#F43F5E" style={{ margin: '0 auto 4px' }}/>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#FDA4AF', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Likes</div>
+            <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', lineHeight: 1, marginTop: 2 }}>{likes}</div>
+          </div>
+          <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 14, flex: 1, position: 'relative', overflow: 'hidden', minHeight: 120 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: '#C4B5FD', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Reactions</div>
+            <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>live from the audience</div>
+            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+              {reactionBurst.map(r => (
+                <div key={r.id} style={{ position: 'absolute', bottom: 10, left: `${r.x}%`, fontSize: 24, animation: 'rx-float 3.2s ease-out forwards' }}>
+                  {r.emoji}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes ping { 75%, 100% { transform: scale(2.4); opacity: 0; } }
+        @keyframes rx-float {
+          0%   { transform: translateY(0) scale(0.7); opacity: 0; }
+          15%  { transform: translateY(-10px) scale(1.1); opacity: 1; }
+          80%  { opacity: 1; }
+          100% { transform: translateY(-140px) scale(1); opacity: 0; }
+        }
+        @media (max-width: 760px) {
+          .studio-audience { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }
