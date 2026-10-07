@@ -31,7 +31,12 @@ export function useLiveAudio({ roomType, roomId, role, enabled = true, meta = {}
   const [calledIn, setCalledIn]     = useState(false);
   const [handRequests, setRequests] = useState([]);   // host-only queue
 
-  const localStreamRef = useRef(null);
+  const localStreamRef   = useRef(null);  // RAW mic (what MediaRecorder sees)
+  const outboundRef      = useRef(null);  // PROCESSED stream fed to peers (raw → gain → dest)
+  const micCtxRef        = useRef(null);
+  const micSourceRef     = useRef(null);
+  const micGainNodeRef   = useRef(null);
+  const [micGainLevel, setMicGainLevel] = useState(1.0);  // 0–2 range (0% – 200%)
   const peersRef       = useRef(new Map());  // socketId -> RTCPeerConnection
   const roleRef        = useRef(role);
   const metaRef        = useRef(meta);
@@ -41,11 +46,11 @@ export function useLiveAudio({ roomType, roomId, role, enabled = true, meta = {}
   const isPublisher = (r) => ['host', 'guest', 'caller'].includes(r);
 
   const getLocalStream = useCallback(async () => {
-    if (localStreamRef.current) return localStreamRef.current;
+    if (outboundRef.current) return outboundRef.current;
     // noiseSuppression off: it over-attenuates soft voices and makes the
     // host sound faint on listeners' ends. AGC + echo cancellation are
     // kept — they normalize level without crushing the signal.
-    const stream = await navigator.mediaDevices.getUserMedia({
+    const raw = await navigator.mediaDevices.getUserMedia({
       audio: {
         echoCancellation: true,
         noiseSuppression: false,
@@ -55,15 +60,60 @@ export function useLiveAudio({ roomType, roomId, role, enabled = true, meta = {}
       },
       video: false,
     });
-    localStreamRef.current = stream;
-    return stream;
+    localStreamRef.current = raw;
+
+    // Build a processed outbound stream: raw → GainNode → MediaStream destination.
+    // Peers consume the processed stream so the host can boost/duck their mic
+    // live via setMicGain().
+    try {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) {
+        const ctx    = new AC();
+        const source = ctx.createMediaStreamSource(raw);
+        const gain   = ctx.createGain();
+        gain.gain.value = 1.0;
+        const dest   = ctx.createMediaStreamDestination();
+        source.connect(gain).connect(dest);
+        micCtxRef.current      = ctx;
+        micSourceRef.current   = source;
+        micGainNodeRef.current = gain;
+        outboundRef.current    = dest.stream;
+      } else {
+        outboundRef.current = raw;
+      }
+    } catch (e) {
+      console.warn('[useLiveAudio] mic gain pipeline failed; using raw stream', e);
+      outboundRef.current = raw;
+    }
+    return outboundRef.current;
   }, []);
+
+  // Sets outbound mic gain. `level` is 0..2 (1.0 = unity).
+  const setMicGain = useCallback((level) => {
+    const clamped = Math.max(0, Math.min(2, Number(level) || 0));
+    setMicGainLevel(clamped);
+    if (micGainNodeRef.current) micGainNodeRef.current.gain.value = clamped;
+  }, []);
+
+  // RAW stream for MediaRecorder (unprocessed, preserves what the host
+  // originally said; recorder shouldn't double-apply any boost).
+  const getRawStream = useCallback(() => localStreamRef.current, []);
 
   const stopLocalStream = useCallback(() => {
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(t => t.stop());
       localStreamRef.current = null;
     }
+    if (outboundRef.current && outboundRef.current !== localStreamRef.current) {
+      try { outboundRef.current.getTracks().forEach(t => t.stop()); } catch {}
+      outboundRef.current = null;
+    }
+    try { micSourceRef.current?.disconnect(); } catch {}
+    try { micGainNodeRef.current?.disconnect(); } catch {}
+    try { micCtxRef.current?.close(); } catch {}
+    micSourceRef.current = null;
+    micGainNodeRef.current = null;
+    micCtxRef.current = null;
   }, []);
 
   const createPeer = useCallback(async (remoteSocketId, isInitiator) => {
@@ -242,6 +292,7 @@ export function useLiveAudio({ roomType, roomId, role, enabled = true, meta = {}
     handRaised, calledIn,
     raiseHand, lowerHand,
     handRequests, approveHand, denyHand, removeCaller,
-    getLocalStream,
+    getLocalStream, getRawStream,
+    micGain: micGainLevel, setMicGain,
   };
 }

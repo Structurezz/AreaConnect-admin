@@ -5,11 +5,12 @@ import {
   Copy, ChevronRight, Crown, Volume2, Heart, MessageSquare, Send,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { podcastAPI } from '../api';
+import { podcastAPI, defaultTrackAPI } from '../api';
 import { useAuth }    from '../context/AuthContext';
 import { useSocket }  from '../context/SocketContext';
 import { useLiveAudio } from '../hooks/useLiveAudio';
 import BoostedRemoteAudio from '../components/BoostedRemoteAudio';
+import { Music, VolumeX, Volume1, Sliders } from 'lucide-react';
 
 const BRAND = '#8B5CF6'; // violet to differentiate from estate green
 const BRAND_DARK = '#6D28D9';
@@ -179,6 +180,13 @@ function LiveStudio({ show, onEnded, onBack }) {
   const [reactionBurst, setReactionBurst] = useState([]);  // ephemeral emojis
   const chatBoxRef = useRef(null);
 
+  // Music + mixer state
+  const [library, setLibrary]     = useState([]);
+  const [currentTrack, setTrack]  = useState(show.nowPlaying?.videoId ? show.nowPlaying : null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [musicVol, setMusicVol]   = useState(show.musicVolume ?? 35);
+  const musicIframeRef = useRef(null);
+
   const voiceBlobRef = useRef(null);
   const recorderRef = useRef(null);
 
@@ -216,6 +224,30 @@ function LiveStudio({ show, onEnded, onBack }) {
     if (!text || !emit) return;
     emit('podcast:chat:send', { showId: show._id, text, userId: user?._id, userName: user?.name || 'Host', userPhoto: user?.profilePhoto });
     setHostInput('');
+  };
+
+  // ── Music mixer ───────────────────────────────────────────────────────
+  useEffect(() => {
+    defaultTrackAPI.getAll().then(({ data }) => setLibrary(data.data || [])).catch(() => {});
+  }, []);
+
+  const applyMusicVolume = (v) => {
+    const clamped = Math.max(0, Math.min(100, Math.round(v)));
+    setMusicVol(clamped);
+    try { musicIframeRef.current?.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'setVolume', args: [clamped] }), '*'); } catch {}
+    emit?.('podcast:volume', { showId: show._id, volume: clamped });
+  };
+
+  const pickTrack = (t) => {
+    const np = { videoId: t.videoId, title: t.title, artist: t.artist || '' };
+    setTrack(np);
+    setShowPicker(false);
+    emit?.('podcast:music-change', { showId: show._id, nowPlaying: np });
+  };
+
+  const clearTrack = () => {
+    setTrack(null);
+    emit?.('podcast:music-change', { showId: show._id, nowPlaying: null });
   };
   useEffect(() => {
     const id = setInterval(() => setElapsed(Date.now() - startRef.current), 1000);
@@ -395,6 +427,56 @@ function LiveStudio({ show, onEnded, onBack }) {
         </div>
       </div>
 
+      {/* ── Mixer deck: music + mic sliders (vertical) ────────────────────── */}
+      <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '14px 18px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+          <Sliders size={14} color="#C4B5FD"/>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Mixer deck</span>
+          <span style={{ fontSize: 11, color: '#94A3B8' }}>· broadcast to the room</span>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {currentTrack ? (
+              <>
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 999, background: 'rgba(139,92,246,0.2)', border: `1px solid ${BRAND}44`, fontSize: 11, fontWeight: 700, color: '#fff', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <Music size={11}/> {currentTrack.title}
+                </div>
+                <button onClick={() => setShowPicker(true)} style={{ padding: '5px 10px', borderRadius: 999, border: 'none', background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Change</button>
+                <button onClick={clearTrack} style={{ padding: '5px 10px', borderRadius: 999, border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.14)', color: '#FCA5A5', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Stop</button>
+              </>
+            ) : (
+              <button onClick={() => setShowPicker(true)} style={{ padding: '5px 12px', borderRadius: 999, border: 'none', background: `linear-gradient(135deg, ${BRAND}, ${BRAND_DARK})`, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                <Music size={11}/> Add music
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Hidden YouTube iframe — plays the background music for the host */}
+        {currentTrack?.videoId && (
+          <iframe ref={musicIframeRef} key={currentTrack.videoId}
+            src={`https://www.youtube.com/embed/${currentTrack.videoId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`}
+            onLoad={() => setTimeout(() => applyMusicVolume(musicVol), 400)}
+            allow="autoplay; encrypted-media"
+            style={{ position: 'absolute', width: 1, height: 1, border: 0, opacity: 0, pointerEvents: 'none' }} />
+        )}
+
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          <Fader label="Music" value={musicVol} max={100} unit="%"
+            disabled={!currentTrack}
+            onChange={applyMusicVolume}
+            color={BRAND}
+            icon={musicVol === 0 ? <VolumeX size={13}/> : musicVol < 40 ? <Volume1 size={13}/> : <Volume2 size={13}/>}
+            quickActions={[{ label: 'Duck', value: 15 }, { label: 'Up', value: 60 }]}
+          />
+          <Fader label="Mic" value={Math.round((live.micGain || 1) * 100)} max={200} unit="%"
+            disabled={false}
+            onChange={(v) => live.setMicGain((v || 0) / 100)}
+            color="#10B981"
+            icon={<Mic size={13}/>}
+            quickActions={[{ label: 'Low',  value: 80 }, { label: 'Hot', value: 150 }]}
+          />
+        </div>
+      </div>
+
       {/* ── Audience panel: live chat + reactions + likes ─────────────────── */}
       <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 220px', gap: 14 }} className="studio-audience">
         {/* Chat */}
@@ -475,6 +557,75 @@ function LiveStudio({ show, onEnded, onBack }) {
           .studio-audience { grid-template-columns: 1fr !important; }
         }
       `}</style>
+
+      {/* Music picker modal */}
+      {showPicker && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2,6,23,0.72)', zIndex: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 480, maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '14px 18px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>Pick a background track</div>
+              <button onClick={() => setShowPicker(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}><X size={16}/></button>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
+              {library.length === 0 && <div style={{ padding: 24, textAlign: 'center', color: '#94A3B8', fontSize: 13 }}>No tracks in the shared library.</div>}
+              {library.map(t => (
+                <button key={t._id} onClick={() => pickTrack(t)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', width: '100%', textAlign: 'left', background: 'transparent', border: '1px solid transparent', borderRadius: 10, cursor: 'pointer' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: `${BRAND}18`, color: BRAND_DARK, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Music size={13}/></div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
+                    <div style={{ fontSize: 11, color: '#94A3B8' }}>{t.artist || 'Shared library'}</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Vertical fader (mixer channel strip)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function Fader({ label, value, max = 100, unit = '%', color, icon, disabled, onChange, quickActions = [] }) {
+  return (
+    <div style={{
+      flex: 1, minWidth: 150,
+      background: disabled ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.25)',
+      border: `1px solid ${disabled ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.12)'}`,
+      borderRadius: 14, padding: 14,
+      opacity: disabled ? 0.55 : 1,
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#CBD5E1', fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+        {icon}{label}
+      </div>
+      <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginTop: 4 }}>{value}<span style={{ fontSize: 11, color: '#94A3B8', marginLeft: 2 }}>{unit}</span></div>
+      <input type="range" min="0" max={max} value={value}
+        disabled={disabled}
+        onChange={e => onChange(Number(e.target.value))}
+        style={{
+          writingMode: 'bt-lr',
+          WebkitAppearance: 'slider-vertical',
+          width: 24, height: 140, margin: '10px 0',
+          accentColor: color,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+        }} />
+      {/* Fallback horizontal slider for browsers that ignore vertical */}
+      <style>{`input[type=range][orient=vertical] { -webkit-appearance: slider-vertical; }`}</style>
+      <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+        {quickActions.map(q => (
+          <button key={q.label} disabled={disabled} onClick={() => onChange(q.value)}
+            style={{ padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 10, fontWeight: 700, cursor: disabled ? 'not-allowed' : 'pointer' }}>
+            {q.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }

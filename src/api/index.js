@@ -91,7 +91,8 @@ export const adminAPI = {
   getPlatformStats: () => api.get('/estates/platform-stats'),
 };
 
-// Resident Lounge default tracks (super admin)
+// Resident Lounge default tracks (super admin). PodcastStudio reads getAll
+// to pick a background track for the show mixer.
 export const defaultTrackAPI = {
   getAll:  ()           => api.get('/lounge/defaults'),
   create:  (data)       => api.post('/lounge/defaults', data),
