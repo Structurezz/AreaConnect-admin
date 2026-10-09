@@ -53,6 +53,14 @@ export default function Subscriptions() {
     estateId: '', planId: '', reason: '', expiryPreset: 'never', customExpiry: '', cycle: 'monthly',
   });
 
+  // Inline comp panel inside the Edit Subscription modal. Seeded from the
+  // subscription's current comp when the modal opens so the admin can tweak
+  // plan / reason / expiry — or flip isActive off to revoke on save.
+  const [editCompForm, setEditCompForm] = useState({
+    isActive: false, planId: '', reason: '',
+    expiryPreset: 'never', customExpiry: '', cycle: 'monthly',
+  });
+
   const load = async () => {
     setLoading(true);
     try {
@@ -85,10 +93,41 @@ export default function Subscriptions() {
     } finally { setAssigning(false); }
   };
 
+  const openEdit = (sub) => {
+    const comp     = sub.comp || {};
+    const isActive = !!(comp.isActive && comp.planId);
+    const hasExpiry = !!comp.expiresAt;
+    setEditCompForm({
+      isActive,
+      planId:   comp.planId?._id || comp.planId || '',
+      reason:   comp.reason || '',
+      cycle:    'monthly',
+      expiryPreset: hasExpiry ? 'custom' : 'never',
+      customExpiry: hasExpiry ? new Date(comp.expiresAt).toISOString().slice(0, 10) : '',
+    });
+    setEditing({ ...sub });
+  };
+
   const handleUpdate = async (e) => {
     e.preventDefault();
     setSaving(true);
     try {
+      const estateId  = editing.estateId?._id || editing.estateId;
+      const wasActive = !!(editing.comp?.isActive && editing.comp?.planId);
+      const willActive = !!editCompForm.isActive;
+
+      // Validate comp input before touching the server.
+      if (willActive && !editCompForm.planId) {
+        toast.error('Pick a plan for the comp access');
+        setSaving(false);
+        return;
+      }
+      if (willActive && editCompForm.expiryPreset === 'custom' && !editCompForm.customExpiry) {
+        toast.error('Pick a custom expiry date');
+        setSaving(false);
+        return;
+      }
+
       await planAPI.updateSubscription(editing._id, {
         planId: editing.planId?._id || editing.planId,
         cycle: editing.cycle,
@@ -96,6 +135,20 @@ export default function Subscriptions() {
         notes: editing.notes,
         billingModel: editing.billingModel,
       });
+
+      if (wasActive && !willActive) {
+        await planAPI.revokeComp(estateId);
+      } else if (willActive) {
+        const expiresAt = resolveCompExpiry(editCompForm.expiryPreset, editCompForm.customExpiry);
+        await planAPI.grantComp({
+          estateId,
+          planId:    editCompForm.planId,
+          reason:    editCompForm.reason,
+          cycle:     editCompForm.cycle,
+          expiresAt,
+        });
+      }
+
       toast.success('Subscription updated');
       setEditing(null);
       load();
@@ -390,7 +443,7 @@ export default function Subscriptions() {
                       </td>
                       <td className="px-5 py-3.5">
                         <div className="flex items-center gap-1">
-                          <button onClick={() => setEditing({ ...sub })}
+                          <button onClick={() => openEdit(sub)}
                             title="Edit subscription"
                             className="p-1.5 rounded-lg transition-all"
                             style={{ color: '#94A3B8' }}
@@ -711,6 +764,102 @@ export default function Subscriptions() {
                 <input className="input-field" placeholder="Internal notes…"
                   value={editing.notes || ''} onChange={e => setEditing({ ...editing, notes: e.target.value })} />
               </div>
+
+              <div className="pt-3" style={{ borderTop: '1px dashed #E2E8F0' }}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+                         style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)' }}>
+                      <Gift size={13} className="text-white" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold" style={{ color: '#0F172A' }}>Comp Access</div>
+                      <div className="text-[10px]" style={{ color: '#94A3B8' }}>
+                        {editing.comp?.isActive && editing.comp?.planId
+                          ? 'Currently granted — update or toggle off to revoke'
+                          : 'Grant a free promo plan on top of billing'}
+                      </div>
+                    </div>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" className="sr-only peer"
+                      checked={editCompForm.isActive}
+                      onChange={e => setEditCompForm({ ...editCompForm, isActive: e.target.checked })} />
+                    <div className="w-9 h-5 rounded-full transition-all"
+                         style={{ background: editCompForm.isActive ? '#F59E0B' : '#CBD5E1' }} />
+                    <span className="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
+                          style={{ transform: editCompForm.isActive ? 'translateX(16px)' : 'translateX(0)' }} />
+                  </label>
+                </div>
+
+                {editCompForm.isActive && (
+                  <div className="space-y-3 mt-3">
+                    <div>
+                      <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Comp plan *</label>
+                      <select className="input-field" value={editCompForm.planId}
+                        onChange={e => setEditCompForm({ ...editCompForm, planId: e.target.value })} required>
+                        <option value="">Select plan…</option>
+                        {plans.map(p => (
+                          <option key={p._id} value={p._id}>
+                            {p.name} — normally {fmt(p.price.monthly)}/mo (comp = free)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Reason</label>
+                      <input className="input-field" placeholder="e.g. Launch promo, VIP, Beta tester"
+                        value={editCompForm.reason}
+                        onChange={e => setEditCompForm({ ...editCompForm, reason: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Expires</label>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {[
+                          { v: '7',      label: '7d'     },
+                          { v: '30',     label: '30d'    },
+                          { v: '90',     label: '90d'    },
+                          { v: 'custom', label: 'Custom' },
+                          { v: 'never',  label: 'Never'  },
+                        ].map(opt => (
+                          <button key={opt.v} type="button"
+                            onClick={() => setEditCompForm({ ...editCompForm, expiryPreset: opt.v })}
+                            className="px-2 py-2 rounded-lg text-xs font-semibold transition-all"
+                            style={editCompForm.expiryPreset === opt.v
+                              ? { background: '#F59E0B', color: '#FFF', border: '1px solid #D97706' }
+                              : { background: '#F8FAFC', color: '#475569', border: '1px solid #E2E8F0' }}>
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                      {editCompForm.expiryPreset === 'custom' && (
+                        <input type="date" className="input-field mt-2"
+                          min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                          value={editCompForm.customExpiry}
+                          onChange={e => setEditCompForm({ ...editCompForm, customExpiry: e.target.value })}
+                          required />
+                      )}
+                      {editCompForm.expiryPreset === 'never' && (
+                        <p className="text-[11px] mt-1 flex items-center gap-1" style={{ color: '#B45309' }}>
+                          <InfinityIcon size={11} /> Stays active until revoked manually.
+                        </p>
+                      )}
+                      {editing.comp?.expiresAt && editCompForm.expiryPreset !== 'never' && (
+                        <p className="text-[11px] mt-1" style={{ color: '#94A3B8' }}>
+                          Current expiry: {format(new Date(editing.comp.expiresAt), 'MMM d, yyyy')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {!editCompForm.isActive && editing.comp?.isActive && editing.comp?.planId && (
+                  <p className="text-[11px] mt-2" style={{ color: '#DC2626' }}>
+                    Comp will be revoked when you save.
+                  </p>
+                )}
+              </div>
+
               <div className="flex gap-3 pt-1">
                 <button type="button" onClick={() => setEditing(null)} className="btn-outline flex-1">Cancel</button>
                 <button type="submit" disabled={saving} className="btn-primary flex-1">
