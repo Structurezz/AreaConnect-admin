@@ -169,6 +169,97 @@ const SLIDES = [
   },
 ];
 
+// ─── Welcome deck (for leads / new users) ─────────────────────────────────────
+// Six slides engineered to welcome a brand-new sign-up and give the sales team
+// a repeatable script. Each slide carries a `say` line — exact copy a rep can
+// read verbatim to the lead to drive activation and retention.
+const WELCOME_SLIDES = [
+  {
+    id: 'w1',
+    type: 'w-cover',
+    title: 'Welcome to AreaConnect',
+    subtitle: 'You just made your estate smarter',
+    body: 'In the next few minutes you\'ll have your estate live, residents invited, and your first visitor pass issued. We\'ll be with you every step.',
+    say: '"Welcome aboard! You\'ve joined 500+ Nigerian estates running on AreaConnect. My job today is simple — get you to your first win in under 10 minutes. Ready?"',
+    accent: '#10B981',
+  },
+  {
+    id: 'w2',
+    type: 'w-why',
+    title: 'Why estates stay with us',
+    subtitle: 'Three outcomes you\'ll see in week one',
+    outcomes: [
+      { icon: '⚡',  title: 'Collect levies 3× faster',       desc: 'Automated invoices + Paystack means residents pay the day they get the reminder — not weeks later.' },
+      { icon: '🛡️', title: 'Zero logbook disputes',          desc: 'Every visitor is pre-registered with a QR pass. Guards verify in under a second. Full audit trail.' },
+      { icon: '📣',  title: 'Residents actually read notices', desc: 'Push notifications + read receipts beat WhatsApp. Know who saw the water-outage memo and who didn\'t.' },
+    ],
+    say: '"Most of our managers tell us the same thing after month one — they can\'t go back. Levy collection jumps from 60% to 90%+, visitor disputes drop to zero, and residents stop missing announcements."',
+  },
+  {
+    id: 'w3',
+    type: 'w-step',
+    stepNum: '01',
+    title: 'Set up your estate',
+    subtitle: '3 minutes · Required once',
+    tasks: [
+      'Add your estate name, address, and logo',
+      'Create the units (bulk CSV or one-by-one)',
+      'Set your service-charge amount and frequency',
+    ],
+    cta: { label: 'Open setup wizard', href: '/estate/setup' },
+    say: '"Let\'s start with the shortest step — your estate profile. Pull up the setup wizard and I\'ll walk you through it. If you have a CSV of your units, we can import all of them in one click."',
+    retentionTip: 'Pro tip: finish setup in the first session. Estates that complete setup same-day are 4× more likely to still be active in month 3.',
+  },
+  {
+    id: 'w4',
+    type: 'w-step',
+    stepNum: '02',
+    title: 'Invite your residents',
+    subtitle: '5 minutes · The activation moment',
+    tasks: [
+      'Upload resident contact list (CSV template provided)',
+      'Residents get a branded welcome email + app link automatically',
+      'Track who has signed in from the dashboard',
+    ],
+    cta: { label: 'Go to Residents', href: '/residents' },
+    say: '"This is the activation moment — once your residents are inside AreaMates, everything else compounds. Even if only 30% sign up on day one, they\'ll pull the rest in. Share the WhatsApp invite template with your residents\' chat group right after this call."',
+    retentionTip: 'Retention anchor: >50% of residents active in month one correlates with 95% subscription renewal in year one.',
+  },
+  {
+    id: 'w5',
+    type: 'w-step',
+    stepNum: '03',
+    title: 'Collect your first dues',
+    subtitle: '2 minutes · Where ROI shows up',
+    tasks: [
+      'Schedule the first levy cycle (e.g. ₦25,000 / month)',
+      'Residents get the invoice in-app + email with pay-now button',
+      'Payments land in your Paystack wallet, reconciled per unit',
+    ],
+    cta: { label: 'Create first invoice', href: '/payments' },
+    say: '"This is where you\'ll feel the ROI first. Fire the first invoice cycle before we end this call — even one successful collection on day one shows the committee this is working. We\'ll keep an eye on the collection rate together."',
+    retentionTip: 'Red flag: estates that don\'t run a collection cycle in week one churn 3× more often. Push for the first cycle today.',
+  },
+  {
+    id: 'w6',
+    type: 'w-close',
+    title: 'You\'re never on your own',
+    subtitle: 'Here\'s what happens next',
+    checkins: [
+      { icon: '💬', when: 'Within 24 hours', what: 'Your onboarding manager (me) checks in on setup progress and answers anything blocking you.' },
+      { icon: '📊', when: 'End of week one',  what: 'We review your first collection cycle together and tune reminders to lift the rate.' },
+      { icon: '🎯', when: 'Day 30 review',    what: 'Benchmark session — compare your numbers to similar estates and plan the next 90 days.' },
+    ],
+    guarantees: [
+      '14-day money-back guarantee — no questions',
+      'Direct WhatsApp line to your onboarding manager',
+      'Free training session for your committee',
+    ],
+    say: '"You\'re not buying software — you\'re getting a partner. I\'ll be here, your residents will love this, and if at any point this doesn\'t work for your estate, we\'ll refund you within the first 14 days. No arguments. Let\'s make this win."',
+    cta: { label: 'Book onboarding call', href: 'mailto:hello@areaconnect.pro' },
+  },
+];
+
 const TYPE_COLORS = {
   developer:        { bg: '#EEF2FF', color: '#6366F1', label: 'Developer' },
   estate_manager:   { bg: '#F0FDF4', color: '#059669', label: 'Est. Manager' },
@@ -431,7 +522,144 @@ function Slide({ slide }) {
     </div>
   );
 
+  // ─── Welcome deck slide types ───────────────────────────────────────────────
+  if (s.type === 'w-cover') return (
+    <div className="h-full flex flex-col items-center justify-center text-center p-10"
+      style={{ background:'linear-gradient(135deg,#064E3B 0%,#065F46 55%,#047857 100%)' }}>
+      <div style={{ display:'inline-block', background:'rgba(255,255,255,0.12)', border:'1px solid rgba(255,255,255,0.22)', color:'#D1FAE5', fontSize:11, fontWeight:700, letterSpacing:'0.1em', textTransform:'uppercase', padding:'5px 16px', borderRadius:20, marginBottom:24 }}>
+        Welcome Deck · For new leads
+      </div>
+      <div style={{ fontSize:52, fontWeight:900, color:'#fff', letterSpacing:'-0.04em', lineHeight:1.1, marginBottom:10 }}>
+        {s.title}
+      </div>
+      <div style={{ fontSize:18, fontWeight:600, color:'rgba(255,255,255,0.75)', marginBottom:24, letterSpacing:'-0.01em' }}>{s.subtitle}</div>
+      <div style={{ maxWidth:520, fontSize:15, color:'rgba(255,255,255,0.6)', lineHeight:1.8 }}>{s.body}</div>
+      <SayBox say={s.say} inverted />
+    </div>
+  );
+
+  if (s.type === 'w-why') return (
+    <div className="h-full flex flex-col p-8 overflow-y-auto" style={{ background:'#fff' }}>
+      <SlideHeader title={s.title} subtitle={s.subtitle} color="#10B981" />
+      <div className="space-y-3 flex-1 mt-4">
+        {s.outcomes.map((o, i) => (
+          <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:14, background:'#F0FDF4', borderRadius:12, padding:'14px 18px', border:'1px solid #BBF7D0' }}>
+            <span style={{ fontSize:24, lineHeight:1, flexShrink:0 }}>{o.icon}</span>
+            <div>
+              <div style={{ fontSize:14, fontWeight:800, color:'#064E3B', marginBottom:3 }}>{o.title}</div>
+              <div style={{ fontSize:12, color:'#374151', lineHeight:1.6 }}>{o.desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+      <SayBox say={s.say} />
+    </div>
+  );
+
+  if (s.type === 'w-step') return (
+    <div className="h-full flex flex-col p-8 overflow-y-auto" style={{ background:'#fff' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:4 }}>
+        <div style={{ width:46, height:46, borderRadius:12, background:'linear-gradient(135deg,#10B981,#059669)', color:'#fff', fontSize:18, fontWeight:900, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+          {s.stepNum}
+        </div>
+        <div>
+          <div style={{ fontSize:22, fontWeight:900, color:'#0F172A', letterSpacing:'-0.03em' }}>{s.title}</div>
+          <div style={{ fontSize:12, color:'#64748B', marginTop:2 }}>{s.subtitle}</div>
+        </div>
+      </div>
+
+      <div className="space-y-2 mt-5">
+        {s.tasks.map((t, i) => (
+          <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:12, background:'#F8FAFC', borderRadius:10, padding:'10px 14px', border:'1px solid #E2E8F0' }}>
+            <div style={{ width:22, height:22, borderRadius:7, background:'#DCFCE7', color:'#059669', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, marginTop:1 }}>
+              <Check size={13} />
+            </div>
+            <span style={{ fontSize:13, color:'#1F2937', lineHeight:1.6 }}>{t}</span>
+          </div>
+        ))}
+      </div>
+
+      {s.cta && (
+        <div style={{ marginTop:14 }}>
+          <a href={s.cta.href}
+            style={{ display:'inline-flex', alignItems:'center', gap:8, background:'linear-gradient(135deg,#10B981,#059669)', color:'#fff', fontWeight:700, fontSize:13, textDecoration:'none', padding:'10px 18px', borderRadius:10 }}>
+            {s.cta.label} <ArrowRight size={14} />
+          </a>
+        </div>
+      )}
+
+      {s.retentionTip && (
+        <div style={{ marginTop:14, background:'linear-gradient(135deg,#FEF3C7,#FDE68A)', border:'1px solid #F59E0B33', borderRadius:12, padding:'12px 16px' }}>
+          <div style={{ fontSize:10, fontWeight:800, color:'#92400E', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:3 }}>Retention lever</div>
+          <div style={{ fontSize:12, color:'#78350F', lineHeight:1.6 }}>{s.retentionTip}</div>
+        </div>
+      )}
+
+      <SayBox say={s.say} />
+    </div>
+  );
+
+  if (s.type === 'w-close') return (
+    <div className="h-full flex flex-col p-8 overflow-y-auto" style={{ background:'#fff' }}>
+      <SlideHeader title={s.title} subtitle={s.subtitle} color="#10B981" />
+
+      <div style={{ fontSize:10, fontWeight:800, color:'#94A3B8', letterSpacing:'0.08em', textTransform:'uppercase', margin:'18px 0 8px' }}>Your onboarding timeline</div>
+      <div className="space-y-2">
+        {s.checkins.map((c, i) => (
+          <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:12, background:'#F8FAFC', borderRadius:10, padding:'12px 16px', border:'1px solid #E2E8F0' }}>
+            <span style={{ fontSize:20, lineHeight:1, flexShrink:0 }}>{c.icon}</span>
+            <div>
+              <div style={{ fontSize:12, fontWeight:800, color:'#059669', letterSpacing:'0.02em' }}>{c.when}</div>
+              <div style={{ fontSize:12, color:'#374151', lineHeight:1.6, marginTop:2 }}>{c.what}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ marginTop:14, background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:12, padding:'14px 16px' }}>
+        <div style={{ fontSize:10, fontWeight:800, color:'#065F46', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:6 }}>Our promises</div>
+        <div className="space-y-1.5">
+          {s.guarantees.map((g, i) => (
+            <div key={i} style={{ display:'flex', alignItems:'center', gap:8 }}>
+              <Check size={13} style={{ color:'#059669', flexShrink:0 }} />
+              <span style={{ fontSize:12, color:'#064E3B', fontWeight:600 }}>{g}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {s.cta && (
+        <div style={{ marginTop:14 }}>
+          <a href={s.cta.href}
+            style={{ display:'inline-flex', alignItems:'center', gap:8, background:'linear-gradient(135deg,#0F172A,#1E293B)', color:'#fff', fontWeight:700, fontSize:13, textDecoration:'none', padding:'10px 18px', borderRadius:10 }}>
+            {s.cta.label} <ArrowRight size={14} />
+          </a>
+        </div>
+      )}
+
+      <SayBox say={s.say} />
+    </div>
+  );
+
   return null;
+}
+
+function SayBox({ say, inverted = false }) {
+  if (!say) return null;
+  if (inverted) {
+    return (
+      <div style={{ marginTop:28, maxWidth:560, background:'rgba(255,255,255,0.08)', border:'1px solid rgba(255,255,255,0.18)', borderRadius:14, padding:'14px 18px', textAlign:'left' }}>
+        <div style={{ fontSize:10, fontWeight:800, color:'#A7F3D0', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:4 }}>Script · Say this</div>
+        <div style={{ fontSize:13, color:'rgba(255,255,255,0.85)', lineHeight:1.65, fontStyle:'italic' }}>{say}</div>
+      </div>
+    );
+  }
+  return (
+    <div style={{ marginTop:16, background:'#0F172A', borderRadius:12, padding:'14px 16px', borderLeft:'3px solid #10B981' }}>
+      <div style={{ fontSize:10, fontWeight:800, color:'#34D399', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:4 }}>Script · Say this</div>
+      <div style={{ fontSize:12.5, color:'rgba(255,255,255,0.85)', lineHeight:1.65, fontStyle:'italic' }}>{say}</div>
+    </div>
+  );
 }
 
 function SlideHeader({ title, subtitle, color }) {
@@ -450,6 +678,7 @@ function SlideHeader({ title, subtitle, color }) {
 export default function PitchDeck() {
   const [activeTab, setActiveTab] = useState('deck');
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [currentWelcomeSlide, setCurrentWelcomeSlide] = useState(0);
   const [prospects, setProspects] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -569,7 +798,11 @@ export default function PitchDeck() {
           </div>
           {/* Tabs */}
           <div style={{ display:'flex', gap:4, background:'#F1F5F9', borderRadius:10, padding:4 }}>
-            {[{ id:'deck', label:'Deck' },{ id:'prospects', label:`Prospects (${prospects.length})` }].map(tab => (
+            {[
+              { id:'deck',       label:'Investor Deck' },
+              { id:'welcome',    label:'Welcome Deck' },
+              { id:'prospects',  label:`Prospects (${prospects.length})` },
+            ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                 style={{
                   padding:'7px 18px', borderRadius:7, fontSize:13, fontWeight:600, border:'none', cursor:'pointer',
@@ -633,6 +866,70 @@ export default function PitchDeck() {
             </div>
           </div>
         )}
+
+        {/* ── Welcome deck tab ─────────────────────────────────────────── */}
+        {activeTab === 'welcome' && (() => {
+          const wSlide = WELCOME_SLIDES[currentWelcomeSlide];
+          const wTotal = WELCOME_SLIDES.length;
+          return (
+            <div className="h-full flex gap-4" style={{ minHeight:0 }}>
+              {/* Slide panel */}
+              <div className="flex-1 flex flex-col" style={{ minWidth:0 }}>
+                <div className="flex-1 rounded-2xl overflow-hidden" style={{ border:'1px solid #BBF7D0', minHeight:0, position:'relative', background:'#F0FDF4' }}>
+                  <Slide slide={wSlide} />
+                </div>
+                {/* Nav */}
+                <div className="flex items-center justify-between mt-3">
+                  <button onClick={() => setCurrentWelcomeSlide(i => Math.max(0, i - 1))}
+                    disabled={currentWelcomeSlide === 0}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                    style={{ background:'#F1F5F9', color: currentWelcomeSlide === 0 ? '#CBD5E1' : '#0F172A', cursor: currentWelcomeSlide === 0 ? 'not-allowed' : 'pointer', border:'1px solid #E2E8F0' }}>
+                    <ChevronLeft size={15} /> Previous
+                  </button>
+                  <span style={{ fontSize:13, color:'#94A3B8', fontWeight:600 }}>
+                    {currentWelcomeSlide + 1} / {wTotal} — {wSlide.title}
+                  </span>
+                  <button onClick={() => setCurrentWelcomeSlide(i => Math.min(wTotal - 1, i + 1))}
+                    disabled={currentWelcomeSlide === wTotal - 1}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all"
+                    style={{ background:'#F1F5F9', color: currentWelcomeSlide === wTotal - 1 ? '#CBD5E1' : '#0F172A', cursor: currentWelcomeSlide === wTotal - 1 ? 'not-allowed' : 'pointer', border:'1px solid #E2E8F0' }}>
+                    Next <ChevronRight size={15} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Slide index */}
+              <div className="w-56 flex-shrink-0 flex flex-col overflow-y-auto" style={{ gap:4 }}>
+                <div style={{ fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>
+                  Welcome flow
+                </div>
+                {WELCOME_SLIDES.map((s, i) => (
+                  <button key={s.id} onClick={() => setCurrentWelcomeSlide(i)}
+                    style={{
+                      textAlign:'left', padding:'10px 12px', borderRadius:10, border:'none', cursor:'pointer',
+                      background: currentWelcomeSlide === i ? '#064E3B' : '#F0FDF4',
+                      borderLeft: currentWelcomeSlide === i ? '3px solid #10B981' : '3px solid transparent',
+                      transition:'all 0.15s',
+                    }}>
+                    <div style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color: currentWelcomeSlide === i ? '#A7F3D0' : '#059669' }}>
+                      {s.type === 'w-step' ? `Step ${s.stepNum}` : `Slide ${i + 1}`}
+                    </div>
+                    <div style={{ fontSize:11, fontWeight:600, marginTop:1, color: currentWelcomeSlide === i ? '#fff' : '#064E3B', lineHeight:1.3 }}>
+                      {s.title}
+                    </div>
+                  </button>
+                ))}
+
+                <div style={{ marginTop:14, background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:10, padding:'10px 12px' }}>
+                  <div style={{ fontSize:10, fontWeight:800, color:'#92400E', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:4 }}>How to use</div>
+                  <div style={{ fontSize:11, color:'#78350F', lineHeight:1.55 }}>
+                    Share-screen with the new lead and walk through each slide. Read the <strong>Script · Say this</strong> block to stay consistent across the team.
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── Prospects tab ─────────────────────────────────────────────── */}
         {activeTab === 'prospects' && (
