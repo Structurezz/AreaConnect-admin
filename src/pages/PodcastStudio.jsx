@@ -213,7 +213,19 @@ function LiveStudio({ show, onEnded, onBack }) {
       setReactionBurst(prev => [...prev.slice(-19), { id, emoji, x: 20 + Math.random() * 60 }]);
       setTimeout(() => setReactionBurst(prev => prev.filter(r => r.id !== id)), 3400);
     });
-    return () => { u1 && u1(); u2 && u2(); u3 && u3(); };
+    // The server replays the last 50 chat messages + current music/likes/volume
+    // on every (re)join. Important for the host coming back to their own show
+    // after navigating away — chat picks up from where they left it.
+    const u4 = subscribe('podcast:state-sync', (sync) => {
+      if (!sync || String(sync.showId) !== String(show._id)) return;
+      if (Array.isArray(sync.chat) && sync.chat.length) {
+        setChat(sync.chat.slice(-99));
+      }
+      if (typeof sync.likes === 'number') setLikes(sync.likes);
+      if (sync.nowPlaying && sync.nowPlaying.videoId) setTrack(sync.nowPlaying);
+      if (typeof sync.musicVolume === 'number') setMusicVol(sync.musicVolume);
+    });
+    return () => { u1 && u1(); u2 && u2(); u3 && u3(); u4 && u4(); };
   }, [subscribe, show._id]);
 
   // Autoscroll chat
@@ -753,6 +765,7 @@ function ShowDetail({ show, onBack, onChanged, onGoLive }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function PodcastStudio() {
+  const { user } = useAuth();
   const [shows, setShows]       = useState([]);
   const [episodes, setEpisodes] = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -766,8 +779,13 @@ export default function PodcastStudio() {
       const [s, e] = await Promise.all([podcastAPI.listShows(), podcastAPI.listEpisodes()]);
       setShows(s.data.data || []);
       setEpisodes(e.data.data || []);
+      // Only drop *this* admin into LiveStudio if they're actually the host
+      // of the show that's live. Other admins visiting the page while someone
+      // else is live see the overview instead.
       const live = (s.data.data || []).find(x => x.status === 'live');
-      if (live) setLiveShow(live);
+      if (live && String(live.hostUserId) === String(user?._id)) {
+        setLiveShow(live);
+      }
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };

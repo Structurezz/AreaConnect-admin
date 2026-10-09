@@ -24,6 +24,7 @@ import EmailCampaigns from './pages/EmailCampaigns';
 import DefaultTracks from './pages/DefaultTracks';
 import PodcastStudio from './pages/PodcastStudio';
 import VisitorInsights from './pages/VisitorInsights';
+import HostStudioResumePill from './components/HostStudioResumePill';
 import Withdrawals from './pages/Withdrawals';
 
 function RequireAdmin({ children }) {
@@ -82,6 +83,7 @@ export default function App() {
       <AuthProvider>
         <SocketProvider>
           <AppRoutes />
+          <HostStudioResumePill />
           <Toaster position="top-right" toastOptions={{
             style: {
               background: '#FFFFFF',
