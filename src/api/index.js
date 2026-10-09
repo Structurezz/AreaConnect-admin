@@ -111,6 +111,9 @@ export const planAPI = {
   getSubscriptionStats: () => api.get('/plans/subscriptions/stats'),
   assign: (data) => api.post('/plans/subscriptions', data),
   updateSubscription: (id, data) => api.patch(`/plans/subscriptions/${id}`, data),
+  // Comp / promo override — give an estate free access to any plan
+  grantComp:  (data)     => api.post('/plans/subscriptions/comp', data),
+  revokeComp: (estateId) => api.delete(`/plans/subscriptions/comp/${estateId}`),
 };
 
 // Pitch deck & prospects

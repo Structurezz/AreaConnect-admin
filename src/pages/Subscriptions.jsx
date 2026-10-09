@@ -3,6 +3,7 @@ import { planAPI, estateAPI } from '../api';
 import toast from 'react-hot-toast';
 import {
   CreditCard, RefreshCw, Building2, Edit3, X, Search, Filter,
+  Gift, Sparkles, Infinity as InfinityIcon, Trash2,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -43,6 +44,14 @@ export default function Subscriptions() {
     residentCount: '', status: 'trial', trialDays: 14, notes: '',
   });
   const [showNew, setShowNew]   = useState(false);
+
+  // Comp / promo override state
+  const [showComp,    setShowComp]    = useState(false);
+  const [compGranting, setCompGranting] = useState(false);
+  const [compRevoking, setCompRevoking] = useState(null);
+  const [compForm,    setCompForm]    = useState({
+    estateId: '', planId: '', reason: '', expiryPreset: 'never', customExpiry: '',
+  });
 
   const load = async () => {
     setLoading(true);
@@ -95,6 +104,77 @@ export default function Subscriptions() {
     } finally { setSaving(false); }
   };
 
+  // Preselect premium-ish plan when the grant modal opens
+  const openCompModal = (preset = {}) => {
+    const premium = plans.find(p =>
+      /premium|pro|growth/i.test(p.name || '') || /premium|pro|growth/i.test(p.slug || '')
+    ) || plans[plans.length - 1];
+    setCompForm({
+      estateId: preset.estateId || '',
+      planId:   preset.planId   || premium?._id || '',
+      reason:   preset.reason   || 'Launch promo',
+      expiryPreset: preset.expiryPreset || 'never',
+      customExpiry: '',
+    });
+    setShowComp(true);
+  };
+
+  const resolveCompExpiry = (preset, custom) => {
+    if (preset === 'never') return null;
+    if (preset === 'custom') return custom ? new Date(custom).toISOString() : null;
+    const days = Number(preset);
+    if (!Number.isFinite(days) || days <= 0) return null;
+    return new Date(Date.now() + days * 86400000).toISOString();
+  };
+
+  const handleGrantComp = async (e) => {
+    e.preventDefault();
+    if (!compForm.estateId || !compForm.planId) {
+      toast.error('Pick an estate and a plan');
+      return;
+    }
+    setCompGranting(true);
+    try {
+      const expiresAt = resolveCompExpiry(compForm.expiryPreset, compForm.customExpiry);
+      await planAPI.grantComp({
+        estateId:  compForm.estateId,
+        planId:    compForm.planId,
+        reason:    compForm.reason,
+        expiresAt,
+      });
+      toast.success('Comp access granted');
+      setShowComp(false);
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to grant comp');
+    } finally {
+      setCompGranting(false);
+    }
+  };
+
+  const handleRevokeComp = async (sub) => {
+    const estateId = sub.estateId?._id || sub.estateId;
+    if (!estateId) return;
+    if (!window.confirm(`Revoke comp access for ${sub.estateId?.name || 'this estate'}?`)) return;
+    setCompRevoking(estateId);
+    try {
+      await planAPI.revokeComp(estateId);
+      toast.success('Comp access revoked');
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to revoke');
+    } finally {
+      setCompRevoking(null);
+    }
+  };
+
+  // A subscription row's comp is "live" when flagged active and (no expiry OR expiry in future).
+  const isCompLive = (sub) => {
+    if (!sub?.comp?.isActive || !sub?.comp?.planId) return false;
+    if (!sub.comp.expiresAt) return true;
+    return new Date(sub.comp.expiresAt) > new Date();
+  };
+
   const filtered = subs.filter(sub => {
     if (statusFilter !== 'all' && sub.status !== statusFilter) return false;
     if (!search) return true;
@@ -120,9 +200,20 @@ export default function Subscriptions() {
           <h1 className="text-2xl font-bold" style={{ color: '#0F172A' }}>Subscriptions</h1>
           <p className="text-sm mt-0.5" style={{ color: '#94A3B8' }}>Manage estate plan assignments and billing</p>
         </div>
-        <button onClick={() => setShowNew(true)} className="btn-primary gap-2">
-          <CreditCard size={15} /> Assign Plan
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => openCompModal()}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
+            style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)', boxShadow: '0 1px 6px rgba(245,158,11,0.35)' }}
+            onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-1px)')}
+            onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
+          >
+            <Gift size={15} /> Grant Comp Access
+          </button>
+          <button onClick={() => setShowNew(true)} className="btn-primary gap-2">
+            <CreditCard size={15} /> Assign Plan
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -224,17 +315,49 @@ export default function Subscriptions() {
                 {filtered.map(sub => {
                   const plan = sub.planId;
                   const price = sub.cycle === 'annual' ? plan?.price?.annual : plan?.price?.monthly;
+                  const compLive = isCompLive(sub);
+                  const compPlan = compLive ? sub.comp.planId : null;
                   return (
                     <tr key={sub._id} className="transition-colors"
-                      style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}
-                      onMouseEnter={ev => ev.currentTarget.style.background = '#F8FAFC'}
-                      onMouseLeave={ev => ev.currentTarget.style.background = 'transparent'}>
+                      style={{ borderTop: '1px solid rgba(0,0,0,0.04)', background: compLive ? 'rgba(245,158,11,0.04)' : undefined }}
+                      onMouseEnter={ev => ev.currentTarget.style.background = compLive ? 'rgba(245,158,11,0.08)' : '#F8FAFC'}
+                      onMouseLeave={ev => ev.currentTarget.style.background = compLive ? 'rgba(245,158,11,0.04)' : 'transparent'}>
                       <td className="px-5 py-3.5">
-                        <div className="font-medium" style={{ color: '#0F172A' }}>{sub.estateId?.name || '—'}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="font-medium" style={{ color: '#0F172A' }}>{sub.estateId?.name || '—'}</div>
+                          {compLive && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                  style={{ background: 'rgba(245,158,11,0.15)', color: '#B45309', border: '1px solid rgba(245,158,11,0.35)' }}
+                                  title={`Comp: ${compPlan?.name || 'plan'} · ${sub.comp.reason || 'no reason'}`}>
+                              <Sparkles size={9} /> COMP
+                            </span>
+                          )}
+                        </div>
                         <div className="text-xs" style={{ color: '#94A3B8' }}>{sub.estateId?.estateCode}</div>
                       </td>
                       <td className="px-5 py-3.5">
-                        {plan ? (
+                        {compLive && compPlan ? (
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: compPlan.color || '#F59E0B' }} />
+                              <span className="font-medium" style={{ color: '#0F172A' }}>{compPlan.name}</span>
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                                    style={{ background: 'rgba(5,150,105,0.10)', color: '#047857' }}>
+                                FREE
+                              </span>
+                            </div>
+                            <div className="text-xs mt-0.5 ml-4 flex items-center gap-1.5" style={{ color: '#B45309' }}>
+                              {sub.comp.expiresAt
+                                ? <>Promo ends {format(new Date(sub.comp.expiresAt), 'MMM d, yyyy')}</>
+                                : <><InfinityIcon size={11} /> Never expires</>}
+                            </div>
+                            {plan && (
+                              <div className="text-[10px] mt-0.5 ml-4" style={{ color: '#94A3B8' }}>
+                                Underlying: {plan.name}
+                              </div>
+                            )}
+                          </div>
+                        ) : plan ? (
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: plan.color }} />
@@ -264,13 +387,42 @@ export default function Subscriptions() {
                           : <span className="text-xs" style={{ color: '#CBD5E1' }}>—</span>}
                       </td>
                       <td className="px-5 py-3.5">
-                        <button onClick={() => setEditing({ ...sub })}
-                          className="p-1.5 rounded-lg transition-all"
-                          style={{ color: '#94A3B8' }}
-                          onMouseEnter={e => { e.currentTarget.style.color = '#059669'; e.currentTarget.style.background = 'rgba(16,185,129,0.08)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'transparent'; }}>
-                          <Edit3 size={14} />
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => setEditing({ ...sub })}
+                            title="Edit subscription"
+                            className="p-1.5 rounded-lg transition-all"
+                            style={{ color: '#94A3B8' }}
+                            onMouseEnter={e => { e.currentTarget.style.color = '#059669'; e.currentTarget.style.background = 'rgba(16,185,129,0.08)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'transparent'; }}>
+                            <Edit3 size={14} />
+                          </button>
+                          {compLive ? (
+                            <button
+                              onClick={() => handleRevokeComp(sub)}
+                              disabled={compRevoking === (sub.estateId?._id || sub.estateId)}
+                              title="Revoke comp access"
+                              className="p-1.5 rounded-lg transition-all"
+                              style={{ color: '#B45309' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.12)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                            >
+                              {compRevoking === (sub.estateId?._id || sub.estateId)
+                                ? <RefreshCw size={14} className="animate-spin" />
+                                : <Trash2 size={14} />}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => openCompModal({ estateId: sub.estateId?._id || sub.estateId })}
+                              title="Grant comp access"
+                              className="p-1.5 rounded-lg transition-all"
+                              style={{ color: '#94A3B8' }}
+                              onMouseEnter={e => { e.currentTarget.style.color = '#B45309'; e.currentTarget.style.background = 'rgba(245,158,11,0.10)'; }}
+                              onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'transparent'; }}
+                            >
+                              <Gift size={14} />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -373,6 +525,112 @@ export default function Subscriptions() {
                 <button type="button" onClick={() => setShowNew(false)} className="btn-outline flex-1">Cancel</button>
                 <button type="submit" disabled={assigning} className="btn-primary flex-1">
                   {assigning ? 'Assigning…' : 'Assign Plan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Grant Comp modal */}
+      {showComp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setShowComp(false)} />
+          <div className="relative glass-card w-full max-w-md max-h-[90vh] overflow-y-auto p-6 space-y-4">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                     style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)' }}>
+                  <Gift size={18} className="text-white" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg" style={{ color: '#0F172A' }}>Grant Comp Access</h3>
+                  <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>Give any estate a free plan — promos, VIPs, beta testers. Overrides billing.</p>
+                </div>
+              </div>
+              <button onClick={() => setShowComp(false)}
+                className="p-1.5 rounded-lg transition-all flex-shrink-0"
+                style={{ color: '#94A3B8' }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#0F172A'; e.currentTarget.style.background = '#F1F5F9'; }}
+                onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'transparent'; }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleGrantComp} className="space-y-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Estate *</label>
+                <select className="input-field" value={compForm.estateId}
+                  onChange={e => setCompForm({ ...compForm, estateId: e.target.value })} required>
+                  <option value="">Select estate…</option>
+                  {estates.map(e => <option key={e._id} value={e._id}>{e.name} — {e.estateCode}</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Grant plan *</label>
+                <select className="input-field" value={compForm.planId}
+                  onChange={e => setCompForm({ ...compForm, planId: e.target.value })} required>
+                  <option value="">Select plan…</option>
+                  {plans.map(p => (
+                    <option key={p._id} value={p._id}>
+                      {p.name} — normally {fmt(p.price.monthly)}/mo (comp = free)
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] mt-1" style={{ color: '#94A3B8' }}>
+                  Estate gets every feature of this plan for free until the comp expires or is revoked.
+                </p>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Reason</label>
+                <input className="input-field"
+                  placeholder="e.g. Launch promo, VIP comp, Beta tester, Partnership"
+                  value={compForm.reason}
+                  onChange={e => setCompForm({ ...compForm, reason: e.target.value })} />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Expires</label>
+                <div className="grid grid-cols-5 gap-1.5">
+                  {[
+                    { v: '7',       label: '7 days'  },
+                    { v: '30',      label: '30 days' },
+                    { v: '90',      label: '90 days' },
+                    { v: 'custom',  label: 'Custom' },
+                    { v: 'never',   label: 'Never'   },
+                  ].map(opt => (
+                    <button key={opt.v} type="button"
+                      onClick={() => setCompForm({ ...compForm, expiryPreset: opt.v })}
+                      className="px-2 py-2 rounded-lg text-xs font-semibold transition-all"
+                      style={compForm.expiryPreset === opt.v
+                        ? { background: '#F59E0B', color: '#FFF', border: '1px solid #D97706' }
+                        : { background: '#F8FAFC', color: '#475569', border: '1px solid #E2E8F0' }}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+                {compForm.expiryPreset === 'custom' && (
+                  <input type="date" className="input-field mt-2"
+                    min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                    value={compForm.customExpiry}
+                    onChange={e => setCompForm({ ...compForm, customExpiry: e.target.value })}
+                    required />
+                )}
+                {compForm.expiryPreset === 'never' && (
+                  <p className="text-[11px] mt-1 flex items-center gap-1" style={{ color: '#B45309' }}>
+                    <InfinityIcon size={11} /> Comp stays active until you revoke it manually.
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <button type="button" onClick={() => setShowComp(false)} className="btn-outline flex-1">Cancel</button>
+                <button type="submit" disabled={compGranting}
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
+                  style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)', boxShadow: '0 1px 6px rgba(245,158,11,0.35)' }}>
+                  {compGranting ? <><RefreshCw size={14} className="animate-spin" /> Granting…</> : <><Sparkles size={14} /> Grant comp</>}
                 </button>
               </div>
             </form>
