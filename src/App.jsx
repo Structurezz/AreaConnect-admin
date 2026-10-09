@@ -23,6 +23,7 @@ import CampaignBuilder from './pages/CampaignBuilder';
 import EmailCampaigns from './pages/EmailCampaigns';
 import DefaultTracks from './pages/DefaultTracks';
 import PodcastStudio from './pages/PodcastStudio';
+import Withdrawals from './pages/Withdrawals';
 
 function RequireAdmin({ children }) {
   const { user, loading } = useAuth();
@@ -66,6 +67,7 @@ function AppRoutes() {
       <Route path="/email-campaigns" element={<RequireAdmin><EmailCampaigns /></RequireAdmin>} />
       <Route path="/lounge-defaults" element={<RequireAdmin><DefaultTracks /></RequireAdmin>} />
       <Route path="/podcast" element={<RequireAdmin><PodcastStudio /></RequireAdmin>} />
+      <Route path="/withdrawals" element={<RequireAdmin><Withdrawals /></RequireAdmin>} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

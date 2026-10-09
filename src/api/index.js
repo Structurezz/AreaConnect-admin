@@ -116,6 +116,12 @@ export const planAPI = {
   revokeComp: (estateId) => api.delete(`/plans/subscriptions/comp/${estateId}`),
 };
 
+// Landing-site visitor analytics
+export const analyticsAPI = {
+  getStats:  ()           => api.get('/analytics/visitors/stats'),
+  getRecent: (params = {}) => api.get('/analytics/visitors/recent', { params }),
+};
+
 // Pitch deck & prospects
 export const pitchAPI = {
   getProspects: (params) => api.get('/pitch/prospects', { params }),
@@ -149,6 +155,14 @@ export const podcastAPI = {
   getLive:      () => api.get('/podcast/live'),
   getUpcoming:  () => api.get('/podcast/upcoming'),
   listEpisodes: () => api.get('/podcast/episodes'),
+};
+
+// Admin — manager withdrawal requests
+export const withdrawalAPI = {
+  list:            (params) => api.get('/admin/withdrawals', { params }),
+  markPaid:        (id, data) => api.post(`/admin/withdrawals/${id}/mark-paid`, data || {}),
+  processPaystack: (id)       => api.post(`/admin/withdrawals/${id}/process`),
+  reject:          (id, data) => api.post(`/admin/withdrawals/${id}/reject`, data || {}),
 };
 
 // Campaigns
