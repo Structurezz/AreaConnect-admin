@@ -50,7 +50,7 @@ export default function Subscriptions() {
   const [compGranting, setCompGranting] = useState(false);
   const [compRevoking, setCompRevoking] = useState(null);
   const [compForm,    setCompForm]    = useState({
-    estateId: '', planId: '', reason: '', expiryPreset: 'never', customExpiry: '',
+    estateId: '', planId: '', reason: '', expiryPreset: 'never', customExpiry: '', cycle: 'monthly',
   });
 
   const load = async () => {
@@ -115,6 +115,7 @@ export default function Subscriptions() {
       reason:   preset.reason   || 'Launch promo',
       expiryPreset: preset.expiryPreset || 'never',
       customExpiry: '',
+      cycle:    preset.cycle    || 'monthly',
     });
     setShowComp(true);
   };
@@ -140,6 +141,7 @@ export default function Subscriptions() {
         estateId:  compForm.estateId,
         planId:    compForm.planId,
         reason:    compForm.reason,
+        cycle:     compForm.cycle,
         expiresAt,
       });
       toast.success('Comp access granted');
@@ -583,13 +585,26 @@ export default function Subscriptions() {
                 </p>
               </div>
 
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Reason</label>
-                <input className="input-field"
-                  placeholder="e.g. Launch promo, VIP comp, Beta tester, Partnership"
-                  value={compForm.reason}
-                  onChange={e => setCompForm({ ...compForm, reason: e.target.value })} />
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Reason</label>
+                  <input className="input-field"
+                    placeholder="e.g. Launch promo, VIP comp, Beta tester"
+                    value={compForm.reason}
+                    onChange={e => setCompForm({ ...compForm, reason: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Shown as</label>
+                  <select className="input-field" value={compForm.cycle}
+                    onChange={e => setCompForm({ ...compForm, cycle: e.target.value })}>
+                    <option value="monthly">Monthly</option>
+                    <option value="annual">Annual</option>
+                  </select>
+                </div>
               </div>
+              <p className="text-[11px] -mt-1" style={{ color: '#94A3B8' }}>
+                Shown-as price only affects the gift email's "normal price" line. Features are unlocked either way.
+              </p>
 
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Expires</label>
