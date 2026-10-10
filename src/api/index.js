@@ -114,6 +114,8 @@ export const planAPI = {
   // Comp / promo override — give an estate free access to any plan
   grantComp:  (data)     => api.post('/plans/subscriptions/comp', data),
   revokeComp: (estateId) => api.delete(`/plans/subscriptions/comp/${estateId}`),
+  getUpcomingRenewals: (params) => api.get('/plans/renewals/upcoming', { params }),
+  getFailedRenewals:   ()        => api.get('/plans/renewals/failed'),
 };
 
 // Landing-site visitor analytics
