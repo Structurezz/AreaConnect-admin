@@ -83,8 +83,11 @@ export const messageAPI = {
 // Users (admin)
 export const userAPI = {
   getAll: (params) => api.get('/users', { params }),
-  create: (data) => api.post('/users', data),
+  getStats: ()     => api.get('/users/stats'),
+  create: (data)   => api.post('/users', data),
   update: (id, data) => api.patch(`/users/${id}`, data),
+  resetPassword: (id) => api.post(`/users/${id}/reset-password`),
+  bulk: (data)        => api.post('/users/bulk', data),
 };
 
 // Admin platform analytics

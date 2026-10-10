@@ -1,8 +1,8 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Search, Plus, RefreshCw, UserCheck, UserX, X, Edit3, Phone, Mail, Building2 } from 'lucide-react';
+import { Search, Plus, RefreshCw, UserCheck, UserX, X, Edit3, Phone, Mail, Building2, KeyRound, Clock, ShieldAlert, CheckSquare, Square } from 'lucide-react';
 import { userAPI, estateAPI } from '../api';
 import toast from 'react-hot-toast';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 
 const ROLES = ['all', 'super_admin', 'estate_manager', 'resident', 'security'];
 const ROLE_META = {
@@ -11,7 +11,7 @@ const ROLE_META = {
   resident:       { label: 'Resident',    bg: 'rgba(37,99,235,0.10)',   color: '#2563EB', border: 'rgba(37,99,235,0.20)' },
   security:       { label: 'Security',    bg: 'rgba(245,158,11,0.10)',  color: '#D97706', border: 'rgba(245,158,11,0.20)' },
 };
-const STATUS_FILTERS = ['all', 'active', 'suspended'];
+const STATUS_FILTERS = ['all', 'active', 'suspended', 'pending-reset'];
 
 function RoleBadge({ role }) {
   const m = ROLE_META[role] || { label: role, bg: 'rgba(71,85,105,0.08)', color: '#475569', border: '#E2E8F0' };
@@ -32,12 +32,17 @@ export default function Users() {
   const [search, setSearch]       = useState('');
   const [roleFilter, setRoleFilter]   = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [estateFilter, setEstateFilter] = useState('all');
+  const [sortBy, setSortBy]         = useState('new');
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing]     = useState(null);
   const [form, setForm]           = useState(BLANK_FORM);
   const [editForm, setEditForm]   = useState({});
   const [saving, setSaving]       = useState(false);
   const [toggling, setToggling]   = useState(null);
+  const [resetting, setResetting] = useState(null);
+  const [selected, setSelected]   = useState(new Set());
+  const [bulking, setBulking]     = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -50,6 +55,38 @@ export default function Users() {
   }, [roleFilter]);
 
   useEffect(() => { load(); }, [load]);
+
+  const toggleSelect = (id) => setSelected(prev => {
+    const next = new Set(prev);
+    next.has(id) ? next.delete(id) : next.add(id);
+    return next;
+  });
+
+  const doBulk = async (action) => {
+    if (!selected.size) return;
+    if (!window.confirm(`${action === 'suspend' ? 'Suspend' : 'Activate'} ${selected.size} selected user${selected.size === 1 ? '' : 's'}?`)) return;
+    setBulking(true);
+    try {
+      await userAPI.bulk({ userIds: Array.from(selected), action });
+      toast.success(`${action === 'suspend' ? 'Suspended' : 'Activated'} ${selected.size}`);
+      setSelected(new Set());
+      load();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Bulk action failed');
+    } finally { setBulking(false); }
+  };
+
+  const resetPassword = async (user) => {
+    if (!window.confirm(`Send ${user.name} a new temporary password?\n\nTheir current password will be invalidated.`)) return;
+    setResetting(user._id);
+    try {
+      await userAPI.resetPassword(user._id);
+      toast.success('Temp password emailed');
+      setUsers(prev => prev.map(u => u._id === user._id ? { ...u, mustChangePassword: true } : u));
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Reset failed');
+    } finally { setResetting(null); }
+  };
 
   const toggleActive = async (user) => {
     setToggling(user._id);
@@ -88,6 +125,7 @@ export default function Users() {
       name: u.name || '',
       phone: u.phone || '',
       estateId: typeof u.estateId === 'object' ? (u.estateId?._id || '') : (u.estateId || ''),
+      role: u.role,
     });
   };
 
@@ -110,11 +148,17 @@ export default function Users() {
   };
 
   const filtered = users.filter(u => {
-    if (statusFilter === 'active' && !u.isActive) return false;
-    if (statusFilter === 'suspended' && u.isActive) return false;
+    if (statusFilter === 'active'    && !u.isActive) return false;
+    if (statusFilter === 'suspended' && u.isActive)  return false;
+    if (statusFilter === 'pending-reset' && !u.mustChangePassword) return false;
+    if (estateFilter !== 'all' && (u.estateId?._id || u.estateId) !== estateFilter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.phone?.includes(q);
+  }).sort((a, b) => {
+    if (sortBy === 'lastseen') return new Date(b.lastSeen || 0) - new Date(a.lastSeen || 0);
+    if (sortBy === 'name')     return (a.name || '').localeCompare(b.name || '');
+    return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
   const counts = ROLES.reduce((acc, r) => {
@@ -138,12 +182,14 @@ export default function Users() {
       </div>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
-          { label: 'Total Users',    value: users.length,   color: '#0F172A' },
-          { label: 'Active',         value: activeCount,    color: '#059669' },
-          { label: 'Suspended',      value: suspendedCount, color: '#DC2626' },
-          { label: 'Estate Managers', value: counts.estate_manager, color: '#7C3AED' },
+          { label: 'Total',            value: users.length,          color: '#0F172A' },
+          { label: 'Active',           value: activeCount,           color: '#059669' },
+          { label: 'Suspended',        value: suspendedCount,        color: '#DC2626' },
+          { label: 'Managers',         value: counts.estate_manager, color: '#7C3AED' },
+          { label: 'Residents',        value: counts.resident,       color: '#2563EB' },
+          { label: 'Security',         value: counts.security,       color: '#D97706' },
         ].map(({ label, value, color }) => (
           <div key={label} className="glass-card p-4 text-center">
             <div className="text-xl font-bold" style={{ color }}>{value}</div>
@@ -151,6 +197,27 @@ export default function Users() {
           </div>
         ))}
       </div>
+
+      {/* Bulk action bar — only shows when something is selected */}
+      {selected.size > 0 && (
+        <div className="glass-card p-3 flex items-center gap-3 flex-wrap"
+          style={{ background: 'linear-gradient(135deg,#EEF2FF,#F5F3FF)', border: '1px solid #C7D2FE' }}>
+          <span className="text-sm font-bold" style={{ color: '#4F46E5' }}>{selected.size} selected</span>
+          <button onClick={() => doBulk('activate')} disabled={bulking}
+            className="text-xs font-bold px-3 py-1.5 rounded-lg"
+            style={{ background: '#059669', color: '#fff' }}>
+            {bulking ? '…' : 'Activate'}
+          </button>
+          <button onClick={() => doBulk('suspend')} disabled={bulking}
+            className="text-xs font-bold px-3 py-1.5 rounded-lg"
+            style={{ background: '#DC2626', color: '#fff' }}>
+            {bulking ? '…' : 'Suspend'}
+          </button>
+          <button onClick={() => setSelected(new Set())}
+            className="text-xs font-semibold px-3 py-1.5 rounded-lg ml-auto"
+            style={{ background: '#F1F5F9', color: '#475569' }}>Clear</button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
@@ -185,6 +252,19 @@ export default function Users() {
             </button>
           ))}
         </div>
+        <div className="flex items-center gap-2">
+          <select className="input-field" style={{ width: 170, height: 32, fontSize: 12 }}
+            value={estateFilter} onChange={e => setEstateFilter(e.target.value)}>
+            <option value="all">All estates</option>
+            {estates.map(e => <option key={e._id} value={e._id}>{e.name}</option>)}
+          </select>
+          <select className="input-field" style={{ width: 150, height: 32, fontSize: 12 }}
+            value={sortBy} onChange={e => setSortBy(e.target.value)}>
+            <option value="new">Newest first</option>
+            <option value="lastseen">Last seen</option>
+            <option value="name">Name A→Z</option>
+          </select>
+        </div>
       </div>
 
       {/* Table */}
@@ -197,35 +277,66 @@ export default function Users() {
           <div className="py-16 text-center text-sm" style={{ color: '#94A3B8' }}>No users found</div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[700px]">
+            <table className="w-full text-sm min-w-[800px]">
               <thead>
                 <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+                  <th className="px-3 py-3 w-10">
+                    <button onClick={() => {
+                      if (filtered.every(u => selected.has(u._id))) setSelected(new Set());
+                      else setSelected(new Set(filtered.map(u => u._id)));
+                    }} className="text-slate-400" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+                      {filtered.length > 0 && filtered.every(u => selected.has(u._id))
+                        ? <CheckSquare size={15} style={{ color: '#4F46E5' }}/>
+                        : <Square size={15}/>}
+                    </button>
+                  </th>
                   <th className="text-left font-medium px-5 py-3" style={{ color: '#94A3B8' }}>User</th>
                   <th className="text-left font-medium px-4 py-3" style={{ color: '#94A3B8' }}>Role</th>
                   <th className="text-left font-medium px-4 py-3 hidden sm:table-cell" style={{ color: '#94A3B8' }}>Phone</th>
-                  <th className="text-left font-medium px-4 py-3 hidden md:table-cell" style={{ color: '#94A3B8' }}>Estate</th>
-                  <th className="text-left font-medium px-4 py-3 hidden lg:table-cell" style={{ color: '#94A3B8' }}>Joined</th>
+                  <th className="text-left font-medium px-4 py-3 hidden md:table-cell" style={{ color: '#94A3B8' }}>Estate / Unit</th>
+                  <th className="text-left font-medium px-4 py-3 hidden lg:table-cell" style={{ color: '#94A3B8' }}>Last seen</th>
                   <th className="text-center font-medium px-4 py-3" style={{ color: '#94A3B8' }}>Status</th>
-                  <th className="px-4 py-3 w-20 text-right font-medium" style={{ color: '#94A3B8' }}>Actions</th>
+                  <th className="px-4 py-3 w-28 text-right font-medium" style={{ color: '#94A3B8' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(u => {
                   const meta = ROLE_META[u.role] || { bg: 'rgba(71,85,105,0.08)', color: '#475569' };
                   const estateName = typeof u.estateId === 'object' ? (u.estateId?.name || '—') : '—';
+                  const unit = typeof u.unitId === 'object' && u.unitId
+                    ? `${u.unitId.block ? `Block ${u.unitId.block} · ` : ''}Unit ${u.unitId.unitNumber}`
+                    : null;
+                  const isSelected = selected.has(u._id);
                   return (
                     <tr key={u._id} className="transition-colors"
-                      style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}
-                      onMouseEnter={ev => ev.currentTarget.style.background = '#F8FAFC'}
-                      onMouseLeave={ev => ev.currentTarget.style.background = 'transparent'}>
+                      style={{ borderTop: '1px solid rgba(0,0,0,0.04)', background: isSelected ? '#EEF2FF' : undefined }}
+                      onMouseEnter={ev => { if (!isSelected) ev.currentTarget.style.background = '#F8FAFC'; }}
+                      onMouseLeave={ev => { if (!isSelected) ev.currentTarget.style.background = 'transparent'; }}>
+                      <td className="px-3 py-3">
+                        <button onClick={() => toggleSelect(u._id)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: isSelected ? '#4F46E5' : '#CBD5E1' }}>
+                          {isSelected ? <CheckSquare size={15}/> : <Square size={15}/>}
+                        </button>
+                      </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 overflow-hidden"
                             style={{ background: meta.bg, color: meta.color }}>
-                            {u.name?.[0]?.toUpperCase() || '?'}
+                            {u.profilePhoto
+                              ? <img src={u.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+                              : (u.name?.[0]?.toUpperCase() || '?')}
                           </div>
-                          <div>
-                            <div className="font-medium leading-tight" style={{ color: '#0F172A' }}>{u.name}</div>
+                          <div className="min-w-0">
+                            <div className="font-medium leading-tight flex items-center gap-1.5" style={{ color: '#0F172A' }}>
+                              <span className="truncate">{u.name}</span>
+                              {u.mustChangePassword && (
+                                <span title="Must change password on next sign-in"
+                                      className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                                      style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' }}>
+                                  <ShieldAlert size={9}/> RESET
+                                </span>
+                              )}
+                            </div>
                             <a href={`mailto:${u.email}`}
                               className="text-xs hover:underline flex items-center gap-1"
                               style={{ color: '#94A3B8' }}>
@@ -244,15 +355,23 @@ export default function Users() {
                           : <span className="text-xs" style={{ color: '#CBD5E1' }}>—</span>}
                       </td>
                       <td className="px-4 py-3 hidden md:table-cell">
-                        {estateName !== '—'
-                          ? <div className="flex items-center gap-1.5 text-xs" style={{ color: '#475569' }}>
-                              <Building2 size={11} style={{ flexShrink: 0 }} />{estateName}
+                        {estateName !== '—' ? (
+                          <>
+                            <div className="flex items-center gap-1.5 text-xs" style={{ color: '#475569' }}>
+                              <Building2 size={11} style={{ flexShrink: 0 }} />
+                              <span className="truncate" style={{ maxWidth: 140 }}>{estateName}</span>
                             </div>
-                          : <span className="text-xs" style={{ color: '#CBD5E1' }}>—</span>}
+                            {unit && <div className="text-[11px] mt-0.5" style={{ color: '#94A3B8' }}>{unit}</div>}
+                          </>
+                        ) : <span className="text-xs" style={{ color: '#CBD5E1' }}>—</span>}
                       </td>
                       <td className="px-4 py-3 hidden lg:table-cell">
-                        <div className="text-xs" style={{ color: '#94A3B8' }}>
-                          {u.createdAt ? format(new Date(u.createdAt), 'MMM d, yyyy') : '—'}
+                        <div className="text-xs flex items-center gap-1" style={{ color: u.lastSeen ? '#475569' : '#CBD5E1' }}>
+                          <Clock size={10} style={{ color: '#CBD5E1' }}/>
+                          {u.lastSeen ? formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true }) : 'Never'}
+                        </div>
+                        <div className="text-[11px] mt-0.5" style={{ color: '#CBD5E1' }}>
+                          joined {u.createdAt ? format(new Date(u.createdAt), 'MMM d, yy') : '—'}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-center">
@@ -273,6 +392,16 @@ export default function Users() {
                             onMouseLeave={ev => { ev.currentTarget.style.color = '#CBD5E1'; ev.currentTarget.style.background = 'transparent'; }}>
                             <Edit3 size={13} />
                           </button>
+                          {u.role !== 'super_admin' && (
+                            <button onClick={() => resetPassword(u)} disabled={resetting === u._id}
+                              title="Email a new temporary password"
+                              className="p-1.5 rounded-lg transition-all disabled:opacity-40"
+                              style={{ color: '#CBD5E1' }}
+                              onMouseEnter={ev => { ev.currentTarget.style.color = '#4F46E5'; ev.currentTarget.style.background = 'rgba(79,70,229,0.08)'; }}
+                              onMouseLeave={ev => { ev.currentTarget.style.color = '#CBD5E1'; ev.currentTarget.style.background = 'transparent'; }}>
+                              {resetting === u._id ? <RefreshCw size={13} className="animate-spin"/> : <KeyRound size={13}/>}
+                            </button>
+                          )}
                           {u.role !== 'super_admin' && (
                             <button onClick={() => toggleActive(u)} disabled={toggling === u._id}
                               title={u.isActive ? 'Suspend user' : 'Activate user'}
@@ -415,14 +544,26 @@ export default function Users() {
                   className="input-field" placeholder="+234…" />
               </div>
               {editing.role !== 'super_admin' && (
-                <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: '#475569' }}>Estate</label>
-                  <select value={editForm.estateId}
-                    onChange={e => setEditForm(p => ({ ...p, estateId: e.target.value }))}
-                    className="input-field">
-                    <option value="">— None —</option>
-                    {estates.map(e => <option key={e._id} value={e._id}>{e.name}</option>)}
-                  </select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium block mb-1" style={{ color: '#475569' }}>Role</label>
+                    <select value={editForm.role}
+                      onChange={e => setEditForm(p => ({ ...p, role: e.target.value }))}
+                      className="input-field">
+                      <option value="estate_manager">Estate Manager</option>
+                      <option value="resident">Resident</option>
+                      <option value="security">Security</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium block mb-1" style={{ color: '#475569' }}>Estate</label>
+                    <select value={editForm.estateId}
+                      onChange={e => setEditForm(p => ({ ...p, estateId: e.target.value }))}
+                      className="input-field">
+                      <option value="">— None —</option>
+                      {estates.map(e => <option key={e._id} value={e._id}>{e.name}</option>)}
+                    </select>
+                  </div>
                 </div>
               )}
               <div className="flex gap-3 pt-2">
