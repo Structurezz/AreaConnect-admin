@@ -13,6 +13,7 @@ export const authAPI = {
 export const estateAPI = {
   create: (data) => api.post('/estates', data),
   getAll: () => api.get('/estates'),
+  getOverview: () => api.get('/estates/overview'),
   getOne: (id) => api.get(`/estates/${id}`),
   update: (id, data) => api.patch(`/estates/${id}`, data),
   getDetail: (id) => api.get(`/estates/${id}/detail`),

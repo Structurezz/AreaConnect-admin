@@ -8,7 +8,7 @@ import {
   CheckCircle, XCircle, ArrowLeft, Edit3, Copy, Calendar,
   Phone, Mail, UserCheck, UserX, CreditCard, RefreshCw,
   ToggleLeft, ToggleRight, Clock, AlertCircle, DollarSign,
-  ChevronDown, ChevronUp,
+  ChevronDown, ChevronUp, AlertTriangle, Megaphone, Siren, Pin, Gift,
 } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
@@ -52,15 +52,11 @@ export default function EstateDetail() {
   const load = async () => {
     setLoading(true);
     try {
-      const [res, allSubs] = await Promise.all([
-        estateAPI.getDetail(estateId),
-        planAPI.getSubscriptions(),
-      ]);
-      setData(res.data.data);
-      const sub = allSubs.data.data.find(
-        s => s.estateId?._id === estateId || s.estateId === estateId
-      );
-      setSub(sub || null);
+      // Single-trip detail now includes subscription + recent visitors / alerts /
+      // announcements / payments. No more O(all-subs) fetch per estate.
+      const { data } = await estateAPI.getDetail(estateId);
+      setData(data.data);
+      setSub(data.data.subscription || null);
     } catch {
       toast.error('Failed to load estate');
       navigate('/estates');
@@ -101,16 +97,21 @@ export default function EstateDetail() {
   if (loading) return <div className="flex justify-center py-24"><Spinner size={32} /></div>;
   if (!data) return null;
 
-  const { estate, residents, securityStaff, units } = data;
+  const { estate, residents, securityStaff, units, visitors = [], alerts = [], announcements = [], payments = [] } = data;
   const activeResidents   = residents.filter(r => r.isActive).length;
   const occupiedUnits     = units.filter(u => u.status === 'occupied').length;
   const unitsByType       = units.reduce((acc, u) => { acc[u.type] = (acc[u.type] || 0) + 1; return acc; }, {});
   const activeStaff       = securityStaff.filter(s => s.isActive).length;
+  const openAlerts        = alerts.filter(a => ['open', 'acknowledged'].includes(a.status));
 
   const tabs = [
     { id: 'residents',    label: `Residents (${residents.length})`,     icon: Users    },
     { id: 'units',        label: `Units (${units.length})`,             icon: Home     },
     { id: 'security',     label: `Security (${securityStaff.length})`,  icon: Shield   },
+    { id: 'visitors',     label: `Visitors (${visitors.length})`,       icon: UserCheck },
+    { id: 'alerts',       label: `Alerts (${openAlerts.length})`,       icon: AlertTriangle },
+    { id: 'payments',     label: `Payments (${payments.length})`,       icon: CreditCard },
+    { id: 'announcements',label: `Announcements (${announcements.length})`, icon: Megaphone },
     { id: 'subscription', label: 'Subscription',                        icon: CreditCard },
   ];
 
@@ -584,6 +585,171 @@ export default function EstateDetail() {
               </table>
             </>
           )}
+        </div>
+      )}
+
+      {/* ── Visitors tab ── */}
+      {tab === 'visitors' && (
+        <div className="glass-card overflow-hidden">
+          {visitors.length === 0 ? (
+            <div className="p-12 text-center">
+              <UserCheck size={36} className="mx-auto mb-3" style={{ color: '#CBD5E1' }} />
+              <p className="text-sm" style={{ color: '#94A3B8' }}>No visitor activity yet</p>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: '#F8FAFC' }}>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Visitor</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Host</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Code</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Status</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style={{ color: '#94A3B8' }}>When</th>
+                </tr>
+              </thead>
+              <tbody>
+                {visitors.map(v => (
+                  <tr key={v._id} style={{ borderTop: '1px solid #F1F5F9' }}>
+                    <td className="px-5 py-3">
+                      <div className="font-medium" style={{ color: '#0F172A' }}>{v.name}</div>
+                      {v.phone && <div className="text-xs" style={{ color: '#94A3B8' }}>{v.phone}</div>}
+                    </td>
+                    <td className="px-5 py-3" style={{ color: '#64748B' }}>{v.hostName || '—'}</td>
+                    <td className="px-5 py-3 font-mono text-xs" style={{ color: '#7C3AED' }}>{v.accessCode || '—'}</td>
+                    <td className="px-5 py-3">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full capitalize"
+                        style={{
+                          background: v.status === 'checked_in' ? '#ECFDF5' : v.status === 'checked_out' ? '#F1F5F9' : '#FEF3C7',
+                          color: v.status === 'checked_in' ? '#047857' : v.status === 'checked_out' ? '#64748B' : '#92400E',
+                        }}>{String(v.status || 'pending').replace('_', ' ')}</span>
+                    </td>
+                    <td className="px-5 py-3 text-xs" style={{ color: '#94A3B8' }}>
+                      {formatDistanceToNow(new Date(v.createdAt), { addSuffix: true })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* ── Alerts tab ── */}
+      {tab === 'alerts' && (
+        <div className="space-y-3">
+          {alerts.length === 0 ? (
+            <div className="glass-card p-12 text-center">
+              <AlertTriangle size={36} className="mx-auto mb-3" style={{ color: '#CBD5E1' }} />
+              <p className="text-sm" style={{ color: '#94A3B8' }}>No security alerts</p>
+            </div>
+          ) : alerts.map(a => (
+            <div key={a._id} className="glass-card p-4 flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{
+                  background: a.severity === 'critical' ? '#FEE2E2' : a.severity === 'high' ? '#FEF3C7' : '#F1F5F9',
+                  color:      a.severity === 'critical' ? '#DC2626' : a.severity === 'high' ? '#D97706' : '#64748B',
+                }}>
+                <Siren size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-sm" style={{ color: '#0F172A' }}>{a.title || a.type || 'Alert'}</span>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize"
+                    style={{
+                      background: a.status === 'open' ? '#FEE2E2' : a.status === 'resolved' ? '#ECFDF5' : '#F1F5F9',
+                      color:      a.status === 'open' ? '#B91C1C' : a.status === 'resolved' ? '#047857' : '#475569',
+                    }}>{a.status || 'open'}</span>
+                  {a.isEmergencyBroadcast && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: '#DC2626', color: '#FFF' }}>BROADCAST</span>
+                  )}
+                </div>
+                {a.note && <div className="text-sm mt-1" style={{ color: '#475569' }}>{a.note}</div>}
+                <div className="text-xs mt-1" style={{ color: '#94A3B8' }}>
+                  {a.residentId?.name && <>By {a.residentId.name} · </>}
+                  {a.unitId && <>Unit {a.unitId.unitNumber} · </>}
+                  {formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Payments tab ── */}
+      {tab === 'payments' && (
+        <div className="glass-card overflow-hidden">
+          {payments.length === 0 ? (
+            <div className="p-12 text-center">
+              <CreditCard size={36} className="mx-auto mb-3" style={{ color: '#CBD5E1' }} />
+              <p className="text-sm" style={{ color: '#94A3B8' }}>No payments yet</p>
+            </div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ background: '#F8FAFC' }}>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Resident</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Schedule</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Amount</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Status</th>
+                  <th className="text-left px-5 py-3 text-xs font-bold uppercase tracking-wider" style={{ color: '#94A3B8' }}>When</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map(p => (
+                  <tr key={p._id} style={{ borderTop: '1px solid #F1F5F9' }}>
+                    <td className="px-5 py-3 font-medium" style={{ color: '#0F172A' }}>{p.residentId?.name || '—'}</td>
+                    <td className="px-5 py-3" style={{ color: '#64748B' }}>{p.scheduleId?.title || '—'}</td>
+                    <td className="px-5 py-3 font-bold" style={{ color: '#059669' }}>
+                      ₦{Number(p.amount || p.scheduleId?.amount || 0).toLocaleString()}
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full capitalize"
+                        style={{
+                          background: p.status === 'paid' ? '#ECFDF5' : p.status === 'overdue' ? '#FEE2E2' : '#FEF3C7',
+                          color:      p.status === 'paid' ? '#047857' : p.status === 'overdue' ? '#B91C1C' : '#92400E',
+                        }}>{p.status || 'pending'}</span>
+                    </td>
+                    <td className="px-5 py-3 text-xs" style={{ color: '#94A3B8' }}>
+                      {formatDistanceToNow(new Date(p.createdAt), { addSuffix: true })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+
+      {/* ── Announcements tab ── */}
+      {tab === 'announcements' && (
+        <div className="space-y-3">
+          {announcements.length === 0 ? (
+            <div className="glass-card p-12 text-center">
+              <Megaphone size={36} className="mx-auto mb-3" style={{ color: '#CBD5E1' }} />
+              <p className="text-sm" style={{ color: '#94A3B8' }}>No announcements posted</p>
+            </div>
+          ) : announcements.map(a => (
+            <div key={a._id} className="glass-card p-4 flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                   style={{ background: 'rgba(99,102,241,0.1)', color: '#6366F1' }}>
+                <Megaphone size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-sm" style={{ color: '#0F172A' }}>{a.title}</span>
+                  {a.isPinned && <Pin size={11} style={{ color: '#D97706' }} />}
+                  {a.category && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize"
+                      style={{ background: '#EEF2FF', color: '#4338CA' }}>{a.category}</span>
+                  )}
+                </div>
+                {a.message && <div className="text-sm mt-1 line-clamp-2" style={{ color: '#475569' }}>{a.message}</div>}
+                <div className="text-xs mt-1" style={{ color: '#94A3B8' }}>
+                  {formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       )}
 

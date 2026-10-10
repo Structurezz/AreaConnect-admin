@@ -6,12 +6,22 @@ import Modal from '../components/ui/Modal';
 import {
   Building2, Plus, MapPin, User, Hash,
   CheckCircle, XCircle, Search, Edit3, ArrowRight,
-  ToggleLeft, ToggleRight, RefreshCw, Phone, Mail,
+  ToggleLeft, ToggleRight, RefreshCw, Phone, Mail, Gift, Users as UsersIcon,
+  Home as HomeIcon, Bell, AlertTriangle, CreditCard, UserCheck as UserCheckIcon,
 } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 
 const STATUS_FILTERS = ['all', 'active', 'inactive', 'managed', 'unmanaged'];
+const SUB_FILTERS = [
+  { key: 'all',       label: 'Any sub' },
+  { key: 'trial',     label: 'Trial' },
+  { key: 'active',    label: 'Active' },
+  { key: 'comp',      label: 'Comp (gift)' },
+  { key: 'risk',      label: 'Renewal risk' },
+  { key: 'expired',   label: 'Expired' },
+  { key: 'nosub',     label: 'No sub' },
+];
 
 export default function AdminEstates() {
   const navigate  = useNavigate();
@@ -19,6 +29,9 @@ export default function AdminEstates() {
   const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [subFilter, setSubFilter]       = useState('all');
+  const [planFilter, setPlanFilter]     = useState('all');
+  const [sortBy, setSortBy]             = useState('new');
   const [selected, setSelected]   = useState(null);
   const [editForm, setEditForm]   = useState({ name: '', address: '' });
   const [saving, setSaving]       = useState(false);
@@ -27,13 +40,19 @@ export default function AdminEstates() {
   const load = async () => {
     setLoading(true);
     try {
-      const { data } = await estateAPI.getAll();
+      // Overview includes subscription + resident/unit/visitor/alert counts
+      // per estate so the list row can show meaningful activity at a glance.
+      const { data } = await estateAPI.getOverview();
       setEstates(data.data);
     } catch { toast.error('Failed to load estates'); }
     finally { setLoading(false); }
   };
 
   useEffect(() => { load(); }, []);
+
+  const planOptions = Array.from(new Set(estates
+    .map(e => e.subscription?.compActive ? e.subscription?.compPlan?.name : e.subscription?.planId?.name)
+    .filter(Boolean))).sort();
 
   const openEdit = (e) => {
     setSelected(e);
@@ -64,13 +83,36 @@ export default function AdminEstates() {
   };
 
   const filtered = estates.filter(e => {
-    if (statusFilter === 'active'   && !e.isActive)    return false;
-    if (statusFilter === 'inactive' && e.isActive)     return false;
-    if (statusFilter === 'managed'  && !e.managerId)   return false;
-    if (statusFilter === 'unmanaged' && e.managerId)   return false;
+    if (statusFilter === 'active'    && !e.isActive)    return false;
+    if (statusFilter === 'inactive'  && e.isActive)     return false;
+    if (statusFilter === 'managed'   && !e.managerId)   return false;
+    if (statusFilter === 'unmanaged' && e.managerId)    return false;
+
+    const sub = e.subscription;
+    if (subFilter === 'trial'   && sub?.status !== 'trial')     return false;
+    if (subFilter === 'active'  && !(sub?.status === 'active' && !sub.compActive)) return false;
+    if (subFilter === 'comp'    && !sub?.compActive)            return false;
+    if (subFilter === 'risk'    && !sub?.renewalIssue)          return false;
+    if (subFilter === 'expired' && !['expired','suspended','cancelled'].includes(sub?.status || '')) return false;
+    if (subFilter === 'nosub'   && sub)                         return false;
+
+    if (planFilter !== 'all') {
+      const planName = sub?.compActive ? sub?.compPlan?.name : sub?.planId?.name;
+      if (planName !== planFilter) return false;
+    }
+
     if (!search) return true;
     const q = search.toLowerCase();
-    return e.name.toLowerCase().includes(q) || e.estateCode.includes(q.toUpperCase());
+    return e.name.toLowerCase().includes(q)
+        || e.estateCode?.toLowerCase().includes(q)
+        || (e.managerId?.name || '').toLowerCase().includes(q)
+        || (e.managerId?.email || '').toLowerCase().includes(q);
+  }).sort((a, b) => {
+    if (sortBy === 'residents')     return (b.counts?.residents    || 0) - (a.counts?.residents    || 0);
+    if (sortBy === 'visitors7d')    return (b.counts?.visitorsWeek || 0) - (a.counts?.visitorsWeek || 0);
+    if (sortBy === 'alerts')        return (b.counts?.openAlerts   || 0) - (a.counts?.openAlerts   || 0);
+    if (sortBy === 'name')          return (a.name || '').localeCompare(b.name || '');
+    return new Date(b.createdAt) - new Date(a.createdAt);
   });
 
   const counts = STATUS_FILTERS.reduce((acc, f) => {
@@ -120,7 +162,7 @@ export default function AdminEstates() {
         <div className="relative flex-1 min-w-52">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#94A3B8' }} />
           <input className="input-field pl-9"
-            placeholder="Search by name or estate code…"
+            placeholder="Search estate, code, manager name or email…"
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="flex gap-1.5 flex-wrap">
@@ -137,6 +179,39 @@ export default function AdminEstates() {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Secondary filters — subscription + plan + sort */}
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs font-bold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Subscription</span>
+        {SUB_FILTERS.map(f => (
+          <button key={f.key} onClick={() => setSubFilter(f.key)}
+            className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+            style={subFilter === f.key
+              ? { background: f.key === 'comp' ? '#D97706' : f.key === 'risk' ? '#DC2626' : '#0F172A', color: '#FFF' }
+              : { background: '#F1F5F9', color: '#475569', border: '1px solid #E2E8F0' }}>
+            {f.label}
+          </button>
+        ))}
+        {planOptions.length > 0 && (
+          <>
+            <span className="text-xs font-bold uppercase tracking-wider ml-3" style={{ color: '#94A3B8' }}>Plan</span>
+            <select className="input-field" style={{ width: 160, height: 32, fontSize: 12 }}
+              value={planFilter} onChange={e => setPlanFilter(e.target.value)}>
+              <option value="all">All plans</option>
+              {planOptions.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </>
+        )}
+        <span className="text-xs font-bold uppercase tracking-wider ml-3" style={{ color: '#94A3B8' }}>Sort</span>
+        <select className="input-field" style={{ width: 160, height: 32, fontSize: 12 }}
+          value={sortBy} onChange={e => setSortBy(e.target.value)}>
+          <option value="new">Newest</option>
+          <option value="name">Name A→Z</option>
+          <option value="residents">Most residents</option>
+          <option value="visitors7d">Most visitors (7d)</option>
+          <option value="alerts">Open alerts</option>
+        </select>
       </div>
 
       {/* Content */}
@@ -225,6 +300,67 @@ export default function AdminEstates() {
                     )}
                   </div>
                 )}
+
+                {/* Subscription row — plan + status + comp/risk badges */}
+                {e.subscription ? (
+                  <div className="flex items-center gap-2 mb-3 flex-wrap">
+                    {(() => {
+                      const sub = e.subscription;
+                      const planName = sub.compActive ? sub.compPlan?.name : sub.planId?.name;
+                      const color    = sub.compActive ? '#D97706' : (sub.status === 'active' ? '#059669' : sub.status === 'trial' ? '#2563EB' : '#94A3B8');
+                      return (
+                        <>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                                style={{ background: color + '14', color, border: `1px solid ${color}30` }}>
+                            <CreditCard size={10} /> {planName || 'No plan'} · {sub.status}
+                          </span>
+                          {sub.compActive && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                  style={{ background: '#FEF3C7', color: '#B45309', border: '1px solid #FDE68A' }}
+                                  title={sub.compExpiresAt ? `Ends ${format(new Date(sub.compExpiresAt), 'MMM d, yyyy')}` : 'Never expires'}>
+                              <Gift size={9} /> COMP
+                            </span>
+                          )}
+                          {sub.renewalIssue && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                                  style={{ background: '#FEE2E2', color: '#B91C1C', border: '1px solid #FECACA' }}
+                                  title={sub.renewalError || 'Renewal failed'}>
+                              <AlertTriangle size={9} /> RENEWAL
+                            </span>
+                          )}
+                          {sub.hasCard && !sub.renewalIssue && (
+                            <span className="text-[10px] font-semibold" style={{ color: '#059669' }}>
+                              ••{sub.cardLast4 || 'card'}
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                ) : (
+                  <div className="mb-3">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' }}>
+                      No subscription
+                    </span>
+                  </div>
+                )}
+
+                {/* Activity counters */}
+                <div className="grid grid-cols-4 gap-1.5 mb-3 text-center">
+                  {[
+                    { Icon: UsersIcon,     v: e.counts?.residents     || 0, label: 'Res',  color: '#7C3AED' },
+                    { Icon: HomeIcon,      v: e.counts?.units         || 0, label: 'Units', color: '#2563EB' },
+                    { Icon: UserCheckIcon, v: e.counts?.visitorsToday || 0, label: 'Vis today', color: '#0EA5E9' },
+                    { Icon: Bell,          v: e.counts?.openAlerts    || 0, label: 'Alerts', color: e.counts?.openAlerts ? '#DC2626' : '#94A3B8' },
+                  ].map(({ Icon, v, label, color }) => (
+                    <div key={label} className="rounded-lg py-1.5" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                      <Icon size={11} className="mx-auto" style={{ color }} />
+                      <div className="text-xs font-black" style={{ color: '#0F172A' }}>{v}</div>
+                      <div className="text-[9px]" style={{ color: '#94A3B8' }}>{label}</div>
+                    </div>
+                  ))}
+                </div>
 
                 {/* Footer */}
                 <div className="flex items-center justify-between mt-auto pt-3"
