@@ -148,6 +148,15 @@ export const alertAPI = {
   broadcast: (data) => api.post('/alerts/broadcast', data),
 };
 
+// Password-reset requests — admins can review across all estates by listing
+// per estate from /auth/password-resets. We hit the all-estates path via
+// an admin-only aggregator (defined inline below).
+export const passwordResetAPI = {
+  listPending: () => api.get('/auth/password-resets/pending-all'),
+  approve: (id) => api.post(`/auth/password-resets/${id}/approve-admin`),
+  deny:    (id, data) => api.post(`/auth/password-resets/${id}/deny-admin`, data || {}),
+};
+
 // Podcast — full admin control
 export const podcastAPI = {
   listShows:    (params) => api.get('/podcast/shows', { params }),
