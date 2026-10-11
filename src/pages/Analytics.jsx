@@ -161,7 +161,7 @@ export default function Analytics() {
               {subStats.byPlan.map(plan => {
                 const pct = Math.round((plan.count / Math.max(subStats.total, 1)) * 100);
                 return (
-                  <div key={plan._id}>
+                  <div key={plan.planId || plan._id || plan.name}>
                     <div className="flex justify-between text-sm mb-1">
                       <div className="flex items-center gap-2">
                         <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: plan.color }} />
@@ -277,7 +277,12 @@ export default function Analytics() {
               style={{ background: 'rgba(5,150,105,0.06)', border: '1px solid rgba(5,150,105,0.12)' }}>
               <div>
                 <div className="text-xs" style={{ color: '#94A3B8' }}>Monthly Recurring Revenue</div>
-                <div className="text-2xl font-bold" style={{ color: '#059669' }}>₦{mrr.toLocaleString()}</div>
+                <div className="text-2xl font-bold" style={{ color: '#059669' }}>₦{paidMrr.toLocaleString()}</div>
+                {compMrr > 0 && (
+                  <div className="text-[11px] mt-0.5" style={{ color: '#B45309' }}>
+                    + ₦{compMrr.toLocaleString()} gift foregone
+                  </div>
+                )}
               </div>
               <TrendingUp size={28} style={{ color: 'rgba(5,150,105,0.3)' }} />
             </div>
@@ -285,7 +290,7 @@ export default function Analytics() {
               style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.12)' }}>
               <div>
                 <div className="text-xs" style={{ color: '#94A3B8' }}>Annual Recurring Revenue</div>
-                <div className="text-2xl font-bold" style={{ color: '#D97706' }}>₦{(mrr * 12).toLocaleString()}</div>
+                <div className="text-2xl font-bold" style={{ color: '#D97706' }}>₦{(paidMrr * 12).toLocaleString()}</div>
               </div>
               <BarChart2 size={28} style={{ color: 'rgba(245,158,11,0.3)' }} />
             </div>
