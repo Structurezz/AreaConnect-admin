@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Building2, Users, Home, Eye, CreditCard, AlertCircle, RefreshCw,
   Shield, TrendingUp, CheckCircle, BarChart2, Percent, ArrowRight,
+  UserCheck, Zap, Wallet,
 } from 'lucide-react';
 import { adminAPI, planAPI, estateAPI } from '../api';
 import toast from 'react-hot-toast';
@@ -32,28 +33,29 @@ export default function Analytics() {
     </div>
   );
 
-  const mrr      = subStats?.mrr ?? 0;
+  const paidMrr = subStats?.mrrPaid ?? subStats?.mrr ?? 0;
+  const compMrr = subStats?.mrrComp ?? 0;
   const subTotal = Math.max((subStats?.active ?? 0) + (subStats?.trial ?? 0) + (subStats?.expired ?? 0), 1);
   const growth   = stats?.estateGrowth ?? [];
   const maxCount = Math.max(...growth.map(g => g.count), 1);
 
+  // Server now ships occupancyRate directly (fixes the busted client reduce)
   const totalUnits    = stats?.totalUnits ?? 0;
-  const occupancyRate = totalUnits > 0
-    ? Math.round((estates.reduce((a, _) => a, 0) / totalUnits) * 100)
-    : 0;
+  const occupancyRate = stats?.occupancyRate ?? 0;
 
   const conversionRate = Math.round(((subStats?.active ?? 0) / subTotal) * 100);
   const totalPeople    = (stats?.totalResidents ?? 0) + (stats?.totalManagers ?? 0) + (stats?.totalSecurity ?? 0);
+  const fmtNGN = (n) => `₦${Number(n || 0).toLocaleString()}`;
 
   const kpis = [
-    { label: 'Total Estates',    value: stats?.totalEstates ?? 0,    icon: Building2,  color: '#D97706' },
-    { label: 'Active Residents', value: stats?.totalResidents ?? 0,  icon: Users,      color: '#2563EB' },
-    { label: 'Platform MRR',     value: `₦${mrr.toLocaleString()}`,  icon: TrendingUp, color: '#059669' },
-    { label: 'Total Units',      value: totalUnits,                   icon: Home,       color: '#7C3AED' },
-    { label: 'Active Estates',   value: estates.filter(e => e.isActive).length, icon: CheckCircle, color: '#059669' },
-    { label: 'Total Users',      value: totalPeople,                  icon: Users,      color: '#D97706' },
-    { label: 'Paid Conversion',  value: `${conversionRate}%`,        icon: Percent,    color: '#7C3AED' },
-    { label: 'Open Alerts',      value: stats?.openAlerts ?? 0,      icon: AlertCircle, color: '#DC2626' },
+    { label: 'Total Estates',    value: stats?.totalEstates ?? 0,    sub: `${stats?.activeEstates ?? 0} active`, icon: Building2,  color: '#D97706' },
+    { label: 'Active Residents', value: stats?.totalResidents ?? 0,  sub: `${totalPeople} total users`, icon: Users, color: '#2563EB' },
+    { label: 'Paid MRR',         value: fmtNGN(paidMrr),             sub: compMrr ? `+${fmtNGN(compMrr)} gift` : 'live revenue', icon: TrendingUp, color: '#059669' },
+    { label: 'Visitors today',   value: stats?.visitorsToday ?? 0,   sub: `${stats?.visitorsWeek ?? 0} this week`, icon: UserCheck, color: '#0EA5E9' },
+    { label: 'Payment volume 30d', value: fmtNGN(stats?.paymentVolume30d),  sub: `${fmtNGN(stats?.paymentVolume)} all-time`, icon: Wallet, color: '#047857' },
+    { label: 'DAU / WAU / MAU',  value: `${stats?.dau ?? 0} / ${stats?.wau ?? 0} / ${stats?.mau ?? 0}`, sub: 'Logged in recently', icon: Zap, color: '#7C3AED' },
+    { label: 'Occupancy',        value: `${occupancyRate}%`,         sub: `${stats?.occupiedUnits ?? 0}/${totalUnits} units`, icon: Home, color: '#7C3AED' },
+    { label: 'Open Alerts',      value: stats?.openAlerts ?? 0,      sub: 'Platform-wide', icon: AlertCircle, color: stats?.openAlerts ? '#DC2626' : '#94A3B8' },
   ];
 
   const subHealth = [
@@ -79,7 +81,7 @@ export default function Analytics() {
 
       {/* 8 Primary KPIs */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        {kpis.map(({ label, value, icon: Icon, color }) => (
+        {kpis.map(({ label, value, sub, icon: Icon, color }) => (
           <div key={label} className="glass-card p-5">
             <div className="flex items-center justify-between mb-3">
               <span className="text-xs font-medium uppercase tracking-wider" style={{ color: '#94A3B8' }}>{label}</span>
@@ -89,6 +91,7 @@ export default function Analytics() {
               </div>
             </div>
             <div className="text-2xl font-bold" style={{ color: '#0F172A' }}>{value}</div>
+            {sub && <div className="text-[11px] mt-1" style={{ color }}>{sub}</div>}
           </div>
         ))}
       </div>

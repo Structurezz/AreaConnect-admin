@@ -53,22 +53,27 @@ export default function Operations() {
     setLoading(true);
     const soon = new Date(Date.now() + 7 * 86400000);
     try {
+      // Withdrawals returns { withdrawals, totals } under data; alerts needs
+      // the platform-wide admin endpoint (not the estate-scoped one).
       const [fr, pr, pw, al, ss, allSubs] = await Promise.all([
         planAPI.getFailedRenewals().catch(() => ({ data: { data: [] } })),
         passwordResetAPI.listPending().catch(() => ({ data: { data: [] } })),
-        withdrawalAPI.list({ status: 'pending' }).catch(() => ({ data: { data: [] } })),
-        alertAPI.getAll({ status: 'open' }).catch(() => ({ data: { data: [] } })),
+        withdrawalAPI.list({ status: 'pending' }).catch(() => ({ data: { data: { withdrawals: [] } } })),
+        alertAPI.listAdmin({ status: 'open' }).catch(() => ({ data: { data: [] } })),
         planAPI.getSubscriptionStats().catch(() => ({ data: { data: null } })),
         planAPI.getSubscriptions().catch(() => ({ data: { data: [] } })),
       ]);
-      setFailedRenewals(fr.data.data || []);
-      setPendingResets(pr.data.data || []);
-      setPendingWithdrawals(pw.data.data || []);
-      setOpenAlerts(al.data.data || []);
+
+      const asArray = (v) => Array.isArray(v) ? v : (Array.isArray(v?.withdrawals) ? v.withdrawals : []);
+
+      setFailedRenewals(Array.isArray(fr.data.data) ? fr.data.data : []);
+      setPendingResets(Array.isArray(pr.data.data) ? pr.data.data : []);
+      setPendingWithdrawals(asArray(pw.data.data));
+      setOpenAlerts(Array.isArray(al.data.data) ? al.data.data : []);
       setSubStats(ss.data.data || null);
 
       // Comp expiring in 7 days
-      const subs = allSubs.data.data || [];
+      const subs = Array.isArray(allSubs.data.data) ? allSubs.data.data : [];
       const nowMs = Date.now();
       setExpiringComps(subs.filter(s => {
         if (!s.comp?.isActive || !s.comp?.expiresAt) return false;

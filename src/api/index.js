@@ -141,7 +141,9 @@ export const pitchAPI = {
 
 // Alerts
 export const alertAPI = {
-  getAll: (params) => api.get('/alerts', { params }),
+  getAll:    (params) => api.get('/alerts', { params }),
+  // Super admin — platform-wide alerts across every estate
+  listAdmin: (params) => api.get('/alerts/platform-all', { params }),
   create: (data) => api.post('/alerts', data),
   acknowledge: (id) => api.patch(`/alerts/${id}/acknowledge`),
   resolve: (id) => api.patch(`/alerts/${id}/resolve`),
