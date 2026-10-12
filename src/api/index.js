@@ -150,6 +150,15 @@ export const alertAPI = {
   broadcast: (data) => api.post('/alerts/broadcast', data),
 };
 
+// Admin — platform-wide payments / Paystack ledger / reconcile / attach
+export const adminPaymentAPI = {
+  list:            (params) => api.get('/admin/payments', { params }),
+  stats:           ()        => api.get('/admin/payments/stats'),
+  paystackLedger:  (params) => api.get('/admin/payments/paystack/ledger', { params }),
+  reconcile:       (reference) => api.post(`/admin/payments/reconcile/${reference}`),
+  attach:          (data)   => api.post('/admin/payments/paystack/attach', data),
+};
+
 // Password-reset requests — admins can review across all estates by listing
 // per estate from /auth/password-resets. We hit the all-estates path via
 // an admin-only aggregator (defined inline below).

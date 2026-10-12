@@ -26,6 +26,7 @@ import PodcastStudio from './pages/PodcastStudio';
 import VisitorInsights from './pages/VisitorInsights';
 import HostStudioResumePill from './components/HostStudioResumePill';
 import Withdrawals from './pages/Withdrawals';
+import Transactions from './pages/Transactions';
 
 function RequireAdmin({ children }) {
   const { user, loading } = useAuth();
@@ -71,6 +72,7 @@ function AppRoutes() {
       <Route path="/podcast" element={<RequireAdmin><PodcastStudio /></RequireAdmin>} />
       <Route path="/visitor-insights" element={<RequireAdmin><VisitorInsights /></RequireAdmin>} />
       <Route path="/withdrawals" element={<RequireAdmin><Withdrawals /></RequireAdmin>} />
+      <Route path="/transactions" element={<RequireAdmin><Transactions /></RequireAdmin>} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>
