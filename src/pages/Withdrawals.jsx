@@ -140,6 +140,20 @@ export default function Withdrawals() {
     } finally { setActingId(null); }
   };
 
+  const syncWithPaystack = async (id) => {
+    setActingId(id);
+    try {
+      const { data } = await withdrawalAPI.sync(id);
+      const st = data.data?.status;
+      if (st === 'success') toast.success('Paystack confirms it was paid — marked as paid');
+      else if (st === 'failed') toast.error('Paystack reports the transfer failed — funds returned to wallet');
+      else toast(`Still ${data.data?.paystackStatus || 'pending'} on Paystack`);
+      refresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed');
+    } finally { setActingId(null); }
+  };
+
   const copyBank = (w) => {
     const text = `${w.accountName}\n${w.accountNumber}\n${w.bankName}\n${fmt(w.amount)} — Ref ${w.reference}`;
     navigator.clipboard.writeText(text);
@@ -369,6 +383,11 @@ export default function Withdrawals() {
                       {isActing ? <RefreshCw size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                       Resend OTP
                     </button>
+                    <button onClick={() => syncWithPaystack(w._id)}
+                      disabled={isActing}
+                      className="btn-outline gap-1 text-xs">
+                      <RefreshCw size={12} className={isActing ? 'animate-spin' : ''} /> Check Paystack
+                    </button>
                     <button onClick={() => { setRejectFor(w._id); setRejectReason(''); }}
                       disabled={isActing}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
@@ -392,6 +411,11 @@ export default function Withdrawals() {
                       style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
                       {isActing ? <RefreshCw size={13} className="animate-spin" /> : <Zap size={13} />}
                       Process via Paystack
+                    </button>
+                    <button onClick={() => syncWithPaystack(w._id)}
+                      disabled={isActing}
+                      className="btn-outline gap-1 text-xs">
+                      <RefreshCw size={12} className={isActing ? 'animate-spin' : ''} /> Check Paystack
                     </button>
                     <button onClick={() => { setRejectFor(w._id); setRejectReason(''); }}
                       disabled={isActing}

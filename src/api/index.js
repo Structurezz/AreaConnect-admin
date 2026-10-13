@@ -192,6 +192,7 @@ export const withdrawalAPI = {
   reject:          (id, data) => api.post(`/admin/withdrawals/${id}/reject`, data || {}),
   finalizeOtp:     (id, otp)  => api.post(`/admin/withdrawals/${id}/finalize-otp`, { otp }),
   resendOtp:       (id)       => api.post(`/admin/withdrawals/${id}/resend-otp`),
+  sync:            (id)       => api.post(`/admin/withdrawals/${id}/sync`),
 };
 
 // Campaigns
