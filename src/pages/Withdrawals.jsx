@@ -3,7 +3,7 @@ import { withdrawalAPI } from '../api';
 import toast from 'react-hot-toast';
 import {
   Wallet, RefreshCw, Check, X, Zap, Copy, Clock, Building2,
-  CheckCircle2, XCircle, Search, Landmark, AlertTriangle,
+  CheckCircle2, XCircle, Search, Landmark, AlertTriangle, KeyRound,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 
@@ -14,6 +14,11 @@ const STATUS = {
 };
 
 const fmt = (n) => `₦${Number(n || 0).toLocaleString('en-NG')}`;
+// A real Paystack transfer exists (not a manual payout or test mock) — so
+// it's in flight and must not be paid again by hand.
+const hasTransfer = (w) => w.paystackTransferCode
+  && !w.paystackTransferCode.startsWith('MANUAL-') && w.paystackTransferCode !== 'TRF_test_mock';
+
 const mask = (acct) => acct ? acct.slice(0, -4).replace(/\d/g, '•') + acct.slice(-4) : '••••';
 
 function Pill({ status }) {
@@ -40,6 +45,8 @@ export default function Withdrawals() {
   const [rejectReason, setRejectReason] = useState('');
   const [paidNoteFor, setPaidNoteFor] = useState(null);
   const [paidNote, setPaidNote] = useState('');
+  const [otpFor, setOtpFor] = useState(null);
+  const [otp, setOtp] = useState('');
 
   const load = async () => {
     setLoading(true);
@@ -102,6 +109,32 @@ export default function Withdrawals() {
       setRejectFor(null);
       setRejectReason('');
       refresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed');
+    } finally { setActingId(null); }
+  };
+
+  const confirmOtp = async () => {
+    const id = otpFor;
+    setActingId(id);
+    try {
+      const { data } = await withdrawalAPI.finalizeOtp(id, otp);
+      toast.success(data.data?.status === 'success'
+        ? 'Transfer sent — receipt emailed to manager'
+        : 'OTP accepted — Paystack is processing the transfer');
+      setOtpFor(null);
+      setOtp('');
+      refresh();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed');
+    } finally { setActingId(null); }
+  };
+
+  const resendOtp = async (id) => {
+    setActingId(id);
+    try {
+      await withdrawalAPI.resendOtp(id);
+      toast.success('OTP re-sent to the Paystack business phone');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed');
     } finally { setActingId(null); }
@@ -278,6 +311,12 @@ export default function Withdrawals() {
                               style={{ background: '#F1F5F9', color: '#64748B' }}>{estate.estateCode}</span>
                       )}
                       <Pill status={w.status} />
+                      {isPending && w.paystackStatus === 'otp' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                          style={{ background: '#EDE9FE', color: '#6D28D9', border: '1px solid #DDD6FE' }}>
+                          <KeyRound size={10} /> Awaiting OTP
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs mt-1" style={{ color: '#64748B' }}>
                       {user.name || 'Manager'} · {user.email || '—'}
@@ -316,7 +355,30 @@ export default function Withdrawals() {
                   </div>
                 )}
 
-                {isPending && (
+                {isPending && hasTransfer(w) && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button onClick={() => { setOtpFor(w._id); setOtp(''); }}
+                      disabled={isActing}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
+                      style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+                      <KeyRound size={13} /> Enter OTP
+                    </button>
+                    <button onClick={() => resendOtp(w._id)}
+                      disabled={isActing}
+                      className="btn-outline gap-1 text-xs">
+                      {isActing ? <RefreshCw size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                      Resend OTP
+                    </button>
+                    <button onClick={() => { setRejectFor(w._id); setRejectReason(''); }}
+                      disabled={isActing}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                      style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>
+                      <X size={13} /> Reject
+                    </button>
+                  </div>
+                )}
+
+                {isPending && !hasTransfer(w) && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     <button onClick={() => { setPaidNoteFor(w._id); setPaidNote(''); }}
                       disabled={isActing}
@@ -368,6 +430,36 @@ export default function Withdrawals() {
                 style={{ background: '#059669' }}>
                 {actingId === paidNoteFor ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
                 Confirm paid
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer OTP modal */}
+      {otpFor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setOtpFor(null)} />
+          <div className="relative glass-card w-full max-w-md p-6 space-y-4">
+            <div>
+              <h3 className="font-bold text-lg" style={{ color: '#0F172A' }}>Authorise transfer</h3>
+              <p className="text-sm mt-0.5" style={{ color: '#64748B' }}>
+                Enter the OTP Paystack sent to the AreaConnect business phone/email for this transfer.
+              </p>
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>OTP *</label>
+              <input className="input-field font-mono tracking-widest" inputMode="numeric" autoFocus
+                placeholder="e.g. 123456"
+                value={otp} onChange={e => setOtp(e.target.value)} />
+            </div>
+            <div className="flex gap-3 pt-1">
+              <button type="button" onClick={() => setOtpFor(null)} className="btn-outline flex-1">Cancel</button>
+              <button onClick={confirmOtp} disabled={!otp.trim() || actingId === otpFor}
+                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
+                style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
+                {actingId === otpFor ? <RefreshCw size={14} className="animate-spin" /> : <KeyRound size={14} />}
+                Send transfer
               </button>
             </div>
           </div>

@@ -190,6 +190,8 @@ export const withdrawalAPI = {
   markPaid:        (id, data) => api.post(`/admin/withdrawals/${id}/mark-paid`, data || {}),
   processPaystack: (id)       => api.post(`/admin/withdrawals/${id}/process`),
   reject:          (id, data) => api.post(`/admin/withdrawals/${id}/reject`, data || {}),
+  finalizeOtp:     (id, otp)  => api.post(`/admin/withdrawals/${id}/finalize-otp`, { otp }),
+  resendOtp:       (id)       => api.post(`/admin/withdrawals/${id}/resend-otp`),
 };
 
 // Campaigns
