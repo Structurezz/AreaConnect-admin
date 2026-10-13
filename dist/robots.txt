@@ -1,0 +1,4 @@
+# Internal admin panel. Crawling is allowed only so search engines can read the
+# noindex tag in index.html; nothing here should ever appear in search results.
+User-agent: *
+Allow: /

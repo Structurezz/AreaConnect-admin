@@ -3,7 +3,7 @@ import { withdrawalAPI } from '../api';
 import toast from 'react-hot-toast';
 import {
   Wallet, RefreshCw, Check, X, Zap, Copy, Clock, Building2,
-  CheckCircle2, XCircle, Search,
+  CheckCircle2, XCircle, Search, Landmark, AlertTriangle,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
 
@@ -31,6 +31,8 @@ export default function Withdrawals() {
   const [withdrawals, setWithdrawals] = useState([]);
   const [totals, setTotals] = useState({ pending: {}, success: {}, failed: {} });
   const [loading, setLoading] = useState(true);
+  const [balance, setBalance] = useState(null);
+  const [balanceLoading, setBalanceLoading] = useState(true);
   const [tab, setTab] = useState('pending');
   const [search, setSearch] = useState('');
   const [actingId, setActingId] = useState(null);
@@ -50,7 +52,20 @@ export default function Withdrawals() {
     } finally { setLoading(false); }
   };
 
+  const loadBalance = async () => {
+    setBalanceLoading(true);
+    try {
+      const { data } = await withdrawalAPI.balance();
+      setBalance(data.data);
+    } catch {
+      setBalance(null);
+    } finally { setBalanceLoading(false); }
+  };
+
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [tab]);
+  useEffect(() => { loadBalance(); }, []);
+
+  const refresh = () => { load(); loadBalance(); };
 
   const confirmMarkPaid = async () => {
     const id = paidNoteFor;
@@ -60,7 +75,7 @@ export default function Withdrawals() {
       toast.success('Marked as paid — receipt emailed to manager');
       setPaidNoteFor(null);
       setPaidNote('');
-      load();
+      refresh();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed');
     } finally { setActingId(null); }
@@ -72,7 +87,7 @@ export default function Withdrawals() {
     try {
       await withdrawalAPI.processPaystack(id);
       toast.success('Paystack transfer initiated');
-      load();
+      refresh();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed');
     } finally { setActingId(null); }
@@ -86,7 +101,7 @@ export default function Withdrawals() {
       toast.success('Rejected — manager notified');
       setRejectFor(null);
       setRejectReason('');
-      load();
+      refresh();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed');
     } finally { setActingId(null); }
@@ -123,12 +138,64 @@ export default function Withdrawals() {
         <div>
           <h1 className="text-2xl font-bold" style={{ color: '#0F172A' }}>Manager Withdrawals</h1>
           <p className="text-sm mt-0.5" style={{ color: '#94A3B8' }}>
-            Estate managers request payouts here. Pay them manually from your Paystack dashboard and mark paid — or fire the transfer with one click.
+            Managers withdraw straight to their bank via Paystack. Pending items are transfers still in flight or requests that need your attention.
           </p>
         </div>
-        <button onClick={load} className="btn-outline gap-2">
+        <button onClick={refresh} className="btn-outline gap-2">
           <RefreshCw size={14} /> Refresh
         </button>
+      </div>
+
+      {/* Paystack balance vs manager liabilities */}
+      <div className="glass-card p-4 lg:p-5">
+        <div className="flex items-center gap-2 mb-3">
+          <Landmark size={16} style={{ color: '#0F172A' }} />
+          <h2 className="font-semibold text-sm" style={{ color: '#0F172A' }}>Paystack balance</h2>
+          {balance?.testMode && (
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
+                  style={{ background: '#FEF3C7', color: '#92400E' }}>TEST MODE</span>
+          )}
+          {balanceLoading && <RefreshCw size={12} className="animate-spin" style={{ color: '#94A3B8' }} />}
+        </div>
+        {!balanceLoading && !balance ? (
+          <p className="text-sm" style={{ color: '#DC2626' }}>Couldn't load balance.</p>
+        ) : balance && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Available on Paystack</div>
+                <div className="text-2xl font-bold mt-1" style={{ color: '#0F172A' }}>
+                  {balance.paystack ? fmt(balance.paystack.balance) : '—'}
+                </div>
+                {balance.paystackError && (
+                  <div className="text-xs mt-0.5" style={{ color: '#DC2626' }}>{balance.paystackError}</div>
+                )}
+              </div>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Owed to managers</div>
+                <div className="text-2xl font-bold mt-1" style={{ color: '#D97706' }}>{fmt(balance.owed)}</div>
+                <div className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>
+                  {fmt(balance.walletBalances)} in wallets
+                  {balance.queued.count > 0 && <> · {fmt(balance.queued.total)} queued ({balance.queued.count})</>}
+                </div>
+              </div>
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Safe to move to bank</div>
+                <div className="text-2xl font-bold mt-1"
+                     style={{ color: balance.surplus == null ? '#94A3B8' : balance.surplus >= 0 ? '#059669' : '#DC2626' }}>
+                  {balance.surplus == null ? '—' : fmt(Math.max(0, balance.surplus))}
+                </div>
+              </div>
+            </div>
+            {balance.surplus != null && balance.surplus < 0 && (
+              <div className="mt-3 p-3 rounded-lg flex items-start gap-2 text-xs"
+                   style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C' }}>
+                <AlertTriangle size={13} className="mt-0.5 shrink-0" />
+                Paystack balance is {fmt(-balance.surplus)} short of what managers can withdraw. Top up the balance or some withdrawals will fail.
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Summary cards */}

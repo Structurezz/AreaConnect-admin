@@ -186,6 +186,7 @@ export const podcastAPI = {
 // Admin — manager withdrawal requests
 export const withdrawalAPI = {
   list:            (params) => api.get('/admin/withdrawals', { params }),
+  balance:         ()       => api.get('/admin/withdrawals/balance'),
   markPaid:        (id, data) => api.post(`/admin/withdrawals/${id}/mark-paid`, data || {}),
   processPaystack: (id)       => api.post(`/admin/withdrawals/${id}/process`),
   reject:          (id, data) => api.post(`/admin/withdrawals/${id}/reject`, data || {}),
