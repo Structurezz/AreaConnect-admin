@@ -13,6 +13,26 @@ import {
 import { format, formatDistanceToNow } from 'date-fns';
 import toast from 'react-hot-toast';
 
+// A unit's real dues position, computed server-side from its residents'
+// bills (server/utils/unitDues). Replaces the old manual "Paid/Unpaid" flag,
+// which defaulted to paid and never reflected actual payments.
+const naira = (n) => `₦${Number(n || 0).toLocaleString('en-NG')}`;
+const shortDay = (d) => new Date(d).toLocaleDateString('en-NG', { day: 'numeric', month: 'short' });
+function unitDuesView(d = {}) {
+  switch (d.status) {
+    case 'overdue': return { color: '#DC2626', label: `${naira(d.overdueAmount)} overdue`,
+      detail: `${d.overdueCount} bill${d.overdueCount > 1 ? 's' : ''} past due${d.outstanding > d.overdueAmount ? ` · ${naira(d.outstanding)} owed` : ''}` };
+    case 'owing': return { color: '#D97706', label: `${naira(d.outstanding)} owing`,
+      detail: d.nextDue ? `Next due ${shortDay(d.nextDue.dueDate)}` : '' };
+    case 'clear': return { color: '#059669', label: 'All bills paid',
+      detail: d.lastPaidAt ? `Last paid ${shortDay(d.lastPaidAt)} · ${naira(d.paidThisYear)} this year` : '' };
+    case 'exempt': return { color: '#64748B', label: 'Exempt', detail: '' };
+    case 'no_residents': return { color: '#94A3B8', label: 'No residents to bill', detail: '' };
+    default: return { color: '#94A3B8', label: 'No bills issued yet', detail: '' };
+  }
+}
+
+
 function copyText(text) {
   navigator.clipboard.writeText(text);
   toast.success('Copied!');
@@ -458,11 +478,15 @@ export default function EstateDetail() {
                               </div>
                             </td>
                             <td className="px-5 py-3.5 hidden sm:table-cell">
-                              <span className="text-xs font-medium"
-                                style={{ color: u.duesStatus === 'paid' ? '#059669' : '#DC2626' }}>
-                                {u.duesStatus === 'paid' ? '✓ Paid' : '✗ Unpaid'}
-                                {u.amountOwed > 0 && <span className="ml-1 font-normal" style={{ color: '#94A3B8' }}>₦{u.amountOwed.toLocaleString()}</span>}
-                              </span>
+                              {(() => {
+                                const dv = unitDuesView(u.dues);
+                                return (
+                                  <div className="text-xs leading-tight">
+                                    <div className="font-semibold" style={{ color: dv.color }}>{dv.label}</div>
+                                    {dv.detail && <div className="mt-0.5" style={{ color: '#94A3B8' }}>{dv.detail}</div>}
+                                  </div>
+                                );
+                              })()}
                             </td>
                             <td className="px-5 py-3.5 hidden md:table-cell text-xs" style={{ color: '#475569' }}>
                               {unitResidents.length > 0
