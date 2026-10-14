@@ -331,9 +331,15 @@ export default function Withdrawals() {
                           <KeyRound size={10} /> Awaiting OTP
                         </span>
                       )}
+                      {w.source === 'marketplace' && (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
+                          style={{ background: '#EEF2FF', color: '#4338CA', border: '1px solid #C7D2FE' }}>
+                          Marketplace seller
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs mt-1" style={{ color: '#64748B' }}>
-                      {user.name || 'Manager'} · {user.email || '—'}
+                      {user.name || (w.source === 'marketplace' ? 'Seller' : 'Manager')} · {user.email || '—'}
                       {user.phone && <> · {user.phone}</>}
                     </div>
                     <div className="text-[11px] mt-0.5" style={{ color: '#94A3B8' }}>

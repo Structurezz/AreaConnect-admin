@@ -195,6 +195,13 @@ export const withdrawalAPI = {
   sync:            (id)       => api.post(`/admin/withdrawals/${id}/sync`),
 };
 
+// Marketplace — commission revenue, escrow, seller payouts
+export const marketplaceAdminAPI = {
+  summary:     (days) => api.get('/admin/marketplace/summary', { params: { days } }),
+  orders:      (params) => api.get('/admin/marketplace/orders', { params }),
+  retryRefund: (id) => api.post(`/admin/marketplace/orders/${id}/retry-refund`),
+};
+
 // Campaigns
 export const campaignAPI = {
   list:      (params) => api.get('/campaigns', { params }),

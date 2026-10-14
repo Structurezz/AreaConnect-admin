@@ -30,6 +30,7 @@ import PodcastStudio from './pages/PodcastStudio';
 import VisitorInsights from './pages/VisitorInsights';
 import HostStudioResumePill from './components/HostStudioResumePill';
 import Withdrawals from './pages/Withdrawals';
+import MarketplaceRevenue from './pages/MarketplaceRevenue';
 import Transactions from './pages/Transactions';
 
 function RequireAdmin({ children }) {
@@ -76,6 +77,7 @@ function AppRoutes() {
       <Route path="/podcast" element={<RequireAdmin><PodcastStudio /></RequireAdmin>} />
       <Route path="/visitor-insights" element={<RequireAdmin><VisitorInsights /></RequireAdmin>} />
       <Route path="/withdrawals" element={<RequireAdmin><Withdrawals /></RequireAdmin>} />
+      <Route path="/marketplace" element={<RequireAdmin><MarketplaceRevenue /></RequireAdmin>} />
       <Route path="/calls" element={<RequireAdmin><Calls /></RequireAdmin>} />
       <Route path="/call-credits" element={<RequireAdmin><CallCredits /></RequireAdmin>} />
       <Route path="/transactions" element={<RequireAdmin><Transactions /></RequireAdmin>} />
