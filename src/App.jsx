@@ -4,6 +4,7 @@ import { SocketProvider } from './context/SocketContext';
 import { CallProvider } from './context/CallContext';
 import CallOverlay from './components/calls/CallOverlay';
 import Calls from './pages/Calls';
+import CallCredits from './pages/CallCredits';
 import AppLayout from './components/layout/AppLayout';
 import { LoadingScreen } from './components/ui/Spinner';
 import { Toaster } from 'react-hot-toast';
@@ -76,6 +77,7 @@ function AppRoutes() {
       <Route path="/visitor-insights" element={<RequireAdmin><VisitorInsights /></RequireAdmin>} />
       <Route path="/withdrawals" element={<RequireAdmin><Withdrawals /></RequireAdmin>} />
       <Route path="/calls" element={<RequireAdmin><Calls /></RequireAdmin>} />
+      <Route path="/call-credits" element={<RequireAdmin><CallCredits /></RequireAdmin>} />
       <Route path="/transactions" element={<RequireAdmin><Transactions /></RequireAdmin>} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

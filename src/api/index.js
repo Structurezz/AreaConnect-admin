@@ -219,3 +219,11 @@ export const callAPI = {
   answer:    (id) => api.post(`/calls/admin/${id}/end`),
   decline:   (id) => api.post(`/calls/admin/${id}/end`),
 };
+
+// Bonus call credits ("airtime") granted by AreaConnect admins
+export const creditAdminAPI = {
+  searchUsers: (q) => api.get('/admin/credits/users', { params: { q } }),
+  estates:     () => api.get('/admin/credits/estates'),
+  grants:      () => api.get('/admin/credits/grants'),
+  grant:       (payload) => api.post('/admin/credits/grant', payload),
+};
