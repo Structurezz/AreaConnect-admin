@@ -206,3 +206,16 @@ export const campaignAPI = {
   sendEmail: (id)     => api.post(`/campaigns/${id}/send-email`),
   generateEmail: (payload) => api.post('/campaigns/generate-email', payload),
 };
+
+// Calls — AreaConnect admins call estate managers / guards (free). Admins
+// aren't in an estate, so they use the /calls/admin routes.
+export const callAPI = {
+  directory: () => api.get('/calls/admin/directory'),
+  history:   () => api.get('/calls/admin/history'),
+  start:     (calleeId) => api.post('/calls/admin', { calleeId }),
+  cancel:    (id) => api.post(`/calls/admin/${id}/cancel`),
+  end:       (id) => api.post(`/calls/admin/${id}/end`),
+  // Admins don't receive calls; kept so the shared call engine has them.
+  answer:    (id) => api.post(`/calls/admin/${id}/end`),
+  decline:   (id) => api.post(`/calls/admin/${id}/end`),
+};

@@ -1,6 +1,9 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
+import { CallProvider } from './context/CallContext';
+import CallOverlay from './components/calls/CallOverlay';
+import Calls from './pages/Calls';
 import AppLayout from './components/layout/AppLayout';
 import { LoadingScreen } from './components/ui/Spinner';
 import { Toaster } from 'react-hot-toast';
@@ -72,6 +75,7 @@ function AppRoutes() {
       <Route path="/podcast" element={<RequireAdmin><PodcastStudio /></RequireAdmin>} />
       <Route path="/visitor-insights" element={<RequireAdmin><VisitorInsights /></RequireAdmin>} />
       <Route path="/withdrawals" element={<RequireAdmin><Withdrawals /></RequireAdmin>} />
+      <Route path="/calls" element={<RequireAdmin><Calls /></RequireAdmin>} />
       <Route path="/transactions" element={<RequireAdmin><Transactions /></RequireAdmin>} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -84,6 +88,8 @@ export default function App() {
     <BrowserRouter>
       <AuthProvider>
         <SocketProvider>
+          <CallProvider>
+          <CallOverlay />
           <AppRoutes />
           <HostStudioResumePill />
           <Toaster position="top-right" toastOptions={{
@@ -98,6 +104,7 @@ export default function App() {
             success: { iconTheme: { primary: '#10B981', secondary: '#ECFDF5' } },
             error:   { iconTheme: { primary: '#EF4444', secondary: '#FEF2F2' } },
           }} />
+          </CallProvider>
         </SocketProvider>
       </AuthProvider>
     </BrowserRouter>

@@ -28,6 +28,8 @@ export const SocketProvider = ({ children }) => {
       withCredentials: true,
       transports: ['polling', 'websocket'],
       upgrade: true,
+      // Read on every (re)connect so the server can verify who we are.
+      auth: (cb) => cb({ token: localStorage.getItem('accessToken') }),
     });
 
     // Attach any subscriptions that were queued before the socket was created.
@@ -66,9 +68,17 @@ export const SocketProvider = ({ children }) => {
   }, []);
 
   const emit = useCallback((event, data) => socketRef.current?.emit(event, data), []);
+  // Fire-and-forget, dropped if the connection is congested (live call audio).
+  const sendVolatile = useCallback((event, ...args) => { socketRef.current?.volatile.emit(event, ...args); }, []);
+  // Emit and wait for the server's acknowledgement (resolves false on timeout).
+  const emitAck = useCallback((event, data, timeoutMs = 4000) => new Promise((resolve) => {
+    const sock = socketRef.current;
+    if (!sock) return resolve(false);
+    sock.timeout(timeoutMs).emit(event, data, (err) => resolve(!err));
+  }), []);
 
   return (
-    <SocketContext.Provider value={{ socket: socketRef.current, connected, subscribe, emit }}>
+    <SocketContext.Provider value={{ socket: socketRef.current, connected, subscribe, emit, emitAck, sendVolatile }}>
       {children}
     </SocketContext.Provider>
   );
