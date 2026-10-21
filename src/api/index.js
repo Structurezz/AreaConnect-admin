@@ -137,6 +137,7 @@ export const pitchAPI = {
   seed:         ()       => api.post('/pitch/prospects/seed'),
   sendEmails:   (data)   => api.post('/pitch/prospects/email', data),
   generate:     (data)   => api.post('/pitch/prospects/generate', data),
+  searchOptions: ()      => api.get('/pitch/prospects/search-options'),
 };
 
 // Alerts

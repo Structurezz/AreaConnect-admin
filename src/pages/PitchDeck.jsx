@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { pitchAPI } from '../api';
 import toast from 'react-hot-toast';
+import LeadSearchPanel from '../components/LeadSearchPanel';
+import { NIGERIA_STATES } from '../utils/nigeriaStates';
 import {
   Send, Users, Building2, Shield, CreditCard, MessageSquare,
   BarChart2, Globe, ChevronLeft, ChevronRight, Search,
@@ -266,6 +268,7 @@ const TYPE_COLORS = {
   property_company: { bg: '#FEF3C7', color: '#D97706', label: 'Prop. Company' },
   investment_firm:  { bg: '#FDF4FF', color: '#9333EA', label: 'Investment' },
   government:       { bg: '#F0F9FF', color: '#0284C7', label: 'Government' },
+  residents_assoc:  { bg: '#FFF1F2', color: '#E11D48', label: 'Residents Assoc.' },
 };
 
 const STATUS_COLORS = {
@@ -688,7 +691,8 @@ export default function PitchDeck() {
   const [filterStatus, setFilterStatus] = useState('');
   const [filterType, setFilterType] = useState('');
   const [statusChanging, setStatusChanging] = useState(null);
-  const [generating, setGenerating] = useState(false);
+  const [filterState, setFilterState] = useState('');
+  const [leadPanelOpen, setLeadPanelOpen] = useState(false);
 
   const loadProspects = async () => {
     setLoading(true);
@@ -697,6 +701,7 @@ export default function PitchDeck() {
       if (search)       params.search = search;
       if (filterStatus) params.status = filterStatus;
       if (filterType)   params.type   = filterType;
+      if (filterState)  params.state  = filterState;
       const [pRes, sRes] = await Promise.all([
         pitchAPI.getProspects(params),
         pitchAPI.getStats(),
@@ -710,7 +715,7 @@ export default function PitchDeck() {
     }
   };
 
-  useEffect(() => { loadProspects(); }, [search, filterStatus, filterType]);
+  useEffect(() => { loadProspects(); }, [search, filterStatus, filterType, filterState]);
 
   const toggleSelect = (id) => {
     setSelected(prev => {
@@ -745,24 +750,6 @@ export default function PitchDeck() {
       toast.error(err?.response?.data?.message || 'Failed to send emails');
     } finally {
       setSending(false);
-    }
-  };
-
-  const handleGenerate = async (count = 25) => {
-    setGenerating(true);
-    try {
-      const res = await pitchAPI.generate({ count });
-      const { added, total } = res.data;
-      if (added === 0) {
-        toast('No new prospects generated — all were duplicates. Try again.');
-      } else {
-        toast.success(`Added ${added} new prospects! Total: ${total}`);
-      }
-      loadProspects();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'Generation failed');
-    } finally {
-      setGenerating(false);
     }
   };
 
@@ -957,7 +944,7 @@ export default function PitchDeck() {
               <div style={{ position:'relative', flex:'1', minWidth:160 }}>
                 <Search size={14} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#94A3B8' }} />
                 <input className="input-field" value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="Search name, company, city…"
+                  placeholder="Search name, company, city, state…"
                   style={{ paddingLeft:32, height:36, fontSize:13 }} />
               </div>
               <select className="input-field" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
@@ -970,14 +957,18 @@ export default function PitchDeck() {
                 <option value="">All Types</option>
                 {Object.entries(TYPE_COLORS).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
               </select>
+              <select className="input-field" value={filterState} onChange={e => setFilterState(e.target.value)}
+                style={{ height:36, fontSize:13, width:140 }}>
+                <option value="">All States</option>
+                {NIGERIA_STATES.map(st => <option key={st} value={st}>{st}</option>)}
+              </select>
               <button onClick={loadProspects} className="btn-outline flex items-center gap-1.5" style={{ height:36, fontSize:13 }}>
                 <RefreshCw size={13} /> Refresh
               </button>
 
-              <button onClick={() => handleGenerate(25)} disabled={generating}
-                style={{ height:36, fontSize:13, padding:'0 14px', borderRadius:8, background:'linear-gradient(135deg,#8B5CF6,#7C3AED)', color:'#fff', fontWeight:600, border:'none', cursor: generating ? 'not-allowed' : 'pointer', display:'flex', alignItems:'center', gap:6, opacity: generating ? 0.7 : 1 }}>
-                {generating ? <RefreshCw size={13} className="animate-spin" /> : <Zap size={13} />}
-                {generating ? 'Generating…' : 'AI Generate 25 More'}
+              <button onClick={() => setLeadPanelOpen(true)}
+                style={{ height:36, fontSize:13, padding:'0 14px', borderRadius:8, background:'linear-gradient(135deg,#8B5CF6,#7C3AED)', color:'#fff', fontWeight:600, border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                <Zap size={13} /> Find Leads
               </button>
 
               {selected.size > 0 && (
@@ -1004,16 +995,16 @@ export default function PitchDeck() {
                         {selected.size === prospects.length && prospects.length > 0 ? <CheckSquare size={15} style={{ color:'#6366F1' }} /> : <Square size={15} />}
                       </button>
                     </th>
-                    {['Name & Company','City','Type','Website','Status','Last Emailed','Actions'].map(h => (
+                    {['Name & Company','Location','Type','Website','Status','Last Emailed','Actions'].map(h => (
                       <th key={h} style={{ padding:'10px 12px', textAlign:'left', fontSize:11, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'0.06em', whiteSpace:'nowrap' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={7} style={{ padding:40, textAlign:'center', color:'#94A3B8' }}>Loading prospects…</td></tr>
+                    <tr><td colSpan={8} style={{ padding:40, textAlign:'center', color:'#94A3B8' }}>Loading prospects…</td></tr>
                   ) : prospects.length === 0 ? (
-                    <tr><td colSpan={7} style={{ padding:40, textAlign:'center', color:'#94A3B8' }}>No prospects found</td></tr>
+                    <tr><td colSpan={8} style={{ padding:40, textAlign:'center', color:'#94A3B8' }}>No prospects found</td></tr>
                   ) : prospects.map((p, i) => {
                     const tc = TYPE_COLORS[p.type] || TYPE_COLORS.estate_manager;
                     const sc = STATUS_COLORS[p.status] || STATUS_COLORS.new;
@@ -1031,7 +1022,10 @@ export default function PitchDeck() {
                           <div style={{ fontSize:11, color:'#64748B', marginTop:1 }}>{p.company}</div>
                           <div style={{ fontSize:11, color:'#94A3B8' }}>{p.email}</div>
                         </td>
-                        <td style={{ padding:'10px 12px', color:'#64748B' }}>{p.city || '—'}</td>
+                        <td style={{ padding:'10px 12px', color:'#64748B' }}>
+                          <div>{p.city || '—'}</div>
+                          {p.state && p.state !== p.city && <div style={{ fontSize:10, color:'#94A3B8' }}>{p.state}</div>}
+                        </td>
                         <td style={{ padding:'10px 12px' }}>
                           <span style={{ background:tc.bg, color:tc.color, fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20 }}>{tc.label}</span>
                         </td>
@@ -1074,6 +1068,7 @@ export default function PitchDeck() {
           </div>
         )}
       </div>
+      <LeadSearchPanel open={leadPanelOpen} onClose={() => setLeadPanelOpen(false)} onDone={loadProspects} />
     </div>
   );
 }
