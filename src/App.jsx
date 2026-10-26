@@ -18,7 +18,7 @@ import EstateDetail from './pages/EstateDetail';
 import Plans from './pages/Plans';
 import Subscriptions from './pages/Subscriptions';
 import Analytics from './pages/Analytics';
-import Revenue from './pages/Revenue';
+import Finance from './pages/Finance';
 import AdminUsers from './pages/Users';
 import Operations from './pages/Operations';
 import PitchDeck from './pages/PitchDeck';
@@ -29,9 +29,7 @@ import DefaultTracks from './pages/DefaultTracks';
 import PodcastStudio from './pages/PodcastStudio';
 import VisitorInsights from './pages/VisitorInsights';
 import HostStudioResumePill from './components/HostStudioResumePill';
-import Withdrawals from './pages/Withdrawals';
 import MarketplaceRevenue from './pages/MarketplaceRevenue';
-import Transactions from './pages/Transactions';
 
 function RequireAdmin({ children }) {
   const { user, loading } = useAuth();
@@ -66,7 +64,8 @@ function AppRoutes() {
       <Route path="/plans" element={<RequireAdmin><Plans /></RequireAdmin>} />
       <Route path="/subscriptions" element={<RequireAdmin><Subscriptions /></RequireAdmin>} />
       <Route path="/analytics" element={<RequireAdmin><Analytics /></RequireAdmin>} />
-      <Route path="/revenue" element={<RequireAdmin><Revenue /></RequireAdmin>} />
+      <Route path="/finance" element={<RequireAdmin><Finance /></RequireAdmin>} />
+      <Route path="/revenue" element={<Navigate to="/finance" replace />} />
       <Route path="/users" element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
       <Route path="/operations" element={<RequireAdmin><Operations /></RequireAdmin>} />
       <Route path="/pitch-deck" element={<RequireAdmin><PitchDeck /></RequireAdmin>} />
@@ -77,11 +76,11 @@ function AppRoutes() {
       <Route path="/lounge-defaults" element={<RequireAdmin><DefaultTracks /></RequireAdmin>} />
       <Route path="/podcast" element={<RequireAdmin><PodcastStudio /></RequireAdmin>} />
       <Route path="/visitor-insights" element={<RequireAdmin><VisitorInsights /></RequireAdmin>} />
-      <Route path="/withdrawals" element={<RequireAdmin><Withdrawals /></RequireAdmin>} />
+      <Route path="/withdrawals" element={<Navigate to="/finance?tab=payouts" replace />} />
       <Route path="/marketplace" element={<RequireAdmin><MarketplaceRevenue /></RequireAdmin>} />
       <Route path="/calls" element={<RequireAdmin><Calls /></RequireAdmin>} />
       <Route path="/call-credits" element={<RequireAdmin><CallCredits /></RequireAdmin>} />
-      <Route path="/transactions" element={<RequireAdmin><Transactions /></RequireAdmin>} />
+      <Route path="/transactions" element={<Navigate to="/finance?tab=transactions" replace />} />
       <Route path="/" element={<Navigate to="/dashboard" replace />} />
       <Route path="*" element={<Navigate to="/dashboard" replace />} />
     </Routes>

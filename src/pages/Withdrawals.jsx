@@ -3,11 +3,9 @@ import { withdrawalAPI } from '../api';
 import toast from 'react-hot-toast';
 import {
   Wallet, RefreshCw, Check, X, Zap, Copy, Clock, Building2,
-  CheckCircle2, XCircle, Search, Landmark, AlertTriangle, KeyRound,
+  CheckCircle2, XCircle, Search, Landmark, AlertTriangle, KeyRound, ArrowUpRight,
 } from 'lucide-react';
-import { formatDistanceToNow, format } from 'date-fns';
-import PageHeader from '../components/ui/PageHeader';
-import StatCard from '../components/ui/StatCard';
+import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
 
 const STATUS = {
   pending: { label: 'Pending',  badge: 'yellow', icon: Clock },
@@ -253,251 +251,137 @@ export default function Withdrawals() {
 
   const surplusColor = balance?.surplus == null ? 'text-[#98A2B3]' : balance.surplus >= 0 ? 'text-[#067647]' : 'text-[#B42318]';
 
-  return (
-    <div className="max-w-[1400px] mx-auto animate-fade-in pb-12">
-      <PageHeader
-        title="Manager Withdrawals"
-        description="Managers withdraw straight to their bank via Paystack. Pending items are transfers still in flight or requests that need your attention."
-        actions={
-          <button onClick={refresh} className="btn-outline">
-            <RefreshCw size={14} className={loading || balanceLoading ? 'animate-spin' : ''} /> Refresh
-          </button>
-        }
-      />
+  const short = balance?.surplus != null && balance.surplus < 0;
+  const groups = filtered.reduce((m, w) => {
+    const k = format(new Date(w.createdAt), 'yyyy-MM-dd'); (m[k] ||= []).push(w); return m;
+  }, {});
+  const dayTitle = (k) => { const d = new Date(`${k}T00:00:00`); return isToday(d) ? 'Today' : isYesterday(d) ? 'Yesterday' : format(d, 'EEEE, d MMM yyyy'); };
+  const ROW_TONE = { pending: 'bg-[#FFFAEB] text-[#B54708]', success: 'bg-[#F2F4F7] text-[#344054]', failed: 'bg-[#FEF3F2] text-[#D92D20]' };
 
-      {/* Paystack balance vs manager liabilities */}
-      <div className="card mb-4">
-        <div className="card-header">
-          <div className="flex items-center gap-2">
-            <Landmark size={15} className="text-[#475467]" />
-            <span className="card-title">Paystack balance</span>
-            {balance?.testMode && <span className="badge badge-yellow">Test mode</span>}
-            {balanceLoading && <RefreshCw size={12} className="animate-spin text-[#98A2B3]" />}
+  return (
+    <div className="max-w-[1400px] mx-auto animate-fade-in pb-12 space-y-4">
+      {/* Payout account summary */}
+      <div className="relative overflow-hidden rounded-2xl p-6 text-white" style={{ background: 'radial-gradient(120% 160% at 100% 0%, #065F46 0%, #0B1220 55%)' }}>
+        <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full border border-white/10" />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[12px] text-white/60 flex items-center gap-1.5">
+              <Landmark size={13} /> Manager payouts · Paystack transfers
+              {balance?.testMode && <span className="px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-200 text-[10.5px] font-semibold">TEST MODE</span>}
+            </p>
+            <p className="mt-4 text-[12.5px] text-white/70">Owed to managers</p>
+            <p className="mt-1 text-[38px] leading-none font-semibold tracking-tight tabular-nums">{balance ? fmt(balance.owed) : balanceLoading ? '…' : '—'}</p>
+            <p className="mt-2 text-[12px] text-white/55">
+              {balance ? <>{fmt(balance.walletBalances)} in estate wallets{balance.queued?.count > 0 && <> · {fmt(balance.queued.total)} queued ({balance.queued.count})</>}</> : 'Couldn’t load balance'}
+            </p>
           </div>
+          <button onClick={refresh} className="p-2 rounded-lg text-white/70 hover:text-white hover:bg-white/10" title="Refresh">
+            <RefreshCw size={16} className={loading || balanceLoading ? 'animate-spin' : ''} />
+          </button>
         </div>
-        {!balanceLoading && !balance ? (
-          <p className="px-5 py-4 text-[13px] text-[#B42318]">Couldn't load balance.</p>
-        ) : !balance ? (
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-5 py-4">
-            {[0, 1, 2].map(i => <div key={i} className="space-y-2"><div className="skeleton h-3 w-28" /><div className="skeleton h-6 w-36" /></div>)}
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#EAECF0]">
-              <div className="px-5 py-4">
-                <div className="text-[12px] font-medium text-[#475467]">Available on Paystack</div>
-                <div className="text-[22px] font-semibold tracking-tight mt-1 text-[#101828] tabular-nums">
-                  {balance.paystack ? fmt(balance.paystack.balance) : '—'}
-                </div>
-                {balance.paystackError && (
-                  <div className="text-[11.5px] mt-0.5 text-[#B42318]">{balance.paystackError}</div>
-                )}
-              </div>
-              <div className="px-5 py-4">
-                <div className="text-[12px] font-medium text-[#475467]">Owed to managers</div>
-                <div className="text-[22px] font-semibold tracking-tight mt-1 text-[#B54708] tabular-nums">{fmt(balance.owed)}</div>
-                <div className="text-[11.5px] mt-0.5 text-[#98A2B3] tabular-nums">
-                  {fmt(balance.walletBalances)} in wallets
-                  {balance.queued.count > 0 && <> · {fmt(balance.queued.total)} queued ({balance.queued.count})</>}
-                </div>
-              </div>
-              <div className="px-5 py-4">
-                <div className="text-[12px] font-medium text-[#475467]">Safe to move to bank</div>
-                <div className={`text-[22px] font-semibold tracking-tight mt-1 tabular-nums ${surplusColor}`}>
-                  {balance.surplus == null ? '—' : fmt(Math.max(0, balance.surplus))}
-                </div>
-              </div>
+        <div className="relative mt-6 grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            ['Paystack balance', balance?.paystack ? fmt(balance.paystack.balance) : '—', balance?.paystackError || 'available now'],
+            ['Safe to move to bank', balance?.surplus == null ? '—' : fmt(Math.max(0, balance.surplus)), 'after manager wallets', short ? 'text-red-300' : 'text-emerald-300'],
+            ['Pending requests', fmt(totals.pending?.total || 0), `${totals.pending?.count || 0} awaiting action`, totals.pending?.count ? 'text-amber-200' : ''],
+            ['Paid out', fmt(totals.success?.total || 0), `${totals.success?.count || 0} transfers · ${totals.failed?.count || 0} rejected`],
+          ].map(([l, v, h, c]) => (
+            <div key={l} className="rounded-xl bg-white/[0.06] border border-white/10 px-3.5 py-2.5">
+              <p className="text-[11px] text-white/55">{l}</p>
+              <p className={`mt-0.5 text-[17px] font-semibold tabular-nums ${c || 'text-white'}`}>{v}</p>
+              <p className="text-[10.5px] text-white/40 truncate">{h}</p>
             </div>
-            {balance.surplus != null && balance.surplus < 0 && (
-              <div className="mx-5 mb-4 px-3 py-2.5 rounded-lg flex items-start gap-2 text-[12.5px] bg-[#FEF3F2] border border-[#FECDCA] text-[#B42318]">
-                <AlertTriangle size={14} className="mt-0.5 shrink-0" />
-                <span>Paystack balance is <span className="tabular-nums font-semibold">{fmt(-balance.surplus)}</span> short of what managers can withdraw. Top up the balance or some withdrawals will fail.</span>
-              </div>
-            )}
-          </>
+          ))}
+        </div>
+        {short && (
+          <div className="relative mt-4 px-3 py-2.5 rounded-lg flex items-start gap-2 text-[12.5px] bg-red-500/15 border border-red-400/30 text-red-100">
+            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+            <span>Paystack is <b className="tabular-nums">{fmt(-balance.surplus)}</b> short of what managers can withdraw. Top up or some payouts will fail.</span>
+          </div>
         )}
       </div>
 
-      {/* Summary cards */}
-      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-6">
-        <StatCard label="Pending" value={fmt(totals.pending?.total || 0)} icon={Clock} color="amber"
-          hint={`${totals.pending?.count || 0} request${(totals.pending?.count || 0) === 1 ? '' : 's'}`} />
-        <StatCard label="Paid" value={fmt(totals.success?.total || 0)} icon={CheckCircle2} color="green"
-          hint={`${totals.success?.count || 0} request${(totals.success?.count || 0) === 1 ? '' : 's'}`} />
-        <StatCard label="Rejected" value={fmt(totals.failed?.total || 0)} icon={XCircle} color="red"
-          hint={`${totals.failed?.count || 0} request${(totals.failed?.count || 0) === 1 ? '' : 's'}`} />
-        <StatCard label="Owing managers" value={fmt(totals.pending?.total || 0)} icon={Wallet} color="blue"
-          hint={`${totals.pending?.count || 0} request${(totals.pending?.count || 0) === 1 ? '' : 's'}`} />
-      </div>
-
-      {/* Ledger */}
+      {/* Payout statement */}
       <div className="card overflow-hidden">
-        <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between px-4 py-3 border-b border-[#E4E7EC]">
-          <div className="max-w-full overflow-x-auto">
-            <div className="tabs">
-              {TABS.map(t => (
-                <button key={t.v} onClick={() => setTab(t.v)} className={`tab ${tab === t.v ? 'active' : ''}`}>
-                  {t.label}
-                  {t.totals && (
-                    <span className="ml-1.5 text-[11px] tabular-nums text-[#98A2B3]">{t.totals.count || 0}</span>
-                  )}
-                </button>
-              ))}
-            </div>
+        <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between px-5 py-3 border-b border-[#F2F4F7]">
+          <div className="tabs overflow-x-auto">
+            {TABS.map((t) => (
+              <button key={t.v} onClick={() => setTab(t.v)} className={`tab ${tab === t.v ? 'active' : ''}`}>
+                {t.label}{t.totals && <span className="ml-1.5 text-[11px] tabular-nums text-[#98A2B3]">{t.totals.count || 0}</span>}
+              </button>
+            ))}
           </div>
-          <div className="relative w-full md:w-80">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
-            <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search manager, estate, reference, account…"
-              className="input-field pl-9" />
+          <div className="flex items-center gap-2 h-9 px-3 rounded-lg border border-[#D0D5DD] w-full md:w-80">
+            <Search size={14} className="text-[#98A2B3]" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Manager, estate, reference, account" className="flex-1 min-w-0 bg-transparent outline-none text-[13px]" />
           </div>
         </div>
 
         {loading ? (
-          <div className="p-4 space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => <div key={i} className="skeleton h-10" />)}
-          </div>
+          <div className="p-5 space-y-3">{Array.from({ length: 5 }).map((_, i) => <div key={i} className="skeleton h-12" />)}</div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-14 text-center px-4">
-            <span className="w-10 h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center mb-3">
-              <Wallet size={18} className="text-[#98A2B3]" />
-            </span>
-            <p className="text-[13.5px] font-semibold text-[#101828]">
-              {search ? 'No matching withdrawals' : tab === 'pending' ? 'No pending requests' : `No ${tab} withdrawals yet`}
-            </p>
-            <p className="mt-0.5 text-[12px] text-[#98A2B3]">
-              {search ? 'Try a different search term.' : tab === 'pending' ? 'All caught up.' : 'They will show up here once processed.'}
-            </p>
+            <span className="w-10 h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center mb-3"><Wallet size={18} className="text-[#98A2B3]" /></span>
+            <p className="text-[13.5px] font-semibold text-[#101828]">{search ? 'No matching payouts' : tab === 'pending' ? 'No pending requests' : `No ${tab === 'success' ? 'paid' : tab === 'failed' ? 'rejected' : ''} payouts yet`}</p>
+            <p className="mt-0.5 text-[12px] text-[#98A2B3]">{search ? 'Try a different search term.' : tab === 'pending' ? 'All caught up.' : 'They will show up here once processed.'}</p>
           </div>
         ) : (
-          <>
-            {/* Desktop table */}
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="table min-w-[1000px]">
-                <thead>
-                  <tr>
-                    <th>Estate · Requester</th>
-                    <th>Pay to</th>
-                    <th>Requested</th>
-                    <th>Status</th>
-                    <th className="!text-right">Amount</th>
-                    <th className="!text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(w => {
-                    const user = w.userId || {};
-                    const estate = w.estateId || {};
-                    return (
-                      <tr key={w._id} className="align-top">
-                        <td className="!align-top">
-                          <div className="flex items-center gap-1.5">
-                            <span className="cell-strong">{estate.name || '—'}</span>
-                            {estate.estateCode && <span className="badge badge-gray !text-[10px]">{estate.estateCode}</span>}
-                          </div>
-                          <div className="text-[12px] text-[#475467] mt-0.5">
-                            {user.name || (w.source === 'marketplace' ? 'Seller' : 'Manager')} · {user.email || '—'}
-                            {user.phone && <> · {user.phone}</>}
-                          </div>
-                          <div className="text-[11px] text-[#98A2B3] mt-0.5">
-                            Ref <span className="font-mono">{w.reference}</span>
-                          </div>
-                        </td>
-                        <td className="!align-top">
-                          <div className="flex items-start gap-2">
-                            <div className="min-w-0">
-                              <div className="font-mono text-[12.5px] text-[#101828]">{w.accountNumber}</div>
-                              <div className="text-[12px] text-[#475467]">{w.bankName}</div>
-                              <div className="text-[11.5px] text-[#98A2B3]">{w.accountName || '—'}</div>
-                            </div>
-                            <button onClick={() => copyBank(w)} title="Copy bank details" className="btn-ghost !p-1.5">
-                              <Copy size={13} />
-                            </button>
-                          </div>
-                        </td>
-                        <td className="!align-top whitespace-nowrap">
-                          <div className="text-[12.5px] text-[#101828] tabular-nums">{format(new Date(w.createdAt), 'MMM d, yyyy HH:mm')}</div>
-                          <div className="text-[11.5px] text-[#98A2B3]">{formatDistanceToNow(new Date(w.createdAt))} ago</div>
-                        </td>
-                        <td className="!align-top">
-                          <div className="flex flex-col items-start gap-1">
-                            <Pill status={w.status} />
-                            {extraBadges(w)}
-                          </div>
-                          {w.status !== 'pending' && w.failureReason && (
-                            <div className="mt-1 text-[11.5px] text-[#98A2B3] max-w-[200px]">
-                              {w.status === 'failed' ? 'Reason: ' : 'Note: '}{w.failureReason}
-                            </div>
-                          )}
-                        </td>
-                        <td className="!align-top text-right tabular-nums text-[14px] font-semibold text-[#101828] whitespace-nowrap">
-                          {fmt(w.amount)}
-                        </td>
-                        <td className="!align-top">
-                          <div className="flex flex-wrap justify-end gap-1.5 max-w-[300px] ml-auto">
-                            {renderActions(w)}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile list */}
-            <div className="lg:hidden divide-y divide-[#EAECF0]">
-              {filtered.map(w => {
-                const user = w.userId || {};
-                const estate = w.estateId || {};
-                return (
-                  <div key={w._id} className="p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <Building2 size={13} className="text-[#98A2B3]" />
-                          <span className="text-[13.5px] font-semibold text-[#101828]">{estate.name || '—'}</span>
-                          {estate.estateCode && <span className="badge badge-gray !text-[10px]">{estate.estateCode}</span>}
+          <div className="max-h-[75vh] overflow-y-auto">
+            {Object.entries(groups).map(([day, rows]) => (
+              <div key={day}>
+                <div className="sticky top-0 z-[1] flex justify-between px-5 py-1.5 bg-[#F9FAFB] border-y border-[#F2F4F7] text-[11.5px]">
+                  <span className="font-semibold text-[#475467]">{dayTitle(day)}</span>
+                  <span className="text-[#98A2B3] tabular-nums">−{fmt(rows.filter((w) => w.status !== 'failed').reduce((t, w) => t + w.amount, 0))}</span>
+                </div>
+                {rows.map((w) => {
+                  const user = w.userId || {};
+                  const estate = w.estateId || {};
+                  const st = STATUS[w.status] || STATUS.pending;
+                  return (
+                    <div key={w._id} className="px-5 py-3 border-b border-[#F9FAFB] last:border-0 hover:bg-[#FCFCFD]">
+                      <div className="flex items-center gap-3">
+                        <span className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${ROW_TONE[w.status] || ROW_TONE.pending}`}>
+                          {w.status === 'pending' ? <Clock size={16} /> : w.status === 'failed' ? <XCircle size={16} /> : <ArrowUpRight size={16} />}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[13px] font-medium text-[#101828] truncate">
+                            {estate.name || (w.source === 'marketplace' ? 'Marketplace seller' : 'Estate')}
+                            {estate.estateCode && <span className="font-mono text-[11px] text-[#98A2B3] ml-1.5">{estate.estateCode}</span>}
+                            <span className="font-normal text-[#667085]"> · {user.name || 'Manager'}</span>
+                          </p>
+                          <p className="text-[11.5px] text-[#98A2B3] truncate">
+                            {format(new Date(w.createdAt), 'HH:mm')} · {formatDistanceToNow(new Date(w.createdAt))} ago · <span className="font-mono">{w.reference}</span>
+                          </p>
                         </div>
-                        <div className="text-[12px] text-[#475467] mt-0.5 break-words">
-                          {user.name || (w.source === 'marketplace' ? 'Seller' : 'Manager')} · {user.email || '—'}
-                          {user.phone && <> · {user.phone}</>}
+                        <div className="hidden md:flex items-center gap-2 min-w-0 w-60 px-3 py-1.5 rounded-lg bg-[#F9FAFB] border border-[#F2F4F7]">
+                          <Landmark size={13} className="text-[#98A2B3] flex-shrink-0" />
+                          <div className="min-w-0 flex-1 leading-tight">
+                            <p className="text-[12px] text-[#101828] truncate"><span className="font-mono">{w.accountNumber}</span> · {w.bankName}</p>
+                            <p className="text-[11px] text-[#98A2B3] truncate">{w.accountName || '—'}</p>
+                          </div>
+                          <button onClick={() => copyBank(w)} title="Copy bank details" className="text-[#98A2B3] hover:text-[#101828]"><Copy size={12} /></button>
+                        </div>
+                        <div className="text-right flex-shrink-0 w-28">
+                          <p className={`text-[13.5px] font-semibold tabular-nums text-[#101828] ${w.status === 'failed' ? 'line-through opacity-50' : ''}`}>−{fmt(w.amount)}</p>
+                          <p className={`text-[11px] ${w.status === 'pending' ? 'text-[#B54708]' : w.status === 'failed' ? 'text-[#B42318]' : 'text-[#98A2B3]'}`}>
+                            {w.status === 'pending' && w.paystackStatus === 'otp' ? 'Awaiting OTP' : w.status === 'success' ? 'Sent' : st.label}
+                          </p>
                         </div>
                       </div>
-                      <div className="text-[16px] font-semibold text-[#101828] tabular-nums whitespace-nowrap">{fmt(w.amount)}</div>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5 mt-2">
-                      <Pill status={w.status} />
-                      {extraBadges(w)}
-                    </div>
-                    <div className="text-[11px] mt-1.5 text-[#98A2B3] break-all">
-                      {formatDistanceToNow(new Date(w.createdAt))} ago · {format(new Date(w.createdAt), 'MMM d, yyyy HH:mm')} · Ref <span className="font-mono">{w.reference}</span>
-                    </div>
-                    <div className="mt-3 px-3 py-2.5 rounded-lg flex items-center justify-between gap-3 bg-[#F9FAFB] border border-[#EAECF0]">
-                      <div className="min-w-0">
-                        <div className="text-[11px] font-medium text-[#98A2B3]">Pay to</div>
-                        <div className="font-mono text-[12.5px] text-[#101828]">
-                          {w.accountNumber} <span className="text-[#475467]">· {w.bankName}</span>
+                      {(w.status === 'pending' || w.failureReason || w.source === 'marketplace') && (
+                        <div className="mt-2 pl-12 flex flex-wrap items-center gap-1.5">
+                          {w.source === 'marketplace' && <span className="badge badge-gray">Marketplace seller</span>}
+                          {w.status !== 'pending' && w.failureReason && <span className="text-[11.5px] text-[#667085]">{w.status === 'failed' ? 'Reason: ' : 'Note: '}{w.failureReason}</span>}
+                          <span className="md:hidden"><button onClick={() => copyBank(w)} className={`btn-outline ${SM}`}><Copy size={12} /> {w.bankName} ••{(w.accountNumber || '').slice(-4)}</button></span>
+                          {w.status === 'pending' && renderActions(w)}
                         </div>
-                        <div className="text-[12px] text-[#475467]">{w.accountName || '—'}</div>
-                      </div>
-                      <button onClick={() => copyBank(w)} className={`btn-outline ${SM}`}>
-                        <Copy size={12} /> Copy
-                      </button>
+                      )}
                     </div>
-                    {w.status !== 'pending' && w.failureReason && (
-                      <div className="mt-2 text-[12px] text-[#98A2B3]">
-                        {w.status === 'failed' ? 'Reason: ' : 'Note: '}{w.failureReason}
-                      </div>
-                    )}
-                    {w.status === 'pending' && (
-                      <div className="mt-3 flex flex-wrap gap-1.5">{renderActions(w)}</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

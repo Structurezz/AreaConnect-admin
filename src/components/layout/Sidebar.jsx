@@ -2,7 +2,7 @@ import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Building2, LogOut, CreditCard, Users, BarChart2, TrendingUp, Settings, AlertTriangle,
-  Presentation, Megaphone, Mail, Music, Radio, Eye, Wallet, Receipt, PhoneCall, Gift, ShoppingBag, Rocket,
+  Presentation, Megaphone, Mail, Music, Radio, Eye, Wallet, Receipt, PhoneCall, Gift, ShoppingBag, Rocket, Landmark,
 } from 'lucide-react';
 
 export const NAV = [
@@ -27,10 +27,8 @@ export const NAV = [
   {
     section: 'Finance',
     links: [
-      { to: '/revenue',       icon: TrendingUp,  label: 'Revenue' },
+      { to: '/finance',       icon: Landmark,    label: 'Finance' },
       { to: '/subscriptions', icon: Settings,    label: 'Subscriptions' },
-      { to: '/transactions',  icon: Receipt,     label: 'Transactions' },
-      { to: '/withdrawals',   icon: Wallet,      label: 'Withdrawals' },
       { to: '/marketplace',   icon: ShoppingBag, label: 'Marketplace' },
       { to: '/call-credits',  icon: Gift,        label: 'Call credits' },
       { to: '/plans',         icon: CreditCard,  label: 'Plans & pricing' },
