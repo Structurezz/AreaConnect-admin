@@ -7,6 +7,8 @@ import {
 import { adminAPI, planAPI, estateAPI } from '../api';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
+import PageHeader from '../components/ui/PageHeader';
+import StatCard from '../components/ui/StatCard';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
@@ -28,8 +30,15 @@ export default function Analytics() {
   }, []);
 
   if (loading) return (
-    <div className="flex justify-center py-32">
-      <RefreshCw size={24} className="animate-spin" style={{ color: '#10B981' }} />
+    <div className="max-w-[1400px] mx-auto pb-12">
+      <PageHeader title="Platform analytics" description="Real-time overview of the AreaConnect platform." />
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-4">
+        {Array.from({ length: 8 }).map((_, i) => <div key={i} className="skeleton h-[104px] !rounded-xl" />)}
+      </div>
+      <div className="grid lg:grid-cols-2 gap-4">
+        <div className="skeleton h-64 !rounded-xl" />
+        <div className="skeleton h-64 !rounded-xl" />
+      </div>
     </div>
   );
 
@@ -48,149 +57,147 @@ export default function Analytics() {
   const fmtNGN = (n) => `₦${Number(n || 0).toLocaleString()}`;
 
   const kpis = [
-    { label: 'Total Estates',    value: stats?.totalEstates ?? 0,    sub: `${stats?.activeEstates ?? 0} active`, icon: Building2,  color: '#D97706' },
-    { label: 'Active Residents', value: stats?.totalResidents ?? 0,  sub: `${totalPeople} total users`, icon: Users, color: '#2563EB' },
-    { label: 'Paid MRR',         value: fmtNGN(paidMrr),             sub: compMrr ? `+${fmtNGN(compMrr)} gift` : 'live revenue', icon: TrendingUp, color: '#059669' },
-    { label: 'Visitors today',   value: stats?.visitorsToday ?? 0,   sub: `${stats?.visitorsWeek ?? 0} this week`, icon: UserCheck, color: '#0EA5E9' },
-    { label: 'Payment volume 30d', value: fmtNGN(stats?.paymentVolume30d),  sub: `${fmtNGN(stats?.paymentVolume)} all-time`, icon: Wallet, color: '#047857' },
-    { label: 'DAU / WAU / MAU',  value: `${stats?.dau ?? 0} / ${stats?.wau ?? 0} / ${stats?.mau ?? 0}`, sub: 'Logged in recently', icon: Zap, color: '#7C3AED' },
-    { label: 'Occupancy',        value: `${occupancyRate}%`,         sub: `${stats?.occupiedUnits ?? 0}/${totalUnits} units`, icon: Home, color: '#7C3AED' },
-    { label: 'Open Alerts',      value: stats?.openAlerts ?? 0,      sub: 'Platform-wide', icon: AlertCircle, color: stats?.openAlerts ? '#DC2626' : '#94A3B8' },
+    { label: 'Total estates',    value: stats?.totalEstates ?? 0,    sub: `${stats?.activeEstates ?? 0} active`, icon: Building2,  color: 'amber' },
+    { label: 'Active residents', value: stats?.totalResidents ?? 0,  sub: `${totalPeople} total users`, icon: Users, color: 'blue' },
+    { label: 'Paid MRR',         value: fmtNGN(paidMrr),             sub: compMrr ? `+${fmtNGN(compMrr)} gift` : 'live revenue', icon: TrendingUp, color: 'green' },
+    { label: 'Visitors today',   value: stats?.visitorsToday ?? 0,   sub: `${stats?.visitorsWeek ?? 0} this week`, icon: UserCheck, color: 'blue' },
+    { label: 'Payment volume 30d', value: fmtNGN(stats?.paymentVolume30d),  sub: `${fmtNGN(stats?.paymentVolume)} all-time`, icon: Wallet, color: 'green' },
+    { label: 'DAU / WAU / MAU',  value: `${stats?.dau ?? 0} / ${stats?.wau ?? 0} / ${stats?.mau ?? 0}`, sub: 'Logged in recently', icon: Zap, color: 'purple' },
+    { label: 'Occupancy',        value: `${occupancyRate}%`,         sub: `${stats?.occupiedUnits ?? 0}/${totalUnits} units`, icon: Home, color: 'green' },
+    { label: 'Open alerts',      value: stats?.openAlerts ?? 0,      sub: 'Platform-wide', icon: AlertCircle, color: stats?.openAlerts ? 'red' : 'blue' },
   ];
 
   const subHealth = [
-    { label: 'Active',   count: subStats?.active  ?? 0, color: '#10B981' },
-    { label: 'On Trial', count: subStats?.trial   ?? 0, color: '#3B82F6' },
-    { label: 'Expired',  count: subStats?.expired ?? 0, color: '#EF4444' },
+    { label: 'Active',   count: subStats?.active  ?? 0, color: '#059669' },
+    { label: 'On trial', count: subStats?.trial   ?? 0, color: '#2E90FA' },
+    { label: 'Expired',  count: subStats?.expired ?? 0, color: '#F04438' },
   ];
 
   const userBreakdown = [
-    { label: 'Estate Managers', value: stats?.totalManagers  ?? 0, color: '#D97706',  icon: Building2 },
-    { label: 'Residents',       value: stats?.totalResidents ?? 0, color: '#2563EB',  icon: Users     },
-    { label: 'Security Staff',  value: stats?.totalSecurity  ?? 0, color: '#059669',  icon: Shield    },
-    { label: 'Total Visitors',  value: stats?.totalVisitors  ?? 0, color: '#7C3AED',  icon: Eye       },
+    { label: 'Estate managers', value: stats?.totalManagers  ?? 0, color: '#059669',  icon: Building2 },
+    { label: 'Residents',       value: stats?.totalResidents ?? 0, color: '#2E90FA',  icon: Users     },
+    { label: 'Security staff',  value: stats?.totalSecurity  ?? 0, color: '#F79009',  icon: Shield    },
+    { label: 'Total visitors',  value: stats?.totalVisitors  ?? 0, color: '#7A5AF8',  icon: Eye       },
   ];
   const maxUsers = Math.max(...userBreakdown.map(u => u.value), 1);
 
+  const activeEstates   = estates.filter(e => e.isActive).length;
+  const inactiveEstates = estates.filter(e => !e.isActive).length;
+  const linkCls = 'inline-flex items-center gap-1 text-[12.5px] font-semibold text-[#059669] hover:text-[#047857]';
+  const Bar = ({ pct, color, h = 'h-1.5' }) => (
+    <div className={`${h} rounded-full bg-[#F2F4F7] overflow-hidden`}>
+      <div className={`${h} rounded-full transition-all`} style={{ width: `${pct}%`, background: color }} />
+    </div>
+  );
+
   return (
-    <div className="space-y-6 animate-fade-in pb-12">
-      <div>
-        <h1 className="text-2xl font-bold" style={{ color: '#0F172A' }}>Platform Analytics</h1>
-        <p className="text-sm mt-1" style={{ color: '#94A3B8' }}>Real-time overview of your estate management platform</p>
-      </div>
+    <div className="max-w-[1400px] mx-auto animate-fade-in pb-12">
+      <PageHeader
+        title="Platform analytics"
+        description="Real-time overview of the AreaConnect platform."
+        actions={<Link to="/revenue" className="btn-outline gap-2"><BarChart2 size={14} /> Revenue report</Link>}
+      />
 
       {/* 8 Primary KPIs */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        {kpis.map(({ label, value, sub, icon: Icon, color }) => (
-          <div key={label} className="glass-card p-5">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-xs font-medium uppercase tracking-wider" style={{ color: '#94A3B8' }}>{label}</span>
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ background: color + '14' }}>
-                <Icon size={15} style={{ color }} />
-              </div>
-            </div>
-            <div className="text-2xl font-bold" style={{ color: '#0F172A' }}>{value}</div>
-            {sub && <div className="text-[11px] mt-1" style={{ color }}>{sub}</div>}
-          </div>
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-4">
+        {kpis.map(({ label, value, sub, icon, color }) => (
+          <StatCard key={label} label={label} value={value} icon={icon} color={color} hint={sub} />
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-2 gap-4 mb-4">
         {/* Subscription Health */}
-        <div className="glass-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>
-              Subscription Health
-            </h2>
-            <Link to="/subscriptions" className="flex items-center gap-1 text-xs font-medium"
-              style={{ color: '#7C3AED' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#8B5CF6'}
-              onMouseLeave={e => e.currentTarget.style.color = '#7C3AED'}>
-              Manage <ArrowRight size={10} />
-            </Link>
+        <div className="card overflow-hidden">
+          <div className="card-header">
+            <div>
+              <h2 className="card-title">Subscription health</h2>
+              <p className="card-sub">Status of all estate subscriptions</p>
+            </div>
+            <Link to="/subscriptions" className={linkCls}>Manage <ArrowRight size={12} /></Link>
           </div>
-          <div className="space-y-3 mb-4">
-            {subHealth.map(({ label, count, color }) => (
-              <div key={label}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span style={{ color: '#475569' }}>{label}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-semibold" style={{ color: '#0F172A' }}>{count}</span>
-                    <span className="text-xs" style={{ color: '#94A3B8' }}>
-                      ({Math.round((count / subTotal) * 100)}%)
+          <div className="p-5 space-y-3.5">
+            {subHealth.map(({ label, count, color }) => {
+              const pct = Math.round((count / subTotal) * 100);
+              return (
+                <div key={label}>
+                  <div className="flex justify-between items-center text-[13px] mb-1.5">
+                    <span className="flex items-center gap-2 text-[#475467]">
+                      <span className="w-2 h-2 rounded-full" style={{ background: color }} />{label}
+                    </span>
+                    <span className="tabular-nums">
+                      <span className="font-semibold text-[#101828]">{count}</span>
+                      <span className="text-[12px] text-[#98A2B3] ml-1.5">{pct}%</span>
                     </span>
                   </div>
+                  <Bar pct={pct} color={color} h="h-2" />
                 </div>
-                <div className="h-2 rounded-full" style={{ background: '#F1F5F9' }}>
-                  <div className="h-2 rounded-full transition-all"
-                    style={{ width: `${Math.round((count / subTotal) * 100)}%`, background: color }} />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-          <div className="pt-4 flex flex-wrap gap-4" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-            {subHealth.map(({ label, count, color }) => (
-              <div key={label} className="text-center">
-                <div className="text-xl font-bold" style={{ color }}>{count}</div>
-                <div className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{label}</div>
+          <div className="grid grid-cols-4 border-t border-[#E4E7EC] divide-x divide-[#E4E7EC]">
+            {subHealth.map(({ label, count }) => (
+              <div key={label} className="px-4 py-3">
+                <div className="text-[11.5px] text-[#98A2B3]">{label}</div>
+                <div className="text-[17px] font-semibold text-[#101828] tabular-nums">{count}</div>
               </div>
             ))}
-            <div className="ml-auto text-right">
-              <div className="text-xl font-bold" style={{ color: '#059669' }}>{conversionRate}%</div>
-              <div className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>Conversion rate</div>
+            <div className="px-4 py-3">
+              <div className="text-[11.5px] text-[#98A2B3]">Conversion</div>
+              <div className="text-[17px] font-semibold text-[#059669] tabular-nums">{conversionRate}%</div>
             </div>
           </div>
         </div>
 
         {/* Plan Distribution */}
-        <div className="glass-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>
-              Plan Distribution
-            </h2>
-            <Link to="/plans" className="flex items-center gap-1 text-xs font-medium"
-              style={{ color: '#7C3AED' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#8B5CF6'}
-              onMouseLeave={e => e.currentTarget.style.color = '#7C3AED'}>
-              View Plans <ArrowRight size={10} />
-            </Link>
-          </div>
-          {subStats?.byPlan?.length ? (
-            <div className="space-y-3">
-              {subStats.byPlan.map(plan => {
-                const pct = Math.round((plan.count / Math.max(subStats.total, 1)) * 100);
-                return (
-                  <div key={plan.planId || plan._id || plan.name}>
-                    <div className="flex justify-between text-sm mb-1">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: plan.color }} />
-                        <span style={{ color: '#475569' }}>{plan.name}</span>
-                      </div>
-                      <span className="font-semibold" style={{ color: '#0F172A' }}>
-                        {plan.count} <span className="font-normal" style={{ color: '#94A3B8' }}>({pct}%)</span>
-                      </span>
-                    </div>
-                    <div className="h-2 rounded-full" style={{ background: '#F1F5F9' }}>
-                      <div className="h-2 rounded-full" style={{ width: `${pct}%`, background: plan.color }} />
-                    </div>
-                  </div>
-                );
-              })}
+        <div className="card overflow-hidden flex flex-col">
+          <div className="card-header">
+            <div>
+              <h2 className="card-title">Plan distribution</h2>
+              <p className="card-sub">Subscriptions by plan</p>
             </div>
-          ) : (
-            <p className="text-sm" style={{ color: '#94A3B8' }}>No subscription data yet</p>
-          )}
-          {subStats?.total > 0 && (
-            <div className="mt-4 pt-4 grid grid-cols-2 gap-4 text-center"
-              style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-              <div>
-                <div className="text-lg font-bold" style={{ color: '#059669' }}>{conversionRate}%</div>
-                <div className="text-xs" style={{ color: '#94A3B8' }}>Trial → Paid rate</div>
+            <Link to="/plans" className={linkCls}>View plans <ArrowRight size={12} /></Link>
+          </div>
+          <div className="p-5 flex-1">
+            {subStats?.byPlan?.length ? (
+              <div className="space-y-3.5">
+                {subStats.byPlan.map(plan => {
+                  const pct = Math.round((plan.count / Math.max(subStats.total, 1)) * 100);
+                  return (
+                    <div key={plan.planId || plan._id || plan.name}>
+                      <div className="flex justify-between items-center text-[13px] mb-1.5">
+                        <span className="flex items-center gap-2 text-[#475467] min-w-0">
+                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: plan.color || '#059669' }} />
+                          <span className="truncate">{plan.name}</span>
+                        </span>
+                        <span className="tabular-nums">
+                          <span className="font-semibold text-[#101828]">{plan.count}</span>
+                          <span className="text-[12px] text-[#98A2B3] ml-1.5">{pct}%</span>
+                        </span>
+                      </div>
+                      <Bar pct={pct} color={plan.color || '#059669'} h="h-2" />
+                    </div>
+                  );
+                })}
               </div>
-              <div>
-                <div className="text-lg font-bold" style={{ color: '#0F172A' }}>{subStats.total}</div>
-                <div className="text-xs" style={{ color: '#94A3B8' }}>Total subscriptions</div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="w-9 h-9 rounded-full bg-[#F2F4F7] flex items-center justify-center mb-2.5">
+                  <CreditCard size={16} className="text-[#98A2B3]" />
+                </div>
+                <p className="text-[13px] font-semibold text-[#101828]">No subscription data yet</p>
+                <p className="text-[12px] text-[#98A2B3]">Plans will appear once estates subscribe.</p>
+              </div>
+            )}
+          </div>
+          {subStats?.total > 0 && (
+            <div className="grid grid-cols-2 border-t border-[#E4E7EC] divide-x divide-[#E4E7EC]">
+              <div className="px-4 py-3">
+                <div className="text-[11.5px] text-[#98A2B3]">Trial → paid rate</div>
+                <div className="text-[17px] font-semibold text-[#059669] tabular-nums">{conversionRate}%</div>
+              </div>
+              <div className="px-4 py-3">
+                <div className="text-[11.5px] text-[#98A2B3]">Total subscriptions</div>
+                <div className="text-[17px] font-semibold text-[#101828] tabular-nums">{subStats.total}</div>
               </div>
             </div>
           )}
@@ -198,68 +205,73 @@ export default function Analytics() {
       </div>
 
       {/* User Breakdown */}
-      <div className="glass-card p-5">
-        <h2 className="text-xs font-semibold uppercase tracking-wider mb-5" style={{ color: '#94A3B8' }}>
-          User Breakdown Across All Estates
-        </h2>
-        <div className="grid sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="card overflow-hidden mb-4">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">User breakdown</h2>
+            <p className="card-sub">Across all estates</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 xl:grid-cols-4 divide-x divide-y xl:divide-y-0 divide-[#E4E7EC]">
           {userBreakdown.map(({ label, value, color, icon: Icon }) => {
             const pct = Math.round((value / Math.max(totalPeople + (stats?.totalVisitors ?? 0), 1)) * 100);
             return (
-              <div key={label} className="p-4 rounded-xl" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                    style={{ background: color + '12' }}>
-                    <Icon size={16} style={{ color }} />
-                  </div>
-                  <span className="text-xs font-semibold" style={{ color: '#94A3B8' }}>{pct}%</span>
+              <div key={label} className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="flex items-center gap-2 text-[12.5px] font-medium text-[#475467]">
+                    <Icon size={14} style={{ color }} /> {label}
+                  </span>
+                  <span className="text-[11.5px] text-[#98A2B3] tabular-nums">{pct}%</span>
                 </div>
-                <div className="text-2xl font-bold mb-0.5" style={{ color: '#0F172A' }}>{value}</div>
-                <div className="text-xs mb-2" style={{ color: '#94A3B8' }}>{label}</div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#E2E8F0' }}>
-                  <div className="h-full rounded-full"
-                    style={{ width: `${Math.round((value / maxUsers) * 100)}%`, background: color }} />
-                </div>
+                <div className="text-[22px] font-semibold text-[#101828] tabular-nums mb-2">{value.toLocaleString()}</div>
+                <Bar pct={Math.round((value / maxUsers) * 100)} color={color} />
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Estate Growth + ARR in row */}
-      <div className="grid lg:grid-cols-2 gap-6">
-        {/* Estate Growth Chart */}
+      {/* Estate Growth + Revenue */}
+      <div className="grid lg:grid-cols-2 gap-4 mb-4">
         {growth.length > 0 && (
-          <div className="glass-card p-5">
-            <h2 className="text-xs font-semibold uppercase tracking-wider mb-5" style={{ color: '#94A3B8' }}>
-              Estate Registrations — Last 6 Months
-            </h2>
-            <div className="flex items-end gap-2 h-28">
-              {growth.map(g => {
-                const pct = Math.max(8, Math.round((g.count / maxCount) * 100));
-                return (
-                  <div key={`${g._id.year}-${g._id.month}`} className="flex-1 flex flex-col items-center gap-1.5 group">
-                    <span className="text-xs font-semibold" style={{ color: '#475569' }}>{g.count}</span>
-                    <div className="w-full rounded-t-md transition-colors"
-                      style={{ height: `${pct}%`, background: 'rgba(16,185,129,0.50)' }}
-                      onMouseEnter={ev => ev.currentTarget.style.background = '#10B981'}
-                      onMouseLeave={ev => ev.currentTarget.style.background = 'rgba(16,185,129,0.50)'} />
-                    <span className="text-xs" style={{ color: '#94A3B8' }}>{MONTHS[g._id.month - 1]}</span>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="mt-4 pt-4 flex items-center justify-between"
-              style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
+          <div className="card overflow-hidden flex flex-col">
+            <div className="card-header">
               <div>
-                <div className="text-xs" style={{ color: '#94A3B8' }}>Total registered</div>
-                <div className="text-lg font-bold" style={{ color: '#0F172A' }}>{stats?.totalEstates ?? 0}</div>
+                <h2 className="card-title">Estate registrations</h2>
+                <p className="card-sub">Last 6 months</p>
               </div>
-              <div className="text-right">
-                <div className="text-xs" style={{ color: '#94A3B8' }}>Active rate</div>
-                <div className="text-lg font-bold" style={{ color: '#059669' }}>
+            </div>
+            <div className="p-5 flex-1">
+              <div className="relative h-36">
+                <div className="absolute inset-0 flex flex-col justify-between pointer-events-none pb-5">
+                  {[0, 1, 2, 3].map(i => <div key={i} className="border-t border-[#F2F4F7]" />)}
+                </div>
+                <div className="relative h-full flex items-end gap-3">
+                  {growth.map(g => {
+                    const pct = Math.max(6, Math.round((g.count / maxCount) * 100));
+                    return (
+                      <div key={`${g._id.year}-${g._id.month}`} className="flex-1 h-full flex flex-col items-center justify-end gap-1 group">
+                        <span className="text-[11px] font-medium text-[#475467] tabular-nums">{g.count}</span>
+                        <div className="w-full max-w-[44px] flex-1 flex items-end" style={{ maxHeight: 'calc(100% - 36px)' }}>
+                          <div className="w-full rounded-t bg-[#059669] opacity-80 group-hover:opacity-100 transition-opacity" style={{ height: `${pct}%` }} />
+                        </div>
+                        <span className="text-[11px] text-[#98A2B3]">{MONTHS[g._id.month - 1]}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 border-t border-[#E4E7EC] divide-x divide-[#E4E7EC]">
+              <div className="px-4 py-3">
+                <div className="text-[11.5px] text-[#98A2B3]">Total registered</div>
+                <div className="text-[17px] font-semibold text-[#101828] tabular-nums">{stats?.totalEstates ?? 0}</div>
+              </div>
+              <div className="px-4 py-3">
+                <div className="text-[11.5px] text-[#98A2B3]">Active rate</div>
+                <div className="text-[17px] font-semibold text-[#059669] tabular-nums">
                   {stats?.totalEstates > 0
-                    ? Math.round((estates.filter(e => e.isActive).length / stats.totalEstates) * 100)
+                    ? Math.round((activeEstates / stats.totalEstates) * 100)
                     : 0}%
                 </div>
               </div>
@@ -268,97 +280,89 @@ export default function Analytics() {
         )}
 
         {/* Revenue summary */}
-        <div className="glass-card p-5">
-          <h2 className="text-xs font-semibold uppercase tracking-wider mb-5" style={{ color: '#94A3B8' }}>
-            Revenue Snapshot
-          </h2>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between py-3 px-4 rounded-xl"
-              style={{ background: 'rgba(5,150,105,0.06)', border: '1px solid rgba(5,150,105,0.12)' }}>
+        <div className="card overflow-hidden flex flex-col">
+          <div className="card-header">
+            <div>
+              <h2 className="card-title">Revenue snapshot</h2>
+              <p className="card-sub">Recurring subscription revenue</p>
+            </div>
+          </div>
+          <div className="divide-y divide-[#F2F4F7] flex-1">
+            <div className="px-5 py-4 flex items-center justify-between gap-3">
               <div>
-                <div className="text-xs" style={{ color: '#94A3B8' }}>Monthly Recurring Revenue</div>
-                <div className="text-2xl font-bold" style={{ color: '#059669' }}>₦{paidMrr.toLocaleString()}</div>
+                <div className="text-[12px] text-[#475467]">Monthly recurring revenue</div>
+                <div className="text-[22px] font-semibold text-[#101828] tabular-nums">₦{paidMrr.toLocaleString()}</div>
                 {compMrr > 0 && (
-                  <div className="text-[11px] mt-0.5" style={{ color: '#B45309' }}>
-                    + ₦{compMrr.toLocaleString()} gift foregone
-                  </div>
+                  <div className="text-[11.5px] text-[#B54708] mt-0.5 tabular-nums">+ ₦{compMrr.toLocaleString()} gift foregone</div>
                 )}
               </div>
-              <TrendingUp size={28} style={{ color: 'rgba(5,150,105,0.3)' }} />
+              <span className="w-8 h-8 rounded-lg bg-[#ECFDF3] text-[#067647] flex items-center justify-center"><TrendingUp size={16} /></span>
             </div>
-            <div className="flex items-center justify-between py-3 px-4 rounded-xl"
-              style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.12)' }}>
+            <div className="px-5 py-4 flex items-center justify-between gap-3">
               <div>
-                <div className="text-xs" style={{ color: '#94A3B8' }}>Annual Recurring Revenue</div>
-                <div className="text-2xl font-bold" style={{ color: '#D97706' }}>₦{(paidMrr * 12).toLocaleString()}</div>
+                <div className="text-[12px] text-[#475467]">Annual recurring revenue</div>
+                <div className="text-[22px] font-semibold text-[#101828] tabular-nums">₦{(paidMrr * 12).toLocaleString()}</div>
               </div>
-              <BarChart2 size={28} style={{ color: 'rgba(245,158,11,0.3)' }} />
+              <span className="w-8 h-8 rounded-lg bg-[#F2F4F7] text-[#475467] flex items-center justify-center"><BarChart2 size={16} /></span>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="py-3 px-4 rounded-xl text-center" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-                <div className="text-lg font-bold" style={{ color: '#7C3AED' }}>{subStats?.active ?? 0}</div>
-                <div className="text-xs" style={{ color: '#94A3B8' }}>Paying estates</div>
+            <div className="grid grid-cols-2 divide-x divide-[#E4E7EC]">
+              <div className="px-5 py-3">
+                <div className="text-[11.5px] text-[#98A2B3]">Paying estates</div>
+                <div className="text-[17px] font-semibold text-[#101828] tabular-nums">{subStats?.active ?? 0}</div>
               </div>
-              <div className="py-3 px-4 rounded-xl text-center" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-                <div className="text-lg font-bold" style={{ color: '#2563EB' }}>{subStats?.trial ?? 0}</div>
-                <div className="text-xs" style={{ color: '#94A3B8' }}>Free trials</div>
+              <div className="px-5 py-3">
+                <div className="text-[11.5px] text-[#98A2B3]">Free trials</div>
+                <div className="text-[17px] font-semibold text-[#101828] tabular-nums">{subStats?.trial ?? 0}</div>
               </div>
             </div>
           </div>
-          <div className="mt-4 pt-4" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-            <Link to="/revenue" className="flex items-center justify-between text-sm font-medium"
-              style={{ color: '#7C3AED' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#8B5CF6'}
-              onMouseLeave={e => e.currentTarget.style.color = '#7C3AED'}>
+          <div className="px-5 py-3 border-t border-[#E4E7EC]">
+            <Link to="/revenue" className={`${linkCls} w-full justify-between`}>
               View full revenue report <ArrowRight size={13} />
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Estate List — active vs inactive */}
-      <div className="glass-card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>
-            Estate Activity Overview
-          </h2>
-          <Link to="/estates" className="flex items-center gap-1 text-xs font-medium"
-            style={{ color: '#7C3AED' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#8B5CF6'}
-            onMouseLeave={e => e.currentTarget.style.color = '#7C3AED'}>
-            All Estates <ArrowRight size={10} />
-          </Link>
-        </div>
-        <div className="grid sm:grid-cols-4 gap-3 mb-4">
-          {[
-            { label: 'Total',       value: estates.length,                                 color: '#0F172A' },
-            { label: 'Active',      value: estates.filter(e => e.isActive).length,         color: '#059669' },
-            { label: 'Inactive',    value: estates.filter(e => !e.isActive).length,        color: '#DC2626' },
-            { label: 'Managed',     value: estates.filter(e => e.managerId).length,        color: '#7C3AED' },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="text-center py-3 rounded-xl" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-              <div className="text-xl font-bold" style={{ color }}>{value}</div>
-              <div className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{label}</div>
-            </div>
-          ))}
-        </div>
-        {estates.length > 0 && (
-          <div className="h-2 rounded-full overflow-hidden flex" style={{ background: '#E2E8F0' }}>
-            <div
-              style={{ width: `${Math.round((estates.filter(e => e.isActive).length / estates.length) * 100)}%`, background: '#10B981' }}
-              title="Active" />
-            <div
-              style={{ width: `${Math.round((estates.filter(e => !e.isActive).length / estates.length) * 100)}%`, background: '#EF4444' }}
-              title="Inactive" />
+      {/* Estate activity */}
+      <div className="card overflow-hidden">
+        <div className="card-header">
+          <div>
+            <h2 className="card-title">Estate activity</h2>
+            <p className="card-sub">Active vs inactive estates</p>
           </div>
-        )}
-        <div className="flex items-center gap-4 mt-2">
-          {[{ label: 'Active', color: '#10B981' }, { label: 'Inactive', color: '#EF4444' }].map(({ label, color }) => (
-            <div key={label} className="flex items-center gap-1.5 text-xs" style={{ color: '#94A3B8' }}>
-              <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-              {label}
+          <Link to="/estates" className={linkCls}>All estates <ArrowRight size={12} /></Link>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-[#E4E7EC] border-b border-[#E4E7EC]">
+          {[
+            { label: 'Total',    value: estates.length },
+            { label: 'Active',   value: activeEstates, dot: '#059669' },
+            { label: 'Inactive', value: inactiveEstates, dot: '#F04438' },
+            { label: 'Managed',  value: estates.filter(e => e.managerId).length, dot: '#2E90FA' },
+          ].map(({ label, value, dot }) => (
+            <div key={label} className="px-4 py-3">
+              <div className="text-[11.5px] text-[#98A2B3] flex items-center gap-1.5">
+                {dot && <span className="w-1.5 h-1.5 rounded-full" style={{ background: dot }} />}{label}
+              </div>
+              <div className="text-[17px] font-semibold text-[#101828] tabular-nums">{value}</div>
             </div>
           ))}
+        </div>
+        <div className="p-5">
+          {estates.length > 0 && (
+            <div className="h-2 rounded-full overflow-hidden flex bg-[#F2F4F7]">
+              <div style={{ width: `${Math.round((activeEstates / estates.length) * 100)}%`, background: '#059669' }} title="Active" />
+              <div style={{ width: `${Math.round((inactiveEstates / estates.length) * 100)}%`, background: '#F04438' }} title="Inactive" />
+            </div>
+          )}
+          <div className="flex items-center gap-4 mt-2.5">
+            {[{ label: 'Active', color: '#059669' }, { label: 'Inactive', color: '#F04438' }].map(({ label, color }) => (
+              <div key={label} className="flex items-center gap-1.5 text-[12px] text-[#98A2B3]">
+                <span className="w-2 h-2 rounded-full" style={{ background: color }} />
+                {label}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>

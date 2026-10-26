@@ -6,11 +6,13 @@ import {
   CheckCircle2, XCircle, Search, Landmark, AlertTriangle, KeyRound,
 } from 'lucide-react';
 import { formatDistanceToNow, format } from 'date-fns';
+import PageHeader from '../components/ui/PageHeader';
+import StatCard from '../components/ui/StatCard';
 
 const STATUS = {
-  pending: { label: 'Pending',  bg: '#FEF3C7', color: '#92400E', border: '#FDE68A', icon: Clock },
-  success: { label: 'Paid',     bg: '#ECFDF5', color: '#059669', border: '#A7F3D0', icon: CheckCircle2 },
-  failed:  { label: 'Rejected', bg: '#FEF2F2', color: '#DC2626', border: '#FECACA', icon: XCircle },
+  pending: { label: 'Pending',  badge: 'yellow', icon: Clock },
+  success: { label: 'Paid',     badge: 'green',  icon: CheckCircle2 },
+  failed:  { label: 'Rejected', badge: 'red',    icon: XCircle },
 };
 
 const fmt = (n) => `₦${Number(n || 0).toLocaleString('en-NG')}`;
@@ -25,10 +27,27 @@ function Pill({ status }) {
   const s = STATUS[status] || STATUS.pending;
   const Icon = s.icon;
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
-      style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
-      <Icon size={10} /> {s.label}
+    <span className={`badge badge-${s.badge}`}>
+      <Icon size={11} /> {s.label}
     </span>
+  );
+}
+
+const SM = '!px-2.5 !py-1 !text-[12px]';
+
+function Modal({ onClose, title, sub, children, footer }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative card w-full max-w-md overflow-hidden shadow-xl">
+        <div className="px-5 pt-5 pb-4">
+          <h3 className="text-[15px] font-semibold text-[#101828]">{title}</h3>
+          <p className="text-[13px] mt-1 text-[#475467]">{sub}</p>
+        </div>
+        <div className="px-5 pb-5">{children}</div>
+        <div className="flex justify-end gap-2 px-5 py-3 border-t border-[#E4E7EC] bg-[#F9FAFB]">{footer}</div>
+      </div>
+    </div>
   );
 }
 
@@ -179,66 +198,120 @@ export default function Withdrawals() {
     { v: 'all',     label: 'All',      totals: null },
   ];
 
-  return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: '#0F172A' }}>Manager Withdrawals</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#94A3B8' }}>
-            Managers withdraw straight to their bank via Paystack. Pending items are transfers still in flight or requests that need your attention.
-          </p>
-        </div>
-        <button onClick={refresh} className="btn-outline gap-2">
-          <RefreshCw size={14} /> Refresh
+  const renderActions = (w) => {
+    const isActing = actingId === w._id;
+    if (w.status !== 'pending') return null;
+    if (hasTransfer(w)) {
+      return (
+        <>
+          <button onClick={() => { setOtpFor(w._id); setOtp(''); }} disabled={isActing} className={`btn-primary ${SM}`}>
+            <KeyRound size={13} /> Enter OTP
+          </button>
+          <button onClick={() => resendOtp(w._id)} disabled={isActing} className={`btn-outline ${SM}`}>
+            <RefreshCw size={12} className={isActing ? 'animate-spin' : ''} /> Resend OTP
+          </button>
+          <button onClick={() => syncWithPaystack(w._id)} disabled={isActing} className={`btn-outline ${SM}`}>
+            <RefreshCw size={12} className={isActing ? 'animate-spin' : ''} /> Check Paystack
+          </button>
+          <button onClick={() => { setRejectFor(w._id); setRejectReason(''); }} disabled={isActing}
+            className={`btn-outline ${SM} !text-[#B42318] hover:!bg-[#FEF3F2]`}>
+            <X size={13} /> Reject
+          </button>
+        </>
+      );
+    }
+    return (
+      <>
+        <button onClick={() => { setPaidNoteFor(w._id); setPaidNote(''); }} disabled={isActing} className={`btn-primary ${SM}`}>
+          <Check size={13} /> Mark as paid
         </button>
-      </div>
+        <button onClick={() => processViaPaystack(w._id)} disabled={isActing} className={`btn-outline ${SM}`}>
+          {isActing ? <RefreshCw size={12} className="animate-spin" /> : <Zap size={12} />}
+          Process via Paystack
+        </button>
+        <button onClick={() => syncWithPaystack(w._id)} disabled={isActing} className={`btn-outline ${SM}`}>
+          <RefreshCw size={12} className={isActing ? 'animate-spin' : ''} /> Check Paystack
+        </button>
+        <button onClick={() => { setRejectFor(w._id); setRejectReason(''); }} disabled={isActing}
+          className={`btn-outline ${SM} !text-[#B42318] hover:!bg-[#FEF3F2]`}>
+          <X size={13} /> Reject
+        </button>
+      </>
+    );
+  };
+
+  const extraBadges = (w) => (
+    <>
+      {w.status === 'pending' && w.paystackStatus === 'otp' && (
+        <span className="badge badge-blue"><KeyRound size={10} /> Awaiting OTP</span>
+      )}
+      {w.source === 'marketplace' && (
+        <span className="badge badge-gray">Marketplace seller</span>
+      )}
+    </>
+  );
+
+  const surplusColor = balance?.surplus == null ? 'text-[#98A2B3]' : balance.surplus >= 0 ? 'text-[#067647]' : 'text-[#B42318]';
+
+  return (
+    <div className="max-w-[1400px] mx-auto animate-fade-in pb-12">
+      <PageHeader
+        title="Manager Withdrawals"
+        description="Managers withdraw straight to their bank via Paystack. Pending items are transfers still in flight or requests that need your attention."
+        actions={
+          <button onClick={refresh} className="btn-outline">
+            <RefreshCw size={14} className={loading || balanceLoading ? 'animate-spin' : ''} /> Refresh
+          </button>
+        }
+      />
 
       {/* Paystack balance vs manager liabilities */}
-      <div className="glass-card p-4 lg:p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <Landmark size={16} style={{ color: '#0F172A' }} />
-          <h2 className="font-semibold text-sm" style={{ color: '#0F172A' }}>Paystack balance</h2>
-          {balance?.testMode && (
-            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
-                  style={{ background: '#FEF3C7', color: '#92400E' }}>TEST MODE</span>
-          )}
-          {balanceLoading && <RefreshCw size={12} className="animate-spin" style={{ color: '#94A3B8' }} />}
+      <div className="card mb-4">
+        <div className="card-header">
+          <div className="flex items-center gap-2">
+            <Landmark size={15} className="text-[#475467]" />
+            <span className="card-title">Paystack balance</span>
+            {balance?.testMode && <span className="badge badge-yellow">Test mode</span>}
+            {balanceLoading && <RefreshCw size={12} className="animate-spin text-[#98A2B3]" />}
+          </div>
         </div>
         {!balanceLoading && !balance ? (
-          <p className="text-sm" style={{ color: '#DC2626' }}>Couldn't load balance.</p>
-        ) : balance && (
+          <p className="px-5 py-4 text-[13px] text-[#B42318]">Couldn't load balance.</p>
+        ) : !balance ? (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 px-5 py-4">
+            {[0, 1, 2].map(i => <div key={i} className="space-y-2"><div className="skeleton h-3 w-28" /><div className="skeleton h-6 w-36" /></div>)}
+          </div>
+        ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Available on Paystack</div>
-                <div className="text-2xl font-bold mt-1" style={{ color: '#0F172A' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#EAECF0]">
+              <div className="px-5 py-4">
+                <div className="text-[12px] font-medium text-[#475467]">Available on Paystack</div>
+                <div className="text-[22px] font-semibold tracking-tight mt-1 text-[#101828] tabular-nums">
                   {balance.paystack ? fmt(balance.paystack.balance) : '—'}
                 </div>
                 {balance.paystackError && (
-                  <div className="text-xs mt-0.5" style={{ color: '#DC2626' }}>{balance.paystackError}</div>
+                  <div className="text-[11.5px] mt-0.5 text-[#B42318]">{balance.paystackError}</div>
                 )}
               </div>
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Owed to managers</div>
-                <div className="text-2xl font-bold mt-1" style={{ color: '#D97706' }}>{fmt(balance.owed)}</div>
-                <div className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>
+              <div className="px-5 py-4">
+                <div className="text-[12px] font-medium text-[#475467]">Owed to managers</div>
+                <div className="text-[22px] font-semibold tracking-tight mt-1 text-[#B54708] tabular-nums">{fmt(balance.owed)}</div>
+                <div className="text-[11.5px] mt-0.5 text-[#98A2B3] tabular-nums">
                   {fmt(balance.walletBalances)} in wallets
                   {balance.queued.count > 0 && <> · {fmt(balance.queued.total)} queued ({balance.queued.count})</>}
                 </div>
               </div>
-              <div>
-                <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Safe to move to bank</div>
-                <div className="text-2xl font-bold mt-1"
-                     style={{ color: balance.surplus == null ? '#94A3B8' : balance.surplus >= 0 ? '#059669' : '#DC2626' }}>
+              <div className="px-5 py-4">
+                <div className="text-[12px] font-medium text-[#475467]">Safe to move to bank</div>
+                <div className={`text-[22px] font-semibold tracking-tight mt-1 tabular-nums ${surplusColor}`}>
                   {balance.surplus == null ? '—' : fmt(Math.max(0, balance.surplus))}
                 </div>
               </div>
             </div>
             {balance.surplus != null && balance.surplus < 0 && (
-              <div className="mt-3 p-3 rounded-lg flex items-start gap-2 text-xs"
-                   style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C' }}>
-                <AlertTriangle size={13} className="mt-0.5 shrink-0" />
-                Paystack balance is {fmt(-balance.surplus)} short of what managers can withdraw. Top up the balance or some withdrawals will fail.
+              <div className="mx-5 mb-4 px-3 py-2.5 rounded-lg flex items-start gap-2 text-[12.5px] bg-[#FEF3F2] border border-[#FECDCA] text-[#B42318]">
+                <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+                <span>Paystack balance is <span className="tabular-nums font-semibold">{fmt(-balance.surplus)}</span> short of what managers can withdraw. Top up the balance or some withdrawals will fail.</span>
               </div>
             )}
           </>
@@ -246,283 +319,238 @@ export default function Withdrawals() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { label: 'Pending',  count: totals.pending?.count || 0, amount: totals.pending?.total || 0, color: '#D97706' },
-          { label: 'Paid',     count: totals.success?.count || 0, amount: totals.success?.total || 0, color: '#059669' },
-          { label: 'Rejected', count: totals.failed?.count  || 0, amount: totals.failed?.total  || 0, color: '#DC2626' },
-          {
-            label: 'Owing managers',
-            count: totals.pending?.count || 0,
-            amount: totals.pending?.total || 0,
-            color: '#0F172A',
-            emphasis: true,
-          },
-        ].map(({ label, count, amount, color, emphasis }) => (
-          <div key={label} className="glass-card p-4"
-               style={emphasis ? { background: 'linear-gradient(135deg,#FEF3C7,#FDE68A)', border: 'none' } : {}}>
-            <div className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>{label}</div>
-            <div className="text-2xl font-bold mt-1" style={{ color }}>{fmt(amount)}</div>
-            <div className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{count} request{count === 1 ? '' : 's'}</div>
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-6">
+        <StatCard label="Pending" value={fmt(totals.pending?.total || 0)} icon={Clock} color="amber"
+          hint={`${totals.pending?.count || 0} request${(totals.pending?.count || 0) === 1 ? '' : 's'}`} />
+        <StatCard label="Paid" value={fmt(totals.success?.total || 0)} icon={CheckCircle2} color="green"
+          hint={`${totals.success?.count || 0} request${(totals.success?.count || 0) === 1 ? '' : 's'}`} />
+        <StatCard label="Rejected" value={fmt(totals.failed?.total || 0)} icon={XCircle} color="red"
+          hint={`${totals.failed?.count || 0} request${(totals.failed?.count || 0) === 1 ? '' : 's'}`} />
+        <StatCard label="Owing managers" value={fmt(totals.pending?.total || 0)} icon={Wallet} color="blue"
+          hint={`${totals.pending?.count || 0} request${(totals.pending?.count || 0) === 1 ? '' : 's'}`} />
+      </div>
+
+      {/* Ledger */}
+      <div className="card overflow-hidden">
+        <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between px-4 py-3 border-b border-[#E4E7EC]">
+          <div className="max-w-full overflow-x-auto">
+            <div className="tabs">
+              {TABS.map(t => (
+                <button key={t.v} onClick={() => setTab(t.v)} className={`tab ${tab === t.v ? 'active' : ''}`}>
+                  {t.label}
+                  {t.totals && (
+                    <span className="ml-1.5 text-[11px] tabular-nums text-[#98A2B3]">{t.totals.count || 0}</span>
+                  )}
+                </button>
+              ))}
+            </div>
           </div>
-        ))}
-      </div>
+          <div className="relative w-full md:w-80">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search manager, estate, reference, account…"
+              className="input-field pl-9" />
+          </div>
+        </div>
 
-      {/* Tabs + search */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <div className="flex gap-1.5 flex-wrap">
-          {TABS.map(t => (
-            <button key={t.v} onClick={() => setTab(t.v)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-              style={tab === t.v
-                ? { background: '#0F172A', color: '#FFF', border: '1px solid #0F172A' }
-                : { background: '#F1F5F9', color: '#475569', border: '1px solid #E2E8F0' }}>
-              {t.label}
-              {t.totals && (
-                <span className="ml-1" style={{ color: tab === t.v ? 'rgba(255,255,255,0.6)' : '#94A3B8' }}>
-                  {t.totals.count || 0}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-        <div className="relative flex-1 min-w-52">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#94A3B8' }} />
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search manager, estate, reference, account…"
-            className="input-field pl-9" />
-        </div>
-      </div>
+        {loading ? (
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => <div key={i} className="skeleton h-10" />)}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-14 text-center px-4">
+            <span className="w-10 h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center mb-3">
+              <Wallet size={18} className="text-[#98A2B3]" />
+            </span>
+            <p className="text-[13.5px] font-semibold text-[#101828]">
+              {search ? 'No matching withdrawals' : tab === 'pending' ? 'No pending requests' : `No ${tab} withdrawals yet`}
+            </p>
+            <p className="mt-0.5 text-[12px] text-[#98A2B3]">
+              {search ? 'Try a different search term.' : tab === 'pending' ? 'All caught up.' : 'They will show up here once processed.'}
+            </p>
+          </div>
+        ) : (
+          <>
+            {/* Desktop table */}
+            <div className="hidden lg:block overflow-x-auto">
+              <table className="table min-w-[1000px]">
+                <thead>
+                  <tr>
+                    <th>Estate · Requester</th>
+                    <th>Pay to</th>
+                    <th>Requested</th>
+                    <th>Status</th>
+                    <th className="!text-right">Amount</th>
+                    <th className="!text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(w => {
+                    const user = w.userId || {};
+                    const estate = w.estateId || {};
+                    return (
+                      <tr key={w._id} className="align-top">
+                        <td className="!align-top">
+                          <div className="flex items-center gap-1.5">
+                            <span className="cell-strong">{estate.name || '—'}</span>
+                            {estate.estateCode && <span className="badge badge-gray !text-[10px]">{estate.estateCode}</span>}
+                          </div>
+                          <div className="text-[12px] text-[#475467] mt-0.5">
+                            {user.name || (w.source === 'marketplace' ? 'Seller' : 'Manager')} · {user.email || '—'}
+                            {user.phone && <> · {user.phone}</>}
+                          </div>
+                          <div className="text-[11px] text-[#98A2B3] mt-0.5">
+                            Ref <span className="font-mono">{w.reference}</span>
+                          </div>
+                        </td>
+                        <td className="!align-top">
+                          <div className="flex items-start gap-2">
+                            <div className="min-w-0">
+                              <div className="font-mono text-[12.5px] text-[#101828]">{w.accountNumber}</div>
+                              <div className="text-[12px] text-[#475467]">{w.bankName}</div>
+                              <div className="text-[11.5px] text-[#98A2B3]">{w.accountName || '—'}</div>
+                            </div>
+                            <button onClick={() => copyBank(w)} title="Copy bank details" className="btn-ghost !p-1.5">
+                              <Copy size={13} />
+                            </button>
+                          </div>
+                        </td>
+                        <td className="!align-top whitespace-nowrap">
+                          <div className="text-[12.5px] text-[#101828] tabular-nums">{format(new Date(w.createdAt), 'MMM d, yyyy HH:mm')}</div>
+                          <div className="text-[11.5px] text-[#98A2B3]">{formatDistanceToNow(new Date(w.createdAt))} ago</div>
+                        </td>
+                        <td className="!align-top">
+                          <div className="flex flex-col items-start gap-1">
+                            <Pill status={w.status} />
+                            {extraBadges(w)}
+                          </div>
+                          {w.status !== 'pending' && w.failureReason && (
+                            <div className="mt-1 text-[11.5px] text-[#98A2B3] max-w-[200px]">
+                              {w.status === 'failed' ? 'Reason: ' : 'Note: '}{w.failureReason}
+                            </div>
+                          )}
+                        </td>
+                        <td className="!align-top text-right tabular-nums text-[14px] font-semibold text-[#101828] whitespace-nowrap">
+                          {fmt(w.amount)}
+                        </td>
+                        <td className="!align-top">
+                          <div className="flex flex-wrap justify-end gap-1.5 max-w-[300px] ml-auto">
+                            {renderActions(w)}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-      {/* List */}
-      {loading ? (
-        <div className="flex justify-center py-16">
-          <RefreshCw size={20} className="animate-spin" style={{ color: '#10B981' }} />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="glass-card py-16 text-center">
-          <Wallet size={36} className="mx-auto mb-3" style={{ color: '#CBD5E1' }} />
-          <p className="text-sm" style={{ color: '#94A3B8' }}>
-            {search ? 'No matching withdrawals' : tab === 'pending' ? 'No pending requests — all caught up.' : `No ${tab} withdrawals yet`}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filtered.map(w => {
-            const user = w.userId || {};
-            const estate = w.estateId || {};
-            const isActing = actingId === w._id;
-            const isPending = w.status === 'pending';
-            return (
-              <div key={w._id} className="glass-card p-4 lg:p-5">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <Building2 size={14} style={{ color: '#64748B' }} />
-                      <span className="font-semibold" style={{ color: '#0F172A' }}>{estate.name || '—'}</span>
-                      {estate.estateCode && (
-                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded"
-                              style={{ background: '#F1F5F9', color: '#64748B' }}>{estate.estateCode}</span>
-                      )}
+            {/* Mobile list */}
+            <div className="lg:hidden divide-y divide-[#EAECF0]">
+              {filtered.map(w => {
+                const user = w.userId || {};
+                const estate = w.estateId || {};
+                return (
+                  <div key={w._id} className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Building2 size={13} className="text-[#98A2B3]" />
+                          <span className="text-[13.5px] font-semibold text-[#101828]">{estate.name || '—'}</span>
+                          {estate.estateCode && <span className="badge badge-gray !text-[10px]">{estate.estateCode}</span>}
+                        </div>
+                        <div className="text-[12px] text-[#475467] mt-0.5 break-words">
+                          {user.name || (w.source === 'marketplace' ? 'Seller' : 'Manager')} · {user.email || '—'}
+                          {user.phone && <> · {user.phone}</>}
+                        </div>
+                      </div>
+                      <div className="text-[16px] font-semibold text-[#101828] tabular-nums whitespace-nowrap">{fmt(w.amount)}</div>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
                       <Pill status={w.status} />
-                      {isPending && w.paystackStatus === 'otp' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                          style={{ background: '#EDE9FE', color: '#6D28D9', border: '1px solid #DDD6FE' }}>
-                          <KeyRound size={10} /> Awaiting OTP
-                        </span>
-                      )}
-                      {w.source === 'marketplace' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                          style={{ background: '#EEF2FF', color: '#4338CA', border: '1px solid #C7D2FE' }}>
-                          Marketplace seller
-                        </span>
-                      )}
+                      {extraBadges(w)}
                     </div>
-                    <div className="text-xs mt-1" style={{ color: '#64748B' }}>
-                      {user.name || (w.source === 'marketplace' ? 'Seller' : 'Manager')} · {user.email || '—'}
-                      {user.phone && <> · {user.phone}</>}
+                    <div className="text-[11px] mt-1.5 text-[#98A2B3] break-all">
+                      {formatDistanceToNow(new Date(w.createdAt))} ago · {format(new Date(w.createdAt), 'MMM d, yyyy HH:mm')} · Ref <span className="font-mono">{w.reference}</span>
                     </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: '#94A3B8' }}>
-                      Requested {formatDistanceToNow(new Date(w.createdAt))} ago · {format(new Date(w.createdAt), 'MMM d, yyyy HH:mm')}
-                      {' '}· Ref <code style={{ background: '#F1F5F9', padding: '1px 4px', borderRadius: 3 }}>{w.reference}</code>
+                    <div className="mt-3 px-3 py-2.5 rounded-lg flex items-center justify-between gap-3 bg-[#F9FAFB] border border-[#EAECF0]">
+                      <div className="min-w-0">
+                        <div className="text-[11px] font-medium text-[#98A2B3]">Pay to</div>
+                        <div className="font-mono text-[12.5px] text-[#101828]">
+                          {w.accountNumber} <span className="text-[#475467]">· {w.bankName}</span>
+                        </div>
+                        <div className="text-[12px] text-[#475467]">{w.accountName || '—'}</div>
+                      </div>
+                      <button onClick={() => copyBank(w)} className={`btn-outline ${SM}`}>
+                        <Copy size={12} /> Copy
+                      </button>
                     </div>
+                    {w.status !== 'pending' && w.failureReason && (
+                      <div className="mt-2 text-[12px] text-[#98A2B3]">
+                        {w.status === 'failed' ? 'Reason: ' : 'Note: '}{w.failureReason}
+                      </div>
+                    )}
+                    {w.status === 'pending' && (
+                      <div className="mt-3 flex flex-wrap gap-1.5">{renderActions(w)}</div>
+                    )}
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold" style={{ color: '#0F172A' }}>{fmt(w.amount)}</div>
-                  </div>
-                </div>
-
-                <div className="mt-3 p-3 rounded-lg flex flex-wrap items-center justify-between gap-3"
-                     style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-                  <div className="min-w-0">
-                    <div className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Pay to</div>
-                    <div className="font-mono text-sm" style={{ color: '#0F172A' }}>
-                      {w.accountNumber} <span style={{ color: '#64748B' }}>· {w.bankName}</span>
-                    </div>
-                    <div className="text-xs mt-0.5" style={{ color: '#475569' }}>
-                      {w.accountName || '—'}
-                    </div>
-                  </div>
-                  <button onClick={() => copyBank(w)}
-                    className="btn-outline gap-1 text-xs">
-                    <Copy size={12} /> Copy
-                  </button>
-                </div>
-
-                {!isPending && w.failureReason && (
-                  <div className="mt-2 text-xs" style={{ color: '#94A3B8' }}>
-                    {w.status === 'failed' ? 'Reason: ' : 'Note: '}{w.failureReason}
-                  </div>
-                )}
-
-                {isPending && hasTransfer(w) && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button onClick={() => { setOtpFor(w._id); setOtp(''); }}
-                      disabled={isActing}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
-                      style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
-                      <KeyRound size={13} /> Enter OTP
-                    </button>
-                    <button onClick={() => resendOtp(w._id)}
-                      disabled={isActing}
-                      className="btn-outline gap-1 text-xs">
-                      {isActing ? <RefreshCw size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-                      Resend OTP
-                    </button>
-                    <button onClick={() => syncWithPaystack(w._id)}
-                      disabled={isActing}
-                      className="btn-outline gap-1 text-xs">
-                      <RefreshCw size={12} className={isActing ? 'animate-spin' : ''} /> Check Paystack
-                    </button>
-                    <button onClick={() => { setRejectFor(w._id); setRejectReason(''); }}
-                      disabled={isActing}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                      style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>
-                      <X size={13} /> Reject
-                    </button>
-                  </div>
-                )}
-
-                {isPending && !hasTransfer(w) && (
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <button onClick={() => { setPaidNoteFor(w._id); setPaidNote(''); }}
-                      disabled={isActing}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
-                      style={{ background: '#059669' }}>
-                      <Check size={13} /> Mark as paid
-                    </button>
-                    <button onClick={() => processViaPaystack(w._id)}
-                      disabled={isActing}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-all"
-                      style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
-                      {isActing ? <RefreshCw size={13} className="animate-spin" /> : <Zap size={13} />}
-                      Process via Paystack
-                    </button>
-                    <button onClick={() => syncWithPaystack(w._id)}
-                      disabled={isActing}
-                      className="btn-outline gap-1 text-xs">
-                      <RefreshCw size={12} className={isActing ? 'animate-spin' : ''} /> Check Paystack
-                    </button>
-                    <button onClick={() => { setRejectFor(w._id); setRejectReason(''); }}
-                      disabled={isActing}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                      style={{ background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>
-                      <X size={13} /> Reject
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
 
       {/* Mark-as-paid modal */}
       {paidNoteFor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setPaidNoteFor(null)} />
-          <div className="relative glass-card w-full max-w-md p-6 space-y-4">
-            <div>
-              <h3 className="font-bold text-lg" style={{ color: '#0F172A' }}>Mark as paid</h3>
-              <p className="text-sm mt-0.5" style={{ color: '#64748B' }}>
-                Confirm you've transferred the funds from your Paystack dashboard. The manager will receive a receipt email.
-              </p>
-            </div>
-            <div>
-              <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Note (optional)</label>
-              <input className="input-field" placeholder="e.g. Transfer ID from Paystack dashboard"
-                value={paidNote} onChange={e => setPaidNote(e.target.value)} />
-            </div>
-            <div className="flex gap-3 pt-1">
-              <button type="button" onClick={() => setPaidNoteFor(null)} className="btn-outline flex-1">Cancel</button>
-              <button onClick={confirmMarkPaid} disabled={actingId === paidNoteFor}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
-                style={{ background: '#059669' }}>
-                {actingId === paidNoteFor ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
-                Confirm paid
-              </button>
-            </div>
-          </div>
-        </div>
+        <Modal onClose={() => setPaidNoteFor(null)} title="Mark as paid"
+          sub="Confirm you've transferred the funds from your Paystack dashboard. The manager will receive a receipt email."
+          footer={<>
+            <button type="button" onClick={() => setPaidNoteFor(null)} className="btn-outline">Cancel</button>
+            <button onClick={confirmMarkPaid} disabled={actingId === paidNoteFor} className="btn-primary">
+              {actingId === paidNoteFor ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
+              Confirm paid
+            </button>
+          </>}>
+          <label className="field-label">Note (optional)</label>
+          <input className="input-field" placeholder="e.g. Transfer ID from Paystack dashboard"
+            value={paidNote} onChange={e => setPaidNote(e.target.value)} />
+        </Modal>
       )}
 
       {/* Transfer OTP modal */}
       {otpFor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setOtpFor(null)} />
-          <div className="relative glass-card w-full max-w-md p-6 space-y-4">
-            <div>
-              <h3 className="font-bold text-lg" style={{ color: '#0F172A' }}>Authorise transfer</h3>
-              <p className="text-sm mt-0.5" style={{ color: '#64748B' }}>
-                Enter the OTP Paystack sent to the AreaConnect business phone/email for this transfer.
-              </p>
-            </div>
-            <div>
-              <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>OTP *</label>
-              <input className="input-field font-mono tracking-widest" inputMode="numeric" autoFocus
-                placeholder="e.g. 123456"
-                value={otp} onChange={e => setOtp(e.target.value)} />
-            </div>
-            <div className="flex gap-3 pt-1">
-              <button type="button" onClick={() => setOtpFor(null)} className="btn-outline flex-1">Cancel</button>
-              <button onClick={confirmOtp} disabled={!otp.trim() || actingId === otpFor}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
-                style={{ background: 'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
-                {actingId === otpFor ? <RefreshCw size={14} className="animate-spin" /> : <KeyRound size={14} />}
-                Send transfer
-              </button>
-            </div>
-          </div>
-        </div>
+        <Modal onClose={() => setOtpFor(null)} title="Authorise transfer"
+          sub="Enter the OTP Paystack sent to the AreaConnect business phone/email for this transfer."
+          footer={<>
+            <button type="button" onClick={() => setOtpFor(null)} className="btn-outline">Cancel</button>
+            <button onClick={confirmOtp} disabled={!otp.trim() || actingId === otpFor} className="btn-primary">
+              {actingId === otpFor ? <RefreshCw size={14} className="animate-spin" /> : <KeyRound size={14} />}
+              Send transfer
+            </button>
+          </>}>
+          <label className="field-label">OTP *</label>
+          <input className="input-field font-mono tracking-widest" inputMode="numeric" autoFocus
+            placeholder="e.g. 123456"
+            value={otp} onChange={e => setOtp(e.target.value)} />
+        </Modal>
       )}
 
       {/* Reject modal */}
       {rejectFor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setRejectFor(null)} />
-          <div className="relative glass-card w-full max-w-md p-6 space-y-4">
-            <div>
-              <h3 className="font-bold text-lg" style={{ color: '#0F172A' }}>Reject withdrawal</h3>
-              <p className="text-sm mt-0.5" style={{ color: '#64748B' }}>
-                The manager will be notified and the amount returns to their wallet balance.
-              </p>
-            </div>
-            <div>
-              <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Reason *</label>
-              <input className="input-field" placeholder="e.g. Mismatched account name, unverified estate"
-                value={rejectReason} onChange={e => setRejectReason(e.target.value)} required />
-            </div>
-            <div className="flex gap-3 pt-1">
-              <button type="button" onClick={() => setRejectFor(null)} className="btn-outline flex-1">Cancel</button>
-              <button onClick={confirmReject} disabled={!rejectReason.trim() || actingId === rejectFor}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
-                style={{ background: '#DC2626' }}>
-                {actingId === rejectFor ? <RefreshCw size={14} className="animate-spin" /> : <X size={14} />}
-                Reject
-              </button>
-            </div>
-          </div>
-        </div>
+        <Modal onClose={() => setRejectFor(null)} title="Reject withdrawal"
+          sub="The manager will be notified and the amount returns to their wallet balance."
+          footer={<>
+            <button type="button" onClick={() => setRejectFor(null)} className="btn-outline">Cancel</button>
+            <button onClick={confirmReject} disabled={!rejectReason.trim() || actingId === rejectFor} className="btn-danger">
+              {actingId === rejectFor ? <RefreshCw size={14} className="animate-spin" /> : <X size={14} />}
+              Reject
+            </button>
+          </>}>
+          <label className="field-label">Reason *</label>
+          <input className="input-field" placeholder="e.g. Mismatched account name, unverified estate"
+            value={rejectReason} onChange={e => setRejectReason(e.target.value)} required />
+        </Modal>
       )}
     </div>
   );

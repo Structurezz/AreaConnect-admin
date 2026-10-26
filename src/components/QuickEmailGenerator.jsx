@@ -124,61 +124,61 @@ export default function QuickEmailGenerator({ onClose, onPublished }) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(6px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(16,24,40,0.5)', backdropFilter: 'blur(2px)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
       onClick={() => !generating && !publishing && onClose?.()}
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{ width: '100%', maxWidth: 980, maxHeight: '92vh', background: '#fff', borderRadius: 20, overflow: 'hidden', boxShadow: '0 24px 60px rgba(0,0,0,0.35)', display: 'flex', flexDirection: 'column' }}
+        className="border border-[#E4E7EC]"
+        style={{ width: '100%', maxWidth: 980, maxHeight: '92vh', background: '#fff', borderRadius: 12, overflow: 'hidden', boxShadow: '0 20px 48px rgba(16,24,40,0.18)', display: 'flex', flexDirection: 'column' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5" style={{ borderBottom: '1px solid #F1F5F9' }}>
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#EC4899,#F472B6)' }}>
-              <Wand2 size={16} color="#fff" />
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[#E4E7EC]">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-[#ECFDF3] border border-[#ABEFC6] text-[#059669]">
+              <Wand2 size={15} />
             </div>
-            <div>
-              <h2 className="text-base font-bold" style={{ color: '#0F172A', letterSpacing: '-0.01em' }}>Generate Campaign Email</h2>
-              <p className="text-xs" style={{ color: '#64748B' }}>Describe it, pick who sees it, publish. Gemini writes the rest.</p>
+            <div className="min-w-0">
+              <h2 className="text-[15px] font-semibold text-[#101828] leading-tight">Generate campaign email</h2>
+              <p className="text-[12px] text-[#98A2B3] truncate">Describe it, pick who sees it, publish. Gemini writes the rest.</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-2 rounded-lg" style={{ background: '#F1F5F9', color: '#475569' }}>
-            <X size={16} />
+          <button onClick={onClose} className="p-1.5 rounded-md text-[#98A2B3] hover:bg-[#F2F4F7] hover:text-[#475467]">
+            <X size={17} />
           </button>
         </div>
 
         <div className="grid gap-0 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]" style={{ overflow: 'hidden', flex: 1 }}>
           {/* ─── Left: inputs ─── */}
-          <div className="p-5 space-y-4 overflow-y-auto" style={{ borderRight: '1px solid #F1F5F9' }}>
+          <div className="p-5 space-y-4 overflow-y-auto md:border-r border-[#E4E7EC]">
             <Field label="What is this email about?" required>
               <textarea
                 value={prompt}
                 onChange={e => setPrompt(e.target.value)}
                 rows={3}
                 placeholder="Welcome new residents and show them how to book a visitor, pay dues, and join the Lounge."
-                className="input"
+                className="input-field"
                 autoFocus
               />
             </Field>
 
             <Field label="Campaign name (used for filing)">
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="Welcome New Members" className="input" />
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="Welcome New Members" className="input-field" />
             </Field>
 
             {/* Audience */}
-            <div className="rounded-xl p-3.5" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+            <div className="rounded-lg p-3.5 bg-[#F9FAFB] border border-[#E4E7EC]">
               <div className="flex items-center gap-1.5 mb-2.5">
-                <Users size={13} style={{ color: '#EC4899' }} />
-                <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#0F172A' }}>Who sees it?</span>
+                <Users size={13} className="text-[#667085]" />
+                <span className="text-[12px] font-semibold text-[#344054]">Who sees it?</span>
               </div>
 
-              <div className="grid grid-cols-3 gap-1.5 mb-2.5">
+              <div className="tabs w-full mb-2.5">
                 {APPS.map(a => (
                   <button
                     key={a.key}
                     onClick={() => setApp(a.key)}
-                    className="px-2 py-1.5 rounded-lg text-xs font-semibold"
-                    style={{ background: app === a.key ? '#0F172A' : '#fff', color: app === a.key ? '#fff' : '#475569', border: '1px solid #E2E8F0' }}
+                    className={`tab flex-1 ${app === a.key ? 'active' : ''}`}
                   >
                     {a.label}
                   </button>
@@ -187,11 +187,14 @@ export default function QuickEmailGenerator({ onClose, onPublished }) {
 
               <div className="grid gap-1.5">
                 {SEGMENTS.map(s => (
-                  <label key={s.key} className="flex items-start gap-2 p-2 rounded-lg cursor-pointer" style={{ background: segment === s.key ? '#FDF2F8' : '#fff', border: `1px solid ${segment === s.key ? '#EC4899' : '#E2E8F0'}` }}>
-                    <input type="radio" checked={segment === s.key} onChange={() => setSegment(s.key)} className="mt-0.5" />
+                  <label
+                    key={s.key}
+                    className={`flex items-start gap-2 p-2 rounded-md cursor-pointer border bg-white ${segment === s.key ? 'border-[#059669] ring-1 ring-[#059669]/20' : 'border-[#E4E7EC]'}`}
+                  >
+                    <input type="radio" checked={segment === s.key} onChange={() => setSegment(s.key)} className="mt-0.5 accent-[#059669]" />
                     <div>
-                      <div className="text-xs font-bold" style={{ color: '#0F172A' }}>{s.label}</div>
-                      <div className="text-[11px]" style={{ color: '#64748B' }}>{s.hint}</div>
+                      <div className="text-[13px] font-medium text-[#101828]">{s.label}</div>
+                      <div className="text-[11.5px] text-[#98A2B3]">{s.hint}</div>
                     </div>
                   </label>
                 ))}
@@ -199,24 +202,24 @@ export default function QuickEmailGenerator({ onClose, onPublished }) {
 
               {(segment === 'new_users' || segment === 'existing_users') && (
                 <div className="flex items-center gap-2 mt-2.5">
-                  <span className="text-xs" style={{ color: '#475569' }}>Days:</span>
-                  <input type="number" min={1} max={365} value={days} onChange={e => setDays(parseInt(e.target.value) || 7)} className="input py-1 px-2 w-20 text-sm" />
+                  <span className="text-[12px] text-[#475467]">Days:</span>
+                  <input type="number" min={1} max={365} value={days} onChange={e => setDays(parseInt(e.target.value) || 7)} className="input-field !w-20 !py-1" />
                 </div>
               )}
 
               {segment === 'by_role' && (
-                <div className="flex gap-3 mt-2.5 text-xs">
+                <div className="flex gap-3 mt-2.5 text-[12px]">
                   {['resident', 'estate_manager'].map(r => (
-                    <label key={r} className="inline-flex items-center gap-1.5" style={{ color: '#0F172A' }}>
-                      <input type="checkbox" checked={roles.includes(r)} onChange={e => setRoles(e.target.checked ? [...roles, r] : roles.filter(x => x !== r))} />
+                    <label key={r} className="inline-flex items-center gap-1.5 text-[#344054]">
+                      <input type="checkbox" className="accent-[#059669]" checked={roles.includes(r)} onChange={e => setRoles(e.target.checked ? [...roles, r] : roles.filter(x => x !== r))} />
                       {r}
                     </label>
                   ))}
                 </div>
               )}
 
-              <label className="flex items-center gap-2 mt-3 text-xs" style={{ color: '#0F172A' }}>
-                <input type="checkbox" checked={sendOnSignup} onChange={e => setSendOnSignup(e.target.checked)} />
+              <label className="flex items-center gap-2 mt-3 text-[12px] text-[#344054]">
+                <input type="checkbox" className="accent-[#059669]" checked={sendOnSignup} onChange={e => setSendOnSignup(e.target.checked)} />
                 Auto-send to matching users the moment they sign up
               </label>
             </div>
@@ -224,16 +227,15 @@ export default function QuickEmailGenerator({ onClose, onPublished }) {
             {/* Theme */}
             <div>
               <div className="flex items-center gap-1.5 mb-2">
-                <Palette size={13} style={{ color: '#EC4899' }} />
-                <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#0F172A' }}>Theme</span>
+                <Palette size={13} className="text-[#667085]" />
+                <span className="text-[12px] font-semibold text-[#344054]">Theme</span>
               </div>
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-1.5 flex-wrap">
                 {THEMES.map((t, i) => (
                   <button
                     key={t.name}
                     onClick={() => { setThemeManual(true); setThemeIdx(i); }}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold"
-                    style={{ background: themeIdx === i ? '#0F172A' : '#fff', color: themeIdx === i ? '#fff' : '#475569', border: '1px solid #E2E8F0' }}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] font-medium border ${themeIdx === i ? 'border-[#059669] bg-[#ECFDF3] text-[#047857]' : 'border-[#D0D5DD] bg-white text-[#344054] hover:bg-[#F9FAFB]'}`}
                   >
                     <span style={{ width: 12, height: 12, borderRadius: 3, background: `linear-gradient(135deg, ${t.primaryColor}, ${t.accentColor})`, display: 'inline-block' }} />
                     {t.name}
@@ -241,24 +243,24 @@ export default function QuickEmailGenerator({ onClose, onPublished }) {
                 ))}
               </div>
               {!themeManual && (
-                <p className="text-[11px] mt-1.5" style={{ color: '#94A3B8' }}>Auto-selected to match audience app. Pick another to override.</p>
+                <p className="field-hint mt-1.5">Auto-selected to match audience app. Pick another to override.</p>
               )}
             </div>
 
             {/* Tone */}
             <Field label="Tone">
-              <input value={tone} onChange={e => setTone(e.target.value)} className="input" />
+              <input value={tone} onChange={e => setTone(e.target.value)} className="input-field" />
             </Field>
           </div>
 
           {/* ─── Right: preview ─── */}
-          <div className="overflow-y-auto" style={{ background: '#F8FAFC' }}>
+          <div className="overflow-y-auto bg-[#F9FAFB] border-t md:border-t-0 border-[#E4E7EC]">
             <div className="p-5">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Live preview</span>
+                <span className="text-[12px] font-semibold text-[#344054]">Live preview</span>
                 {generated && (
-                  <button onClick={generate} disabled={generating} className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg" style={{ background: '#fff', color: '#475569', border: '1px solid #E2E8F0' }}>
-                    <RefreshCw size={11} /> Regenerate
+                  <button onClick={generate} disabled={generating} className="btn-outline !py-1 !px-2.5 !text-[12px]">
+                    <RefreshCw size={12} /> Regenerate
                   </button>
                 )}
               </div>
@@ -273,17 +275,18 @@ export default function QuickEmailGenerator({ onClose, onPublished }) {
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between gap-3 p-4" style={{ borderTop: '1px solid #F1F5F9', background: '#F8FAFC' }}>
-          <div className="text-xs" style={{ color: '#64748B' }}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-3.5 border-t border-[#E4E7EC] bg-[#F9FAFB]">
+          <div className="text-[12px] text-[#98A2B3]">
             {generated ? 'Review the preview then publish. You can edit it later from Email Campaigns.' : 'Fill in the prompt and audience, then generate.'}
           </div>
           <div className="flex items-center gap-2">
+            <button onClick={onClose} className="btn-outline">Cancel</button>
             {!generated ? (
               <button
                 onClick={generate}
                 disabled={generating || !prompt.trim()}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-                style={{ background: 'linear-gradient(135deg,#EC4899,#F472B6)', opacity: (generating || !prompt.trim()) ? 0.5 : 1 }}
+                className="btn-primary"
+                style={{ opacity: (generating || !prompt.trim()) ? 0.5 : 1 }}
               >
                 {generating ? <><Loader2 size={14} className="animate-spin" /> Generating…</> : <><Sparkles size={14} /> Generate</>}
               </button>
@@ -291,29 +294,14 @@ export default function QuickEmailGenerator({ onClose, onPublished }) {
               <button
                 onClick={publish}
                 disabled={publishing}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-                style={{ background: 'linear-gradient(135deg,#EC4899,#F472B6)' }}
+                className="btn-primary"
               >
-                {publishing ? <><Loader2 size={14} className="animate-spin" /> Publishing…</> : <><Send size={14} /> Publish Campaign</>}
+                {publishing ? <><Loader2 size={14} className="animate-spin" /> Publishing…</> : <><Send size={14} /> Publish campaign</>}
               </button>
             )}
           </div>
         </div>
       </div>
-
-      <style>{`
-        .input {
-          width: 100%;
-          padding: 9px 12px;
-          border-radius: 10px;
-          background: #F8FAFC;
-          border: 1px solid #E2E8F0;
-          font-size: 14px;
-          color: #0F172A;
-          outline: none;
-        }
-        .input:focus { border-color: #EC4899; background: #fff; }
-      `}</style>
     </div>
   );
 }
@@ -321,8 +309,8 @@ export default function QuickEmailGenerator({ onClose, onPublished }) {
 function Field({ label, required, children }) {
   return (
     <div>
-      <label className="block text-xs font-semibold mb-1.5" style={{ color: '#475569' }}>
-        {label} {required && <span style={{ color: '#EC4899' }}>*</span>}
+      <label className="field-label">
+        {label} {required && <span className="text-[#D92D20]">*</span>}
       </label>
       {children}
     </div>
@@ -331,17 +319,17 @@ function Field({ label, required, children }) {
 
 function EmptyPreview({ generating, onGenerate, disabled }) {
   return (
-    <div className="rounded-2xl p-8 text-center" style={{ background: '#fff', border: '1px dashed #CBD5E1' }}>
-      <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#EC4899,#F472B6)' }}>
-        <Sparkles size={22} color="#fff" />
+    <div className="rounded-lg p-8 text-center bg-white border border-dashed border-[#D0D5DD]">
+      <div className="w-10 h-10 rounded-full mx-auto mb-3 flex items-center justify-center bg-[#F2F4F7]">
+        <Sparkles size={18} className="text-[#98A2B3]" />
       </div>
-      <h3 className="text-sm font-bold mb-1" style={{ color: '#0F172A' }}>No preview yet</h3>
-      <p className="text-xs mb-4" style={{ color: '#64748B' }}>Describe your campaign on the left, then hit generate to see the email here.</p>
+      <h3 className="text-[14px] font-semibold text-[#101828] mb-1">No preview yet</h3>
+      <p className="text-[12.5px] text-[#475467] mb-4">Describe your campaign on the left, then hit generate to see the email here.</p>
       <button
         onClick={onGenerate}
         disabled={disabled}
-        className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white"
-        style={{ background: 'linear-gradient(135deg,#EC4899,#F472B6)', opacity: disabled ? 0.5 : 1 }}
+        className="btn-primary !py-1.5 !text-[12px]"
+        style={{ opacity: disabled ? 0.5 : 1 }}
       >
         {generating ? <><Loader2 size={12} className="animate-spin" /> Generating…</> : <><Sparkles size={12} /> Generate</>}
       </button>

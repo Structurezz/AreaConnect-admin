@@ -3,12 +3,42 @@ import { estateAPI, adminAPI, planAPI } from '../api';
 import { Link } from 'react-router-dom';
 import {
   Building2, Users, Plus, ArrowRight, TrendingUp, Home, AlertCircle,
-  Clock, CreditCard, BarChart2, Settings, Shield, Bell, RefreshCw,
-  CheckCircle, MapPin,
+  Clock, CreditCard, BarChart2, Settings, Shield, Bell,
+  CheckCircle, MapPin, UserCheck, Briefcase, ChevronRight,
 } from 'lucide-react';
 import Spinner from '../components/ui/Spinner';
-import { format } from 'date-fns';
+import PageHeader from '../components/ui/PageHeader';
+import StatCard from '../components/ui/StatCard';
+import { format, subMonths, startOfMonth } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
+
+// Simple CSS column chart — no chart lib in this app.
+function ColumnChart({ data, color = '#059669', height = 160 }) {
+  const max = Math.max(1, ...data.map(d => d.value));
+  return (
+    <div>
+      <div className="relative" style={{ height }}>
+        {[0, 0.5, 1].map(p => (
+          <div key={p} className="absolute left-0 right-0 border-t" style={{ bottom: `${p * 100}%`, borderColor: '#F2F4F7' }} />
+        ))}
+        <div className="absolute inset-0 flex items-end gap-3 px-1">
+          {data.map(d => (
+            <div key={d.label} className="flex-1 h-full flex flex-col justify-end items-center group">
+              <span className="text-[11px] font-medium text-[#475467] tabular-nums mb-1">{d.value}</span>
+              <div className="w-full max-w-[36px] rounded-t-[4px] transition-all"
+                style={{ height: `${(d.value / max) * 85}%`, minHeight: d.value ? 3 : 0, background: color }} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex gap-3 px-1 mt-2 border-t border-[#E4E7EC] pt-2">
+        {data.map(d => (
+          <div key={d.label} className="flex-1 text-center text-[11px] text-[#98A2B3]">{d.label}</div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const { user } = useAuth();
@@ -41,329 +71,269 @@ export default function AdminDashboard() {
   const firstName   = user?.name?.split(' ')[0] || 'Admin';
   const openAlerts  = platformStats?.openAlerts ?? 0;
 
-  const heroStats = [
-    { label: 'Total Estates',    value: estates.length },
-    { label: 'Active Estates',   value: active },
-    { label: 'With Manager',     value: withManager },
-    { label: 'Unmanaged',        value: unmanaged,                           warn: unmanaged > 0 },
-    { label: 'Total Residents',  value: platformStats?.totalResidents ?? 0 },
-    { label: 'Total Units',      value: platformStats?.totalUnits ?? 0 },
-    { label: 'Monthly Revenue',  value: `₦${mrr.toLocaleString()}` },
-    { label: 'Open Alerts',      value: openAlerts,                          warn: openAlerts > 0 },
+  // Estates onboarded per month (last 6 months) from createdAt
+  const growth = Array.from({ length: 6 }, (_, i) => {
+    const m = startOfMonth(subMonths(new Date(), 5 - i));
+    const next = startOfMonth(subMonths(new Date(), 4 - i));
+    return {
+      label: format(m, 'MMM'),
+      value: estates.filter(e => {
+        const d = new Date(e.createdAt);
+        return d >= m && d < next;
+      }).length,
+    };
+  });
+
+  const subTotal = subStats?.total ?? 0;
+  const subMix = [
+    { label: 'Active',  value: subStats?.active ?? 0,  color: '#059669' },
+    { label: 'Trial',   value: subStats?.trial ?? 0,   color: '#2E90FA' },
+    { label: 'Expired', value: subStats?.expired ?? 0, color: '#F04438' },
   ];
+  const pct = (v) => (subTotal > 0 ? Math.round((v / subTotal) * 100) : 0);
 
   const healthItems = [
-    {
-      label: 'Trials Active',
-      value: subStats?.trial ?? 0,
-      icon: Clock,
-      good: (subStats?.trial ?? 0) === 0,
-      to: '/subscriptions',
-      sub: 'Conversion opportunities',
-    },
-    {
-      label: 'Expired / Lapsed',
-      value: subStats?.expired ?? 0,
-      icon: AlertCircle,
-      good: (subStats?.expired ?? 0) === 0,
-      to: '/operations',
-      sub: 'Need immediate action',
-    },
-    {
-      label: 'Unmanaged Estates',
-      value: unmanaged,
-      icon: Building2,
-      good: unmanaged === 0,
-      to: '/operations',
-      sub: 'No manager assigned',
-    },
-    {
-      label: 'Open Alerts',
-      value: openAlerts,
-      icon: Bell,
-      good: openAlerts === 0,
-      to: '/analytics',
-      sub: 'Across all estates',
-    },
+    { label: 'Trials active',     value: subStats?.trial ?? 0,   icon: Clock,       good: (subStats?.trial ?? 0) === 0,   to: '/subscriptions', sub: 'Conversion opportunities' },
+    { label: 'Expired / lapsed',  value: subStats?.expired ?? 0, icon: AlertCircle, good: (subStats?.expired ?? 0) === 0, to: '/operations',    sub: 'Need immediate action' },
+    { label: 'Unmanaged estates', value: unmanaged,              icon: Building2,   good: unmanaged === 0,                to: '/operations',    sub: 'No manager assigned' },
+    { label: 'Open alerts',       value: openAlerts,             icon: Bell,        good: openAlerts === 0,               to: '/analytics',     sub: 'Across all estates' },
   ];
 
   const quickActions = [
-    { to: '/estates/new',   icon: Plus,       label: 'Create Estate',   sub: 'Register a new gated community', color: '#7C3AED', bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.18)' },
-    { to: '/estates',       icon: Building2,  label: 'All Estates',     sub: 'Browse, filter and manage', color: '#2563EB', bg: 'rgba(37,99,235,0.07)', border: 'rgba(37,99,235,0.15)' },
-    { to: '/users',         icon: Users,      label: 'Users',           sub: 'Manage roles and accounts', color: '#059669', bg: 'rgba(16,185,129,0.07)', border: 'rgba(16,185,129,0.15)' },
-    { to: '/analytics',     icon: BarChart2,  label: 'Analytics',       sub: 'KPIs, growth, trends', color: '#D97706', bg: 'rgba(245,158,11,0.07)', border: 'rgba(245,158,11,0.15)' },
-    { to: '/revenue',       icon: TrendingUp, label: 'Revenue',         sub: 'MRR, ARR, financials', color: '#059669', bg: 'rgba(16,185,129,0.07)', border: 'rgba(16,185,129,0.15)' },
-    { to: '/operations',    icon: AlertCircle,label: 'Operations',      sub: 'Watchlists and health', color: '#DC2626', bg: 'rgba(220,38,38,0.07)', border: 'rgba(220,38,38,0.15)' },
-    { to: '/subscriptions', icon: CreditCard, label: 'Subscriptions',   sub: 'Plans and billing', color: '#7C3AED', bg: 'rgba(139,92,246,0.08)', border: 'rgba(139,92,246,0.18)' },
-    { to: '/plans',         icon: Settings,   label: 'Plans & Pricing', sub: 'Feature plan management', color: '#475569', bg: 'rgba(71,85,105,0.07)', border: 'rgba(71,85,105,0.15)' },
+    { to: '/onboarding',    icon: Plus,        label: 'Onboard estates',  sub: 'Register new communities' },
+    { to: '/estates',       icon: Building2,   label: 'All estates',      sub: 'Browse, filter and manage' },
+    { to: '/users',         icon: Users,       label: 'Users',            sub: 'Roles and accounts' },
+    { to: '/analytics',     icon: BarChart2,   label: 'Analytics',        sub: 'KPIs, growth, trends' },
+    { to: '/revenue',       icon: TrendingUp,  label: 'Revenue',          sub: 'MRR, ARR, financials' },
+    { to: '/operations',    icon: AlertCircle, label: 'Operations',       sub: 'Watchlists and health' },
+    { to: '/subscriptions', icon: CreditCard,  label: 'Subscriptions',    sub: 'Plans and billing' },
+    { to: '/plans',         icon: Settings,    label: 'Plans & pricing',  sub: 'Feature plan management' },
   ];
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="max-w-[1400px] mx-auto animate-fade-in">
+      <PageHeader
+        heading title={`Welcome back, ${firstName}`}
+        description={`Platform overview across all estates · ${format(new Date(), 'EEEE, MMMM d, yyyy')}`}
+        actions={
+          <>
+            <Link to="/analytics" className="btn-outline gap-2"><BarChart2 size={14} /> Analytics</Link>
+          </>
+        }
+      />
 
-      {/* ── Hero ── */}
-      <div
-        className="relative overflow-hidden rounded-2xl p-6 sm:p-8"
-        style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 60%, #6D28D9 100%)' }}
-      >
-        <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full pointer-events-none"
-          style={{ background: 'rgba(255,255,255,0.07)' }} />
-        <div className="absolute -bottom-12 left-1/2 w-48 h-48 rounded-full pointer-events-none"
-          style={{ background: 'rgba(255,255,255,0.04)' }} />
-
-        <div className="relative">
-          <div className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1 rounded-full mb-4"
-            style={{ background: 'rgba(255,255,255,0.18)', color: 'rgba(255,255,255,0.95)' }}>
-            {format(new Date(), 'EEEE, MMMM d, yyyy')}
-          </div>
-
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5 mb-6">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-1" style={{ letterSpacing: '-0.03em' }}>
-                Welcome back, {firstName}
-              </h1>
-              <p className="text-sm" style={{ color: 'rgba(255,255,255,0.72)' }}>
-                Platform overview — all estates across the network
-              </p>
-            </div>
-            <Link
-              to="/estates/new"
-              className="inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl self-start sm:self-auto transition-all"
-              style={{ background: 'white', color: '#7C3AED' }}
-              onMouseEnter={e => e.currentTarget.style.background = '#F5F3FF'}
-              onMouseLeave={e => e.currentTarget.style.background = 'white'}>
-              <Plus size={15} /> New Estate
-            </Link>
-          </div>
-
-          {/* 8 stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {heroStats.map(({ label, value, warn }) => (
-              <div key={label}
-                className="rounded-xl p-3.5 sm:p-4"
-                style={{
-                  background: warn ? 'rgba(245,158,11,0.25)' : 'rgba(255,255,255,0.15)',
-                  backdropFilter: 'blur(8px)',
-                }}>
-                <div className="text-2xl font-bold text-white mb-0.5">{value}</div>
-                <div className="text-xs font-medium" style={{ color: 'rgba(255,255,255,0.72)' }}>{label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Platform Health ── */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-base font-semibold" style={{ color: '#0F172A' }}>Platform Health</h2>
-          <Link to="/operations" className="flex items-center gap-1 text-xs font-medium"
-            style={{ color: '#7C3AED' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#8B5CF6'}
-            onMouseLeave={e => e.currentTarget.style.color = '#7C3AED'}>
-            View Operations <ArrowRight size={11} />
-          </Link>
-        </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {healthItems.map(({ label, value, icon: Icon, good, to, sub }) => {
-            const color  = good ? '#059669' : value > 0 ? '#DC2626' : '#059669';
-            const bg     = good ? 'rgba(16,185,129,0.08)' : value > 0 ? 'rgba(220,38,38,0.08)' : 'rgba(16,185,129,0.08)';
-            const border = good ? 'rgba(16,185,129,0.18)' : value > 0 ? 'rgba(220,38,38,0.18)' : 'rgba(16,185,129,0.18)';
-            return (
-              <Link key={label} to={to}
-                className="glass-card p-4 flex items-center gap-3 transition-all"
-                style={{ textDecoration: 'none', border: `1px solid ${border}` }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.06)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = ''; }}>
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ background: bg }}>
-                  {good && value === 0
-                    ? <CheckCircle size={17} style={{ color }} />
-                    : <Icon size={17} style={{ color }} />
-                  }
-                </div>
-                <div>
-                  <div className="text-lg font-bold leading-none mb-0.5" style={{ color: '#0F172A' }}>{value}</div>
-                  <div className="text-xs font-semibold" style={{ color }}>{label}</div>
-                  <div className="text-xs" style={{ color: '#94A3B8' }}>{sub}</div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Subscription Summary ── */}
-      {subStats && (
-        <div className="glass-card p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold" style={{ color: '#0F172A' }}>Subscription Summary</h2>
-            <Link to="/subscriptions" className="flex items-center gap-1 text-xs font-medium"
-              style={{ color: '#7C3AED' }}
-              onMouseEnter={e => e.currentTarget.style.color = '#8B5CF6'}
-              onMouseLeave={e => e.currentTarget.style.color = '#7C3AED'}>
-              Manage <ArrowRight size={11} />
-            </Link>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            {[
-              { label: 'Total',    value: subStats.total ?? 0,   color: '#0F172A' },
-              { label: 'Active',   value: subStats.active ?? 0,  color: '#059669' },
-              { label: 'Trial',    value: subStats.trial ?? 0,   color: '#2563EB' },
-              { label: 'Expired',  value: subStats.expired ?? 0, color: '#DC2626' },
-              { label: 'MRR',      value: `₦${mrr.toLocaleString()}`, color: '#059669' },
-            ].map(({ label, value, color }) => (
-              <div key={label} className="text-center py-3 rounded-xl" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-                <div className="text-xl font-bold" style={{ color }}>{value}</div>
-                <div className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{label}</div>
-              </div>
-            ))}
-          </div>
-          {subStats.total > 0 && (
-            <div className="mt-4">
-              <div className="flex justify-between text-xs mb-1.5" style={{ color: '#94A3B8' }}>
-                <span>Subscription health</span>
-                <span>Active: {Math.round(((subStats.active ?? 0) / subStats.total) * 100)}% · Trial: {Math.round(((subStats.trial ?? 0) / subStats.total) * 100)}% · Expired: {Math.round(((subStats.expired ?? 0) / subStats.total) * 100)}%</span>
-              </div>
-              <div className="h-2 rounded-full overflow-hidden flex" style={{ background: '#E2E8F0' }}>
-                <div style={{ width: `${Math.round(((subStats.active ?? 0) / subStats.total) * 100)}%`, background: '#10B981' }} />
-                <div style={{ width: `${Math.round(((subStats.trial ?? 0) / subStats.total) * 100)}%`, background: '#3B82F6' }} />
-                <div style={{ width: `${Math.round(((subStats.expired ?? 0) / subStats.total) * 100)}%`, background: '#EF4444' }} />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Platform User Stats ── */}
-      {platformStats && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[
-            { label: 'Estate Managers', value: platformStats.totalManagers ?? 0, icon: Building2, color: '#D97706' },
-            { label: 'Security Staff',  value: platformStats.totalSecurity  ?? 0, icon: Shield,   color: '#2563EB' },
-            { label: 'Total Visitors',  value: platformStats.totalVisitors  ?? 0, icon: Users,    color: '#7C3AED' },
-            { label: 'Open Alerts',     value: platformStats.openAlerts     ?? 0, icon: Bell,     color: '#DC2626' },
-          ].map(({ label, value, icon: Icon, color }) => (
-            <div key={label} className="glass-card p-4 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: color + '12' }}>
-                <Icon size={16} style={{ color }} />
-              </div>
-              <div>
-                <div className="text-xl font-bold" style={{ color: '#0F172A' }}>{value}</div>
-                <div className="text-xs" style={{ color: '#94A3B8' }}>{label}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* ── Recent Estates ── */}
-      <div>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold" style={{ color: '#0F172A', letterSpacing: '-0.02em' }}>Recent Estates</h2>
-          <Link to="/estates" className="flex items-center gap-1 text-sm font-medium transition-colors"
-            style={{ color: '#7C3AED' }}
-            onMouseEnter={e => e.currentTarget.style.color = '#8B5CF6'}
-            onMouseLeave={e => e.currentTarget.style.color = '#7C3AED'}>
-            View all <ArrowRight size={13} />
-          </Link>
+      <div className="space-y-5">
+        {/* KPIs */}
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Total estates"   value={estates.length} icon={Building2} color="green" hint={`${active} active · ${withManager} managed`} />
+          <StatCard label="Total residents" value={platformStats?.totalResidents ?? 0} icon={Users} color="blue" hint={`${(platformStats?.totalUnits ?? 0).toLocaleString()} units`} />
+          <StatCard label="Monthly recurring revenue" value={`₦${mrr.toLocaleString()}`} icon={TrendingUp} color="green" hint={`${subStats?.active ?? 0} paying subscriptions`} />
+          <StatCard label="Open alerts"     value={openAlerts} icon={Bell} color={openAlerts > 0 ? 'red' : 'amber'} hint="Across all estates" />
         </div>
 
-        {estates.length === 0 ? (
-          <div className="glass-card p-16 text-center">
-            <Building2 size={48} className="mx-auto mb-4" style={{ color: '#CBD5E1' }} />
-            <p className="font-medium mb-1" style={{ color: '#475569' }}>No estates yet</p>
-            <p className="text-sm mb-5" style={{ color: '#94A3B8' }}>Create your first estate to get started</p>
-            <Link to="/estates/new" className="btn-primary inline-flex gap-2">
-              <Plus size={16} /> Create Estate
-            </Link>
-          </div>
-        ) : (
-          <div className="glass-card overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                  {['Estate', 'Code', 'Manager', 'Location', 'Status', 'Created'].map(h => (
-                    <th key={h} className="text-left text-xs font-medium uppercase tracking-wider px-5 py-3"
-                      style={{ color: '#94A3B8' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {estates.slice(0, 10).map(e => (
-                  <tr key={e._id} className="transition-colors"
-                    style={{ borderTop: '1px solid rgba(0,0,0,0.04)' }}
-                    onMouseEnter={ev => ev.currentTarget.style.background = '#F8FAFC'}
-                    onMouseLeave={ev => ev.currentTarget.style.background = 'transparent'}>
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-sm flex-shrink-0"
-                          style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.18)', color: '#7C3AED' }}>
-                          {e.name[0]}
-                        </div>
-                        <Link to={`/estates/${e._id}`}
-                          className="font-medium text-sm hover:underline"
-                          style={{ color: '#0F172A' }}>
-                          {e.name}
-                        </Link>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className="font-mono text-sm tracking-widest" style={{ color: '#7C3AED' }}>{e.estateCode}</span>
-                    </td>
-                    <td className="px-5 py-4 text-sm" style={{ color: '#475569' }}>
-                      {e.managerId?.name || <span className="italic" style={{ color: '#CBD5E1' }}>Unassigned</span>}
-                    </td>
-                    <td className="px-5 py-4 text-sm max-w-[180px] truncate" style={{ color: '#94A3B8' }}>
-                      <span className="flex items-center gap-1">
-                        <MapPin size={11} style={{ flexShrink: 0 }} />
-                        <span className="truncate">{e.address}</span>
-                      </span>
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`badge ${e.isActive ? 'badge-green' : 'badge-red'}`}>
-                        {e.isActive ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-sm whitespace-nowrap" style={{ color: '#94A3B8' }}>
-                      {format(new Date(e.createdAt), 'MMM d, yyyy')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {estates.length > 10 && (
-              <div className="px-5 py-3 text-center" style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                <Link to="/estates" className="text-sm font-medium hover:underline" style={{ color: '#7C3AED' }}>
-                  View all {estates.length} estates →
-                </Link>
-              </div>
-            )}
+        {platformStats && (
+          <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
+            <StatCard label="Total units"     value={platformStats.totalUnits ?? 0}    icon={Home}      color="blue" />
+            <StatCard label="Estate managers" value={platformStats.totalManagers ?? 0} icon={Briefcase} color="amber" />
+            <StatCard label="Security staff"  value={platformStats.totalSecurity ?? 0} icon={Shield}    color="purple" />
+            <StatCard label="Total visitors"  value={platformStats.totalVisitors ?? 0} icon={UserCheck} color="green" />
           </div>
         )}
-      </div>
 
-      {/* ── Quick Actions ── */}
-      <div>
-        <h2 className="text-lg font-semibold mb-4" style={{ color: '#0F172A', letterSpacing: '-0.02em' }}>Quick Actions</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {quickActions.map(({ to, icon: Icon, label, sub, bg, border, color }) => (
-            <Link key={to} to={to}
-              className="glass-card p-4 flex items-center gap-3 transition-all"
-              style={{ textDecoration: 'none' }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.07)'; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = ''; }}>
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: bg, border: `1px solid ${border}` }}>
-                <Icon size={18} style={{ color }} />
-              </div>
+        {/* Charts */}
+        <div className="grid gap-5 lg:grid-cols-3">
+          <div className="card lg:col-span-2">
+            <div className="card-header">
               <div>
-                <div className="font-semibold text-sm mb-0.5" style={{ color: '#0F172A' }}>{label}</div>
-                <div className="text-xs" style={{ color: '#94A3B8' }}>{sub}</div>
+                <div className="card-title">Estates onboarded</div>
+                <div className="card-sub">New estates per month · last 6 months</div>
               </div>
+              <Link to="/estates" className="text-[12.5px] font-medium text-[#059669] hover:underline inline-flex items-center gap-1">
+                View estates <ArrowRight size={12} />
+              </Link>
+            </div>
+            <div className="p-5">
+              <ColumnChart data={growth} />
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-header">
+              <div>
+                <div className="card-title">Subscription mix</div>
+                <div className="card-sub">{subTotal} total subscriptions</div>
+              </div>
+              <Link to="/subscriptions" className="text-[12.5px] font-medium text-[#059669] hover:underline inline-flex items-center gap-1">
+                Manage <ArrowRight size={12} />
+              </Link>
+            </div>
+            <div className="p-5">
+              <div className="flex items-baseline gap-2">
+                <span className="text-[26px] font-semibold tracking-tight text-[#101828] tabular-nums">{pct(subStats?.active ?? 0)}%</span>
+                <span className="text-[12px] text-[#98A2B3]">active rate</span>
+              </div>
+              <div className="h-2 rounded-full overflow-hidden flex mt-3 bg-[#F2F4F7]">
+                {subMix.map(s => (
+                  <div key={s.label} style={{ width: `${pct(s.value)}%`, background: s.color }} />
+                ))}
+              </div>
+              <ul className="mt-4 divide-y divide-[#F2F4F7]">
+                {subMix.map(s => (
+                  <li key={s.label} className="flex items-center justify-between py-2 text-[13px]">
+                    <span className="flex items-center gap-2 text-[#475467]">
+                      <span className="w-2 h-2 rounded-full" style={{ background: s.color }} />
+                      {s.label}
+                    </span>
+                    <span className="tabular-nums text-[#101828] font-medium">
+                      {s.value} <span className="text-[#98A2B3] font-normal ml-1">{pct(s.value)}%</span>
+                    </span>
+                  </li>
+                ))}
+                <li className="flex items-center justify-between py-2 text-[13px]">
+                  <span className="text-[#475467]">MRR</span>
+                  <span className="tabular-nums text-[#101828] font-semibold">₦{mrr.toLocaleString()}</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        {/* Platform health */}
+        <div className="card">
+          <div className="card-header">
+            <div>
+              <div className="card-title">Platform health</div>
+              <div className="card-sub">Items that may need attention</div>
+            </div>
+            <Link to="/operations" className="text-[12.5px] font-medium text-[#059669] hover:underline inline-flex items-center gap-1">
+              View operations <ArrowRight size={12} />
             </Link>
-          ))}
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4">
+            {healthItems.map(({ label, value, icon: Icon, good, to, sub }, i) => {
+              const ok = good || value === 0;
+              return (
+                <Link key={label} to={to}
+                  className={`p-4 flex items-center gap-3 hover:bg-[#F9FAFB] transition-colors border-[#F2F4F7]
+                    ${i % 2 === 1 ? 'border-l' : ''} ${i >= 2 ? 'border-t lg:border-t-0' : ''} ${i === 2 ? 'lg:border-l' : ''}`}>
+                  <span className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${ok ? 'bg-[#ECFDF3] text-[#067647]' : 'bg-[#FEF3F2] text-[#B42318]'}`}>
+                    {ok ? <CheckCircle size={16} /> : <Icon size={16} />}
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[18px] font-semibold leading-none text-[#101828] tabular-nums">{value}</div>
+                    <div className="text-[12.5px] font-medium text-[#344054] mt-1 truncate">{label}</div>
+                    <div className="text-[11.5px] text-[#98A2B3] truncate">{sub}</div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Recent estates */}
+        <div className="card overflow-hidden">
+          <div className="card-header">
+            <div>
+              <div className="card-title">Recent estates</div>
+              <div className="card-sub">Latest {Math.min(10, estates.length)} of {estates.length}</div>
+            </div>
+            <Link to="/estates" className="text-[12.5px] font-medium text-[#059669] hover:underline inline-flex items-center gap-1">
+              View all <ArrowRight size={12} />
+            </Link>
+          </div>
+
+          {estates.length === 0 ? (
+            <div className="py-12 text-center">
+              <div className="w-10 h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center mx-auto mb-3">
+                <Building2 size={18} className="text-[#98A2B3]" />
+              </div>
+              <p className="text-[13.5px] font-medium text-[#101828]">No estates yet</p>
+              <p className="text-[12.5px] text-[#98A2B3] mt-0.5 mb-4">Onboard your first estate to get started.</p>
+              <Link to="/onboarding" className="btn-primary inline-flex gap-2"><Plus size={14} /> Onboard estates</Link>
+            </div>
+          ) : (
+            <>
+              <div className="overflow-x-auto">
+                <table className="table min-w-[720px]">
+                  <thead>
+                    <tr>
+                      <th>Estate</th>
+                      <th>Manager</th>
+                      <th>Location</th>
+                      <th>Status</th>
+                      <th>Created</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {estates.slice(0, 10).map(e => (
+                      <tr key={e._id}>
+                        <td>
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center font-semibold text-[13px] flex-shrink-0 bg-[#F2F4F7] text-[#344054] border border-[#E4E7EC]">
+                              {e.name[0]}
+                            </div>
+                            <div className="min-w-0">
+                              <Link to={`/estates/${e._id}`} className="cell-strong hover:underline">{e.name}</Link>
+                              <div className="font-mono text-[11.5px] text-[#98A2B3] tracking-wider">{e.estateCode}</div>
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          {e.managerId?.name || <span className="text-[#98A2B3]">Unassigned</span>}
+                        </td>
+                        <td className="max-w-[220px]">
+                          <span className="flex items-center gap-1 text-[#667085]">
+                            <MapPin size={12} className="flex-shrink-0 text-[#98A2B3]" />
+                            <span className="truncate">{e.address}</span>
+                          </span>
+                        </td>
+                        <td>
+                          <span className={`badge ${e.isActive ? 'badge-green' : 'badge-red'}`}>
+                            {e.isActive ? 'Active' : 'Inactive'}
+                          </span>
+                        </td>
+                        <td className="whitespace-nowrap tabular-nums text-[#667085]">
+                          {format(new Date(e.createdAt), 'MMM d, yyyy')}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              {estates.length > 10 && (
+                <div className="px-4 py-3 text-center border-t border-[#F2F4F7]">
+                  <Link to="/estates" className="text-[13px] font-medium text-[#059669] hover:underline">
+                    View all {estates.length} estates
+                  </Link>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Quick actions */}
+        <div className="card overflow-hidden">
+          <div className="card-header">
+            <div>
+              <div className="card-title">Quick actions</div>
+              <div className="card-sub">Jump to common admin tasks</div>
+            </div>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-px bg-[#F2F4F7]">
+            {quickActions.map(({ to, icon: Icon, label, sub }) => (
+              <Link key={to} to={to}
+                className="bg-white p-4 flex items-center gap-3 hover:bg-[#F9FAFB] transition-colors group">
+                <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 bg-[#ECFDF3] text-[#059669]">
+                  <Icon size={16} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-semibold text-[#101828]">{label}</div>
+                  <div className="text-[12px] text-[#98A2B3] truncate">{sub}</div>
+                </div>
+                <ChevronRight size={14} className="text-[#D0D5DD] group-hover:text-[#059669] transition-colors" />
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </div>

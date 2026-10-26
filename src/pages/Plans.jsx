@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { planAPI } from '../api';
 import toast from 'react-hot-toast';
+import PageHeader from '../components/ui/PageHeader';
 import {
   CreditCard, Plus, Edit3, Check, X, ChevronDown, ChevronUp,
   Zap, Users, Home, Megaphone, MessageSquare, ShoppingBag,
@@ -71,26 +72,19 @@ function FeatureValue({ featureKey, value, editable, onChange }) {
   if (!item) return null;
 
   if (item.type === 'number') {
-    if (!editable) return <span className="text-sm" style={{ color: '#475569' }}>{value === -1 ? '∞' : value}</span>;
+    if (!editable) return <span className="text-[13px] font-medium text-[#101828] tabular-nums">{value === -1 ? '∞' : value}</span>;
     return (
       <input
         type="number"
         min="-1"
         value={value}
         onChange={e => onChange(featureKey, parseInt(e.target.value))}
-        className="input-field w-20 text-center"
+        className="input-field w-24 text-center tabular-nums"
       />
     );
   }
   if (item.type === 'select') {
-    if (!editable) return (
-      <span
-        className="text-xs capitalize px-2 py-0.5 rounded-full"
-        style={{ background: '#F1F5F9', color: '#475569', border: '1px solid #E2E8F0' }}
-      >
-        {value}
-      </span>
-    );
+    if (!editable) return <span className="badge badge-gray capitalize">{value}</span>;
     return (
       <select value={value} onChange={e => onChange(featureKey, e.target.value)} className="input-field w-auto">
         {item.options.map(o => <option key={o} value={o}>{o}</option>)}
@@ -99,110 +93,116 @@ function FeatureValue({ featureKey, value, editable, onChange }) {
   }
   // boolean
   if (!editable) return value
-    ? <Check size={14} style={{ color: '#059669' }} />
-    : <X size={14} style={{ color: '#CBD5E1' }} />;
+    ? <Check size={14} className="text-[#059669]" />
+    : <X size={14} className="text-[#D0D5DD]" />;
   return (
     <button
+      type="button"
+      role="switch"
+      aria-checked={!!value}
       onClick={() => onChange(featureKey, !value)}
-      className="w-10 h-5 rounded-full transition-all relative"
-      style={{ background: value ? '#10B981' : '#E2E8F0' }}
+      className={`w-9 h-5 rounded-full transition-colors relative flex-shrink-0 ${value ? 'bg-[#059669]' : 'bg-[#E4E7EC]'}`}
     >
       <span
-        className="absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all"
-        style={{ left: value ? '1.25rem' : '0.125rem' }}
+        className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all"
+        style={{ left: value ? '1.125rem' : '0.125rem' }}
       />
     </button>
   );
 }
 
+const BOOLEAN_FEATURES = FEATURE_GROUPS.flatMap(g => g.items).filter(i => !i.type);
+const LIMITS = FEATURE_GROUPS[0].items;
+
 function PlanCard({ plan, onEdit }) {
   const [expanded, setExpanded] = useState(false);
+  const features = plan.features || {};
+  const included = BOOLEAN_FEATURES.filter(i => features[i.key]);
+  const preview = included.slice(0, 6);
+  const analytics = features.analytics;
+
   return (
-    <div className="glass-card overflow-hidden">
-      <div className="p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: plan.color + '14', border: `1px solid ${plan.color}30` }}
-            >
-              <CreditCard size={18} style={{ color: plan.color }} />
+    <div className="card flex flex-col overflow-hidden">
+      <div className="p-5 flex-1">
+        {/* Name + badges */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: plan.color }} />
+              <span className="text-[15px] font-semibold text-[#101828]">{plan.name}</span>
+              {plan.badge && <span className="badge badge-green">{plan.badge}</span>}
+              {!plan.isActive && <span className="badge badge-gray">Inactive</span>}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold" style={{ color: '#0F172A' }}>{plan.name}</span>
-                {plan.badge && (
-                  <span
-                    className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                    style={{ background: plan.color + '18', color: plan.color }}
-                  >
-                    {plan.badge}
-                  </span>
-                )}
-                {!plan.isActive && (
-                  <span
-                    className="text-xs px-2 py-0.5 rounded-full"
-                    style={{ background: '#F1F5F9', color: '#94A3B8', border: '1px solid #E2E8F0' }}
-                  >
-                    Inactive
-                  </span>
-                )}
-              </div>
-              <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{plan.description}</p>
-            </div>
+            {plan.description && (
+              <p className="text-[12.5px] text-[#475467] mt-1 line-clamp-2">{plan.description}</p>
+            )}
           </div>
-          <button
-            onClick={() => onEdit(plan)}
-            className="p-2 rounded-lg transition-all"
-            style={{ color: '#94A3B8' }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#0F172A'; e.currentTarget.style.background = '#F1F5F9'; }}
-            onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'transparent'; }}
-          >
-            <Edit3 size={14} />
-          </button>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          {[
-            { label: '/ month', value: fmt(plan.price.monthly) },
-            { label: '/ year', value: fmt(plan.price.annual) },
-            { label: '/ resident', value: plan.price.perResident ? fmt(plan.price.perResident) : '—' },
-          ].map(({ label, value }) => (
-            <div
-              key={label}
-              className="rounded-xl p-3 text-center"
-              style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}
-            >
-              <div className="font-bold text-sm" style={{ color: '#0F172A' }}>{value}</div>
-              <div className="text-xs" style={{ color: '#94A3B8' }}>{label}</div>
+        {/* Price */}
+        <div className="mt-4">
+          <div className="flex items-baseline gap-1">
+            <span className="text-[26px] leading-none font-semibold tracking-tight text-[#101828] tabular-nums">
+              {fmt(plan.price.monthly)}
+            </span>
+            {plan.price.monthly > 0 && <span className="text-[12px] text-[#98A2B3]">/ month</span>}
+          </div>
+          <div className="mt-1.5 text-[12px] text-[#475467] tabular-nums">
+            {fmt(plan.price.annual)}{plan.price.annual > 0 && <span className="text-[#98A2B3]"> / year</span>}
+            <span className="text-[#D0D5DD] mx-1.5">·</span>
+            {plan.price.perResident ? <>{fmt(plan.price.perResident)}<span className="text-[#98A2B3]"> / resident</span></> : <span className="text-[#98A2B3]">No per-resident billing</span>}
+          </div>
+        </div>
+
+        {/* Limits */}
+        <div className="mt-4 grid grid-cols-3 rounded-lg border border-[#E4E7EC] divide-x divide-[#E4E7EC]">
+          {LIMITS.map(l => (
+            <div key={l.key} className="px-2 py-2 text-center min-w-0">
+              <div className="text-[13px] font-semibold text-[#101828] tabular-nums">
+                {features[l.key] === -1 ? '∞' : (features[l.key] ?? '—')}
+              </div>
+              <div className="text-[10.5px] text-[#98A2B3] truncate">{l.label.replace('Max ', '')}</div>
             </div>
           ))}
         </div>
 
-        <button
-          onClick={() => setExpanded(e => !e)}
-          className="flex items-center gap-1.5 text-xs w-full justify-center transition-colors"
-          style={{ color: '#94A3B8' }}
-          onMouseEnter={e => e.currentTarget.style.color = '#0F172A'}
-          onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'}
-        >
-          {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-          {expanded ? 'Hide' : 'View'} features
-        </button>
+        {/* Included features */}
+        <div className="mt-4">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-[#98A2B3] mb-2">Includes</p>
+          {preview.length ? (
+            <ul className="space-y-1.5">
+              {preview.map(i => (
+                <li key={i.key} className="flex items-center gap-2 text-[13px] text-[#475467]">
+                  <Check size={13} className="text-[#059669] flex-shrink-0" />
+                  <span className="truncate">{i.label}</span>
+                </li>
+              ))}
+              {analytics && analytics !== 'none' && (
+                <li className="flex items-center gap-2 text-[13px] text-[#475467]">
+                  <Check size={13} className="text-[#059669] flex-shrink-0" />
+                  <span className="truncate capitalize">{analytics} analytics</span>
+                </li>
+              )}
+            </ul>
+          ) : (
+            <p className="text-[12.5px] text-[#98A2B3]">No features enabled</p>
+          )}
+          {included.length > preview.length && (
+            <p className="text-[12px] text-[#98A2B3] mt-1.5">+{included.length - preview.length} more</p>
+          )}
+        </div>
       </div>
 
       {expanded && (
-        <div className="p-5 space-y-5" style={{ borderTop: '1px solid #E2E8F0' }}>
+        <div className="px-5 py-4 space-y-4 border-t border-[#E4E7EC] bg-[#FCFCFD]">
           {FEATURE_GROUPS.map(group => (
             <div key={group.label}>
-              <p className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: '#94A3B8' }}>
-                {group.label}
-              </p>
-              <div className="space-y-2">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-[#98A2B3] mb-2">{group.label}</p>
+              <div className="space-y-1.5">
                 {group.items.map(item => (
-                  <div key={item.key} className="flex items-center justify-between">
-                    <span className="text-sm" style={{ color: '#475569' }}>{item.label}</span>
-                    <FeatureValue featureKey={item.key} value={plan.features[item.key]} editable={false} />
+                  <div key={item.key} className="flex items-center justify-between gap-3">
+                    <span className="text-[13px] text-[#475467]">{item.label}</span>
+                    <FeatureValue featureKey={item.key} value={features[item.key]} editable={false} />
                   </div>
                 ))}
               </div>
@@ -210,8 +210,25 @@ function PlanCard({ plan, onEdit }) {
           ))}
         </div>
       )}
+
+      <div className="px-5 py-3 border-t border-[#E4E7EC] flex items-center justify-between gap-2">
+        <button
+          onClick={() => setExpanded(e => !e)}
+          className="inline-flex items-center gap-1 text-[12.5px] font-medium text-[#475467] hover:text-[#101828] transition-colors"
+        >
+          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          {expanded ? 'Hide' : 'All'} features
+        </button>
+        <button onClick={() => onEdit(plan)} className="btn-outline !py-1.5 !px-3">
+          <Edit3 size={13} /> Edit
+        </button>
+      </div>
     </div>
   );
+}
+
+function SectionLabel({ children }) {
+  return <p className="text-[11px] font-semibold uppercase tracking-wide text-[#98A2B3] mb-3">{children}</p>;
 }
 
 const BLANK_PLAN = {
@@ -282,24 +299,27 @@ export default function Plans() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: '#0F172A' }}>Plans &amp; Pricing</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#94A3B8' }}>Define subscription tiers and feature access</p>
-        </div>
-        <button onClick={openNew} className="btn-primary gap-2"><Plus size={16} /> New Plan</button>
-      </div>
+    <div className="max-w-[1400px] mx-auto animate-fade-in">
+      <PageHeader
+        title="Plans & Pricing"
+        description="Define subscription tiers, pricing and feature access for estates."
+        actions={<button onClick={openNew} className="btn-primary"><Plus size={15} /> New plan</button>}
+      />
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <div
-            className="animate-spin rounded-full"
-            style={{ width: 24, height: 24, border: '2px solid #E2E8F0', borderTopColor: '#10B981' }}
-          />
+        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+          {[0, 1, 2, 3].map(i => <div key={i} className="skeleton h-[380px] rounded-xl" />)}
+        </div>
+      ) : plans.length === 0 ? (
+        <div className="card py-14 flex flex-col items-center text-center">
+          <div className="w-10 h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center mb-3">
+            <CreditCard size={18} className="text-[#98A2B3]" />
+          </div>
+          <p className="text-[14px] font-semibold text-[#101828]">No plans yet</p>
+          <p className="text-[13px] text-[#475467] mt-0.5">Create your first subscription tier to start assigning estates.</p>
         </div>
       ) : (
-        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
           {plans.map(p => <PlanCard key={p._id} plan={p} onEdit={openEdit} />)}
         </div>
       )}
@@ -307,98 +327,94 @@ export default function Plans() {
       {/* Edit / Create drawer */}
       {editing && (
         <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditing(null)} />
-          <div
-            className="relative w-full max-w-lg h-full overflow-y-auto flex flex-col shadow-2xl"
-            style={{ background: '#FFFFFF', borderLeft: '1px solid #E2E8F0' }}
-          >
-            <div
-              className="flex items-center justify-between px-6 py-5 sticky top-0 z-10"
-              style={{ background: '#FFFFFF', borderBottom: '1px solid #E2E8F0' }}
-            >
-              <h2 className="font-bold text-lg" style={{ color: '#0F172A' }}>
-                {editing._id ? 'Edit Plan' : 'New Plan'}
-              </h2>
+          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={() => setEditing(null)} />
+          <div className="relative w-full max-w-lg h-full overflow-y-auto flex flex-col bg-white border-l border-[#E4E7EC] shadow-2xl">
+            <div className="flex items-center justify-between px-6 py-4 sticky top-0 z-10 bg-white border-b border-[#E4E7EC]">
+              <div>
+                <h2 className="text-[16px] font-semibold text-[#101828]">
+                  {editing._id ? 'Edit plan' : 'New plan'}
+                </h2>
+                <p className="text-[12px] text-[#98A2B3] mt-0.5">
+                  {editing._id ? editing.name : 'Set pricing, limits and included features'}
+                </p>
+              </div>
               <button
                 onClick={() => setEditing(null)}
-                className="p-2 rounded-lg transition-all"
-                style={{ color: '#94A3B8' }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#0F172A'; e.currentTarget.style.background = '#F1F5F9'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'transparent'; }}
+                className="p-1.5 rounded-lg text-[#98A2B3] hover:text-[#101828] hover:bg-[#F2F4F7] transition-colors"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <div className="flex-1 p-6 space-y-6">
+            <div className="flex-1 px-6 py-5 space-y-6">
               {/* Basic info */}
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Plan Name</label>
-                    <input className="input-field" value={editing.name} onChange={e => setField('name', e.target.value)} placeholder="Professional" />
+              <div>
+                <SectionLabel>Details</SectionLabel>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="field-label">Plan name</label>
+                      <input className="input-field" value={editing.name} onChange={e => setField('name', e.target.value)} placeholder="Professional" />
+                    </div>
+                    <div>
+                      <label className="field-label">Slug</label>
+                      <input className="input-field" value={editing.slug} onChange={e => setField('slug', e.target.value.toLowerCase().replace(/\s+/g, '-'))} placeholder="professional" />
+                    </div>
                   </div>
                   <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Slug</label>
-                    <input className="input-field" value={editing.slug} onChange={e => setField('slug', e.target.value.toLowerCase().replace(/\s+/g, '-'))} placeholder="professional" />
+                    <label className="field-label">Description</label>
+                    <input className="input-field" value={editing.description} onChange={e => setField('description', e.target.value)} />
                   </div>
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Description</label>
-                  <input className="input-field" value={editing.description} onChange={e => setField('description', e.target.value)} />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Badge (optional)</label>
-                    <input className="input-field" value={editing.badge} onChange={e => setField('badge', e.target.value)} placeholder="Best Value" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Colour</label>
-                    <div className="flex gap-2">
-                      <input type="color" value={editing.color} onChange={e => setField('color', e.target.value)}
-                        className="w-10 h-9 rounded-lg cursor-pointer p-0.5"
-                        style={{ border: '1.5px solid #E2E8F0', background: 'transparent' }}
-                      />
-                      <input className="input-field flex-1" value={editing.color} onChange={e => setField('color', e.target.value)} />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="field-label">Badge (optional)</label>
+                      <input className="input-field" value={editing.badge} onChange={e => setField('badge', e.target.value)} placeholder="Best Value" />
+                    </div>
+                    <div>
+                      <label className="field-label">Colour</label>
+                      <div className="flex gap-2">
+                        <input type="color" value={editing.color} onChange={e => setField('color', e.target.value)}
+                          className="w-10 h-9 rounded-lg cursor-pointer p-0.5 border border-[#D0D5DD] bg-transparent flex-shrink-0"
+                        />
+                        <input className="input-field flex-1 min-w-0" value={editing.color} onChange={e => setField('color', e.target.value)} />
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Pricing */}
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#94A3B8' }}>Pricing (₦)</p>
+              <div className="pt-5 border-t border-[#F2F4F7]">
+                <SectionLabel>Pricing (₦)</SectionLabel>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Monthly flat fee</label>
-                    <input type="number" min="0" className="input-field" value={editing.price.monthly}
+                    <label className="field-label">Monthly flat fee</label>
+                    <input type="number" min="0" className="input-field tabular-nums" value={editing.price.monthly}
                       onChange={e => setField('price.monthly', parseInt(e.target.value) || 0)} />
                   </div>
                   <div>
-                    <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Annual flat fee (full year)</label>
-                    <input type="number" min="0" className="input-field" value={editing.price.annual}
+                    <label className="field-label">Annual flat fee (full year)</label>
+                    <input type="number" min="0" className="input-field tabular-nums" value={editing.price.annual}
                       onChange={e => setField('price.annual', parseInt(e.target.value) || 0)} />
                   </div>
                   <div className="col-span-2">
-                    <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Per-resident / month (₦ per resident)</label>
-                    <input type="number" min="0" className="input-field" placeholder="e.g. 2000"
+                    <label className="field-label">Per-resident / month (₦ per resident)</label>
+                    <input type="number" min="0" className="input-field tabular-nums" placeholder="e.g. 2000"
                       value={editing.price.perResident ?? 0}
                       onChange={e => setField('price.perResident', parseInt(e.target.value) || 0)} />
-                    <p className="text-xs mt-1" style={{ color: '#CBD5E1' }}>Leave 0 to disable per-resident billing for this plan.</p>
+                    <p className="field-hint">Leave 0 to disable per-resident billing for this plan.</p>
                   </div>
                 </div>
               </div>
 
               {/* Features */}
               {FEATURE_GROUPS.map(group => (
-                <div key={group.label}>
-                  <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#94A3B8' }}>
-                    {group.label}
-                  </p>
-                  <div className="space-y-3">
+                <div key={group.label} className="pt-5 border-t border-[#F2F4F7]">
+                  <SectionLabel>{group.label}</SectionLabel>
+                  <div className="space-y-2.5">
                     {group.items.map(item => (
-                      <div key={item.key} className="flex items-center justify-between">
-                        <span className="text-sm" style={{ color: '#475569' }}>{item.label}</span>
+                      <div key={item.key} className="flex items-center justify-between gap-3">
+                        <span className="text-[13px] text-[#344054]">{item.label}</span>
                         <FeatureValue featureKey={item.key} value={editing.features[item.key]} editable
                           onChange={(k, v) => setField(`features.${k}`, v)} />
                       </div>
@@ -408,13 +424,10 @@ export default function Plans() {
               ))}
             </div>
 
-            <div
-              className="px-6 py-4 sticky bottom-0 flex gap-3"
-              style={{ background: '#FFFFFF', borderTop: '1px solid #E2E8F0' }}
-            >
-              <button onClick={() => setEditing(null)} className="btn-outline flex-1">Cancel</button>
-              <button onClick={handleSave} disabled={saving} className="btn-primary flex-1">
-                {saving ? 'Saving...' : editing._id ? 'Save Changes' : 'Create Plan'}
+            <div className="px-6 py-3.5 sticky bottom-0 flex gap-2 justify-end bg-white border-t border-[#E4E7EC]">
+              <button onClick={() => setEditing(null)} className="btn-outline">Cancel</button>
+              <button onClick={handleSave} disabled={saving} className="btn-primary">
+                {saving ? 'Saving...' : editing._id ? 'Save changes' : 'Create plan'}
               </button>
             </div>
           </div>

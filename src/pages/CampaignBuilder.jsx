@@ -6,6 +6,7 @@ import {
   Monitor, Smartphone, Wand2, Loader2,
 } from 'lucide-react';
 import { campaignAPI } from '../api';
+import PageHeader from '../components/ui/PageHeader';
 
 const PLACEMENTS = [
   { key: 'modal',            label: 'In-App Modal',    hint: 'One-time modal shown after login' },
@@ -229,59 +230,54 @@ export default function CampaignBuilder() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-sm" style={{ color: '#94A3B8' }}>Loading campaign…</div>;
+    return (
+      <div className="max-w-[1400px] mx-auto space-y-3">
+        <div className="skeleton h-7 w-56" />
+        <div className="skeleton h-40" />
+        <div className="skeleton h-40" />
+      </div>
+    );
   }
 
-  return (
-    <>
-      <div className="p-6 md:p-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
-          <button
-            onClick={() => navigate(initialType === 'email' ? '/email-campaigns' : '/campaigns')}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold"
-            style={{ background: '#F1F5F9', color: '#475569' }}
-          >
-            <ArrowLeft size={14} /> Back
-          </button>
+  const backTo = initialType === 'email' ? '/email-campaigns' : '/campaigns';
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setAiOpen(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
-              style={{ background: '#0F172A', color: '#fff' }}
-            >
-              <Wand2 size={14} /> Generate with AI
-            </button>
-            <button
-              onClick={() => submit('draft')}
-              disabled={saving}
-              className="px-4 py-2 rounded-xl text-sm font-semibold"
-              style={{ background: '#F1F5F9', color: '#0F172A' }}
-            >
-              {saving ? 'Saving…' : 'Save Draft'}
-            </button>
-            <button
-              onClick={() => submit('active')}
-              disabled={saving}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white"
-              style={{ background: 'linear-gradient(135deg,#EC4899 0%,#F472B6 100%)' }}
-            >
-              <Sparkles size={14} /> {isEdit ? 'Save & Activate' : 'Create & Launch'}
-            </button>
-          </div>
-        </div>
+  return (
+    <div className="max-w-[1400px] mx-auto">
+        <button
+          onClick={() => navigate(backTo)}
+          className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[#475467] hover:text-[#101828] mb-3"
+        >
+          <ArrowLeft size={14} /> {initialType === 'email' ? 'Email campaigns' : 'Campaigns'}
+        </button>
+
+        <PageHeader
+          heading title={isEdit ? (form.name || 'Edit campaign') : 'New campaign'}
+          description="Configure placements, audience and content. The preview updates as you type."
+          actions={
+            <>
+              <button onClick={() => setAiOpen(true)} className="btn-outline">
+                <Wand2 size={14} /> Generate with AI
+              </button>
+              <button onClick={() => submit('draft')} disabled={saving} className="btn-outline">
+                {saving ? 'Saving…' : 'Save draft'}
+              </button>
+              <button onClick={() => submit('active')} disabled={saving} className="btn-primary">
+                <Sparkles size={14} /> {isEdit ? 'Save & activate' : 'Create & launch'}
+              </button>
+            </>
+          }
+        />
 
         {aiOpen && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16, backdropFilter: 'blur(6px)' }} onClick={() => !aiLoading && setAiOpen(false)}>
-            <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, background: '#fff', borderRadius: 20, padding: 28, boxShadow: '0 24px 60px rgba(0,0,0,0.3)' }}>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#EC4899,#F472B6)' }}>
-                  <Wand2 size={16} color="#fff" />
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(16,24,40,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: 16, backdropFilter: 'blur(2px)' }} onClick={() => !aiLoading && setAiOpen(false)}>
+            <div onClick={e => e.stopPropagation()} className="border border-[#E4E7EC] space-y-3" style={{ width: '100%', maxWidth: 520, background: '#fff', borderRadius: 12, padding: 24, boxShadow: '0 20px 48px rgba(16,24,40,0.18)' }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#ECFDF3] border border-[#ABEFC6] text-[#059669]">
+                  <Wand2 size={15} />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold" style={{ color: '#0F172A', letterSpacing: '-0.01em' }}>Generate with Gemini</h3>
-                  <p className="text-xs" style={{ color: '#64748B' }}>Uses your theme colors and AreaConnect logo automatically.</p>
+                  <h3 className="text-[15px] font-semibold text-[#101828] leading-tight">Generate with Gemini</h3>
+                  <p className="text-[12px] text-[#98A2B3]">Uses your theme colors and AreaConnect logo automatically.</p>
                 </div>
               </div>
 
@@ -291,33 +287,31 @@ export default function CampaignBuilder() {
                   onChange={e => setAiPrompt(e.target.value)}
                   rows={3}
                   placeholder="Welcome new residents and show them how to book a visitor, pay dues, and join the Lounge."
-                  className="input"
+                  className="input-field"
                   autoFocus
                 />
               </Field>
               <Field label="Tone">
-                <input value={aiTone} onChange={e => setAiTone(e.target.value)} className="input" />
+                <input value={aiTone} onChange={e => setAiTone(e.target.value)} className="input-field" />
               </Field>
 
-              <label className="inline-flex items-center gap-2 text-sm mt-2" style={{ color: '#0F172A' }}>
-                <input type="checkbox" checked={aiOverwriteAd} onChange={e => setAiOverwriteAd(e.target.checked)} />
+              <label className="inline-flex items-center gap-2 text-[13px] mt-1 text-[#344054]">
+                <input type="checkbox" className="accent-[#059669]" checked={aiOverwriteAd} onChange={e => setAiOverwriteAd(e.target.checked)} />
                 Also overwrite the ad copy (headline, badge, body, CTA)
               </label>
 
-              <div className="flex items-center gap-2 mt-6">
+              <div className="flex items-center justify-end gap-2 pt-3">
                 <button
                   onClick={() => setAiOpen(false)}
                   disabled={aiLoading}
-                  className="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold"
-                  style={{ background: '#F1F5F9', color: '#475569' }}
+                  className="btn-outline"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={runAI}
                   disabled={aiLoading}
-                  className="flex-[2] inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white"
-                  style={{ background: 'linear-gradient(135deg,#EC4899,#F472B6)' }}
+                  className="btn-primary"
                 >
                   {aiLoading ? <><Loader2 size={14} className="animate-spin" /> Generating…</> : <><Sparkles size={14} /> Generate</>}
                 </button>
@@ -326,9 +320,9 @@ export default function CampaignBuilder() {
           </div>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_460px]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_460px]">
           {/* ─── Form ─── */}
-          <div className="space-y-5">
+          <div className="space-y-4 min-w-0">
             {/* Basics */}
             <Section title="Basics" icon={Megaphone}>
               <Field label="Campaign name" required>
@@ -336,12 +330,12 @@ export default function CampaignBuilder() {
                   value={form.name}
                   onChange={e => set('name', e.target.value)}
                   placeholder="Welcome New Members"
-                  className="input"
+                  className="input-field"
                 />
               </Field>
 
               <Field label="Status">
-                <select value={form.status} onChange={e => set('status', e.target.value)} className="input">
+                <select value={form.status} onChange={e => set('status', e.target.value)} className="input-field">
                   <option value="draft">Draft</option>
                   <option value="active">Active</option>
                   <option value="paused">Paused</option>
@@ -359,17 +353,13 @@ export default function CampaignBuilder() {
                     <button
                       key={p.key}
                       onClick={() => togglePlacement(p.key)}
-                      className="text-left p-3 rounded-xl transition"
-                      style={{
-                        background: active ? '#FDF2F8' : '#F8FAFC',
-                        border: `1.5px solid ${active ? '#EC4899' : '#E2E8F0'}`,
-                      }}
+                      className={`text-left p-3 rounded-lg border transition-colors ${active ? 'border-[#059669] bg-[#ECFDF3]/50 ring-1 ring-[#059669]/20' : 'border-[#E4E7EC] bg-white hover:bg-[#F9FAFB]'}`}
                     >
-                      <div className="flex items-start justify-between mb-1">
-                        <span className="text-sm font-bold" style={{ color: '#0F172A' }}>{p.label}</span>
-                        {active && <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ background: '#EC4899', color: '#fff' }}>ON</span>}
+                      <div className="flex items-start justify-between gap-2 mb-0.5">
+                        <span className="text-[13px] font-semibold text-[#101828]">{p.label}</span>
+                        {active && <span className="badge badge-green">On</span>}
                       </div>
-                      <p className="text-xs" style={{ color: '#64748B' }}>{p.hint}</p>
+                      <p className="text-[12px] text-[#98A2B3]">{p.hint}</p>
                     </button>
                   );
                 })}
@@ -379,16 +369,12 @@ export default function CampaignBuilder() {
             {/* Audience */}
             <Section title="Who sees it?" icon={Sparkles}>
               <Field label="App">
-                <div className="flex gap-2">
+                <div className="tabs w-full">
                   {APPS.map(a => (
                     <button
                       key={a.key}
                       onClick={() => set('audience.app', a.key)}
-                      className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold"
-                      style={{
-                        background: form.audience.app === a.key ? '#0F172A' : '#F1F5F9',
-                        color: form.audience.app === a.key ? '#fff' : '#475569',
-                      }}
+                      className={`tab flex-1 ${form.audience.app === a.key ? 'active' : ''}`}
                     >
                       {a.label}
                     </button>
@@ -399,16 +385,16 @@ export default function CampaignBuilder() {
               <Field label="Audience segment">
                 <div className="grid gap-1.5">
                   {SEGMENTS.map(s => (
-                    <label key={s.key} className="flex items-start gap-2 p-2.5 rounded-lg cursor-pointer" style={{ background: form.audience.segment === s.key ? '#FDF2F8' : '#F8FAFC', border: `1px solid ${form.audience.segment === s.key ? '#EC4899' : '#E2E8F0'}` }}>
+                    <label key={s.key} className={`flex items-start gap-2 p-2.5 rounded-md cursor-pointer border ${form.audience.segment === s.key ? 'border-[#059669] bg-[#ECFDF3]/50 ring-1 ring-[#059669]/20' : 'border-[#E4E7EC] bg-white hover:bg-[#F9FAFB]'}`}>
                       <input
                         type="radio"
                         checked={form.audience.segment === s.key}
                         onChange={() => set('audience.segment', s.key)}
-                        className="mt-0.5"
+                        className="mt-0.5 accent-[#059669]"
                       />
                       <div>
-                        <div className="text-sm font-semibold" style={{ color: '#0F172A' }}>{s.label}</div>
-                        <div className="text-xs" style={{ color: '#64748B' }}>{s.hint}</div>
+                        <div className="text-[13px] font-medium text-[#101828]">{s.label}</div>
+                        <div className="text-[12px] text-[#98A2B3]">{s.hint}</div>
                       </div>
                     </label>
                   ))}
@@ -422,9 +408,9 @@ export default function CampaignBuilder() {
                       type="number" min={1} max={365}
                       value={form.audience.newUserWithinDays}
                       onChange={e => set('audience.newUserWithinDays', parseInt(e.target.value) || 7)}
-                      className="input w-24"
+                      className="input-field !w-24"
                     />
-                    <span className="text-sm" style={{ color: '#64748B' }}>days</span>
+                    <span className="text-[13px] text-[#475467]">days</span>
                   </div>
                 </Field>
               )}
@@ -436,9 +422,9 @@ export default function CampaignBuilder() {
                       type="number" min={1} max={365}
                       value={form.audience.existingUserBeyondDays}
                       onChange={e => set('audience.existingUserBeyondDays', parseInt(e.target.value) || 7)}
-                      className="input w-24"
+                      className="input-field !w-24"
                     />
-                    <span className="text-sm" style={{ color: '#64748B' }}>days</span>
+                    <span className="text-[13px] text-[#475467]">days</span>
                   </div>
                 </Field>
               )}
@@ -446,9 +432,10 @@ export default function CampaignBuilder() {
               {form.audience.segment === 'by_role' && (
                 <Field label="Roles">
                   {['resident', 'estate_manager'].map(r => (
-                    <label key={r} className="inline-flex items-center gap-2 mr-4 text-sm" style={{ color: '#0F172A' }}>
+                    <label key={r} className="inline-flex items-center gap-2 mr-4 text-[13px] text-[#344054]">
                       <input
                         type="checkbox"
+                        className="accent-[#059669]"
                         checked={form.audience.roles.includes(r)}
                         onChange={e => {
                           const roles = e.target.checked
@@ -467,27 +454,27 @@ export default function CampaignBuilder() {
             {/* Content */}
             <Section title="Ad content" icon={Megaphone}>
               <Field label="Badge (optional)">
-                <input value={form.content.badge} onChange={e => set('content.badge', e.target.value)} placeholder="NEW HERE?" className="input" />
+                <input value={form.content.badge} onChange={e => set('content.badge', e.target.value)} placeholder="NEW HERE?" className="input-field" />
               </Field>
               <Field label="Headline" required>
-                <input value={form.content.headline} onChange={e => set('content.headline', e.target.value)} placeholder="Welcome to AreaConnect" className="input" />
+                <input value={form.content.headline} onChange={e => set('content.headline', e.target.value)} placeholder="Welcome to AreaConnect" className="input-field" />
               </Field>
               <Field label="Subheadline">
-                <input value={form.content.subheadline} onChange={e => set('content.subheadline', e.target.value)} placeholder="Your estate, together." className="input" />
+                <input value={form.content.subheadline} onChange={e => set('content.subheadline', e.target.value)} placeholder="Your estate, together." className="input-field" />
               </Field>
               <Field label="Body">
-                <textarea value={form.content.body} onChange={e => set('content.body', e.target.value)} rows={4} className="input" />
+                <textarea value={form.content.body} onChange={e => set('content.body', e.target.value)} rows={4} className="input-field" />
               </Field>
               <Field label="Image URL (optional)">
-                <input value={form.content.imageUrl} onChange={e => set('content.imageUrl', e.target.value)} placeholder="https://…" className="input" />
+                <input value={form.content.imageUrl} onChange={e => set('content.imageUrl', e.target.value)} placeholder="https://…" className="input-field" />
               </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="CTA text"><input value={form.content.ctaText} onChange={e => set('content.ctaText', e.target.value)} className="input" /></Field>
-                <Field label="CTA URL / route"><input value={form.content.ctaUrl} onChange={e => set('content.ctaUrl', e.target.value)} placeholder="/profile" className="input" /></Field>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="CTA text"><input value={form.content.ctaText} onChange={e => set('content.ctaText', e.target.value)} className="input-field" /></Field>
+                <Field label="CTA URL / route"><input value={form.content.ctaUrl} onChange={e => set('content.ctaUrl', e.target.value)} placeholder="/profile" className="input-field" /></Field>
               </div>
 
               {/* Theme */}
-              <div className="grid grid-cols-4 gap-2 mt-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
                 {[
                   ['primaryColor', 'Primary'],
                   ['accentColor', 'Accent'],
@@ -495,18 +482,18 @@ export default function CampaignBuilder() {
                   ['textColor', 'Text'],
                 ].map(([k, label]) => (
                   <div key={k}>
-                    <label className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: '#94A3B8' }}>{label}</label>
+                    <label className="field-label !mb-0">{label}</label>
                     <div className="flex items-center gap-1.5 mt-1">
                       <input
                         type="color"
                         value={form.content.theme[k]}
                         onChange={e => set(`content.theme.${k}`, e.target.value)}
-                        className="w-8 h-8 rounded cursor-pointer border-0"
+                        className="w-8 h-8 flex-shrink-0 rounded-md cursor-pointer border border-[#D0D5DD] p-0.5 bg-white"
                       />
                       <input
                         value={form.content.theme[k]}
                         onChange={e => set(`content.theme.${k}`, e.target.value)}
-                        className="input text-xs px-2 py-1 flex-1"
+                        className="input-field !text-[12px] !px-2 !py-1 flex-1 min-w-0 font-mono"
                       />
                     </div>
                   </div>
@@ -518,16 +505,16 @@ export default function CampaignBuilder() {
             {form.placements.includes('email') && (
               <Section title="Email content" icon={Mail}>
                 <Field label="Subject" required>
-                  <input value={form.email.subject} onChange={e => set('email.subject', e.target.value)} className="input" />
+                  <input value={form.email.subject} onChange={e => set('email.subject', e.target.value)} className="input-field" />
                 </Field>
                 <Field label="Preheader (preview text)">
-                  <input value={form.email.preheader} onChange={e => set('email.preheader', e.target.value)} className="input" />
+                  <input value={form.email.preheader} onChange={e => set('email.preheader', e.target.value)} className="input-field" />
                 </Field>
                 <Field label="HTML body" required>
-                  <textarea value={form.email.htmlBody} onChange={e => set('email.htmlBody', e.target.value)} rows={10} className="input font-mono text-xs" />
+                  <textarea value={form.email.htmlBody} onChange={e => set('email.htmlBody', e.target.value)} rows={10} className="input-field font-mono !text-[12px]" />
                 </Field>
-                <label className="inline-flex items-center gap-2 text-sm" style={{ color: '#0F172A' }}>
-                  <input type="checkbox" checked={form.email.sendOnUserSignup} onChange={e => set('email.sendOnUserSignup', e.target.checked)} />
+                <label className="inline-flex items-center gap-2 text-[13px] text-[#344054]">
+                  <input type="checkbox" className="accent-[#059669]" checked={form.email.sendOnUserSignup} onChange={e => set('email.sendOnUserSignup', e.target.checked)} />
                   Auto-send to matching users the moment they sign up
                 </label>
               </Section>
@@ -535,38 +522,36 @@ export default function CampaignBuilder() {
 
             {/* Schedule */}
             <Section title="Schedule (optional)" icon={Eye}>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Start"><input type="datetime-local" value={form.schedule.startAt} onChange={e => set('schedule.startAt', e.target.value)} className="input" /></Field>
-                <Field label="End"><input type="datetime-local" value={form.schedule.endAt} onChange={e => set('schedule.endAt', e.target.value)} className="input" /></Field>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Field label="Start"><input type="datetime-local" value={form.schedule.startAt} onChange={e => set('schedule.startAt', e.target.value)} className="input-field" /></Field>
+                <Field label="End"><input type="datetime-local" value={form.schedule.endAt} onChange={e => set('schedule.endAt', e.target.value)} className="input-field" /></Field>
               </div>
             </Section>
           </div>
 
           {/* ─── Live preview ─── */}
-          <div className="lg:sticky lg:top-6 self-start">
-            <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #E2E8F0' }}>
-              <div className="flex items-center justify-between p-3" style={{ borderBottom: '1px solid #F1F5F9' }}>
-                <div className="flex items-center gap-2 text-xs font-bold" style={{ color: '#0F172A' }}>
-                  <Eye size={14} /> LIVE PREVIEW
+          <div className="lg:sticky lg:top-6 self-start min-w-0">
+            <div className="card overflow-hidden">
+              <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-[#E4E7EC]">
+                <div className="flex items-center gap-2 text-[14px] font-semibold text-[#101828]">
+                  <Eye size={14} className="text-[#667085]" /> Live preview
                 </div>
-                <div className="flex items-center gap-1">
-                  {form.placements.map(p => (
-                    <button
-                      key={p}
-                      onClick={() => setPreviewTab(p)}
-                      className="text-[10px] px-2 py-1 rounded font-semibold"
-                      style={{
-                        background: previewTab === p ? '#0F172A' : '#F1F5F9',
-                        color: previewTab === p ? '#fff' : '#475569',
-                      }}
-                    >
-                      {p}
-                    </button>
-                  ))}
-                </div>
+                {form.placements.length > 0 && (
+                  <div className="tabs max-w-full overflow-x-auto">
+                    {form.placements.map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setPreviewTab(p)}
+                        className={`tab !text-[11.5px] !px-2 !py-1 ${previewTab === p ? 'active' : ''}`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div className="p-4" style={{ background: '#F8FAFC', minHeight: 480 }}>
+              <div className="p-4 bg-[#F9FAFB]" style={{ minHeight: 480 }}>
                 {previewTab === 'email' ? (
                   <EmailPreview form={form} />
                 ) : (
@@ -575,53 +560,40 @@ export default function CampaignBuilder() {
               </div>
 
               {previewTab !== 'email' && (
-                <div className="flex items-center justify-center gap-2 p-2" style={{ borderTop: '1px solid #F1F5F9' }}>
-                  <button
-                    onClick={() => setPreviewMode('desktop')}
-                    className="p-1.5 rounded"
-                    style={{ background: previewMode === 'desktop' ? '#0F172A' : 'transparent', color: previewMode === 'desktop' ? '#fff' : '#94A3B8' }}
-                  >
-                    <Monitor size={14} />
-                  </button>
-                  <button
-                    onClick={() => setPreviewMode('mobile')}
-                    className="p-1.5 rounded"
-                    style={{ background: previewMode === 'mobile' ? '#0F172A' : 'transparent', color: previewMode === 'mobile' ? '#fff' : '#94A3B8' }}
-                  >
-                    <Smartphone size={14} />
-                  </button>
+                <div className="flex items-center justify-center p-2 border-t border-[#E4E7EC]">
+                  <div className="tabs">
+                    <button
+                      onClick={() => setPreviewMode('desktop')}
+                      title="Desktop"
+                      className={`tab !px-2 ${previewMode === 'desktop' ? 'active' : ''}`}
+                    >
+                      <Monitor size={14} />
+                    </button>
+                    <button
+                      onClick={() => setPreviewMode('mobile')}
+                      title="Mobile"
+                      className={`tab !px-2 ${previewMode === 'mobile' ? 'active' : ''}`}
+                    >
+                      <Smartphone size={14} />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
           </div>
         </div>
-      </div>
-
-      <style>{`
-        .input {
-          width: 100%;
-          padding: 9px 12px;
-          border-radius: 10px;
-          background: #F8FAFC;
-          border: 1px solid #E2E8F0;
-          font-size: 14px;
-          color: #0F172A;
-          outline: none;
-        }
-        .input:focus { border-color: #EC4899; background: #fff; }
-      `}</style>
-    </>
+    </div>
   );
 }
 
 function Section({ title, icon: Icon, children }) {
   return (
-    <div className="rounded-2xl p-5" style={{ background: '#fff', border: '1px solid #E2E8F0' }}>
-      <div className="flex items-center gap-2 mb-4">
-        <Icon size={16} style={{ color: '#EC4899' }} />
-        <h3 className="text-sm font-bold uppercase tracking-wider" style={{ color: '#0F172A' }}>{title}</h3>
+    <div className="card overflow-hidden">
+      <div className="flex items-center gap-2 px-5 py-3.5 border-b border-[#E4E7EC]">
+        <Icon size={15} className="text-[#667085]" />
+        <h3 className="card-title">{title}</h3>
       </div>
-      <div className="space-y-3">{children}</div>
+      <div className="p-5 space-y-3">{children}</div>
     </div>
   );
 }
@@ -629,8 +601,8 @@ function Section({ title, icon: Icon, children }) {
 function Field({ label, required, children }) {
   return (
     <div>
-      <label className="block text-xs font-semibold mb-1.5" style={{ color: '#475569' }}>
-        {label} {required && <span style={{ color: '#EC4899' }}>*</span>}
+      <label className="field-label">
+        {label} {required && <span className="text-[#D92D20]">*</span>}
       </label>
       {children}
     </div>

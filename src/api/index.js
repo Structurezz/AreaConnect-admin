@@ -20,6 +20,19 @@ export const estateAPI = {
   getStats: () => api.get('/estates/stats'),
 };
 
+// Admin onboarding (wizard, bulk import, invitations, portfolios)
+export const onboardingAPI = {
+  summary:      ()       => api.get('/admin/onboarding/summary'),
+  managers:     (params) => api.get('/admin/onboarding/managers', { params }),
+  estate:       (data)   => api.post('/admin/onboarding/estate', data),
+  bulk:         (data)   => api.post('/admin/onboarding/bulk', data),
+  portfolio:    (data)   => api.post('/admin/onboarding/portfolio', data),
+  invites:      ()       => api.get('/admin/onboarding/invites'),
+  invite:       (data)   => api.post('/admin/onboarding/invites', data),
+  resendInvite: (id)     => api.post(`/admin/onboarding/invites/${id}/resend`),
+  revokeInvite: (id)     => api.delete(`/admin/onboarding/invites/${id}`),
+};
+
 // Visitors
 export const visitorAPI = {
   getAll: (params) => api.get('/visitors', { params }),

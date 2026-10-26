@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Radio, Mic, MicOff, Users, Plus, Calendar, X, Hand, Check, UserX,
   Save, Loader2, Share2, Trash2, Edit3, Play, Pause, Headphones, Link as LinkIcon,
-  Copy, ChevronRight, Crown, Volume2, Heart, MessageSquare, Send,
+  Copy, ChevronRight, ChevronLeft, Crown, Volume2, Heart, MessageSquare, Send,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { podcastAPI, defaultTrackAPI } from '../api';
@@ -11,9 +11,10 @@ import { useSocket }  from '../context/SocketContext';
 import { useLiveAudio } from '../hooks/useLiveAudio';
 import BoostedRemoteAudio from '../components/BoostedRemoteAudio';
 import { Music, VolumeX, Volume1, Sliders } from 'lucide-react';
+import PageHeader from '../components/ui/PageHeader';
+import StatCard from '../components/ui/StatCard';
 
-const BRAND = '#8B5CF6'; // violet to differentiate from estate green
-const BRAND_DARK = '#6D28D9';
+const BRAND = '#059669'; // platform accent (emerald)
 
 const fmtDur = (ms) => {
   const s = Math.floor(ms / 1000);
@@ -31,6 +32,42 @@ function AudioSinks({ streams }) {
   return (
     <div style={{ width: 0, height: 0, overflow: 'hidden' }}>
       {Array.from(streams.entries()).map(([id, stream]) => <BoostedRemoteAudio key={id} stream={stream} />)}
+    </div>
+  );
+}
+
+// Shared modal chrome (overlay + white panel with header row)
+function ModalShell({ title, subtitle, onClose, maxWidth = 480, z = 70, children, footer }) {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center p-4 bg-[#101828]/50 backdrop-blur-[2px]" style={{ zIndex: z }}>
+      <div className="bg-white rounded-xl w-full border border-[#E4E7EC] shadow-[0_20px_48px_-12px_rgba(16,24,40,0.25)] overflow-hidden flex flex-col max-h-[85vh] animate-fade-in"
+        style={{ maxWidth }}>
+        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-[#E4E7EC]">
+          <div className="min-w-0">
+            <div className="text-[15px] font-semibold text-[#101828]">{title}</div>
+            {subtitle && <div className="text-[12px] text-[#98A2B3] mt-0.5">{subtitle}</div>}
+          </div>
+          <button type="button" onClick={onClose}
+            className="p-1.5 rounded-md text-[#98A2B3] hover:bg-[#F2F4F7] hover:text-[#101828] transition-colors">
+            <X size={16}/>
+          </button>
+        </div>
+        <div className="flex-1 overflow-y-auto">{children}</div>
+        {footer && <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-[#E4E7EC] bg-[#F9FAFB]">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+// Compact empty state used across the page
+function Empty({ icon: Icon, title, hint }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+      <div className="w-10 h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center mb-3">
+        <Icon size={18} className="text-[#98A2B3]" />
+      </div>
+      <p className="text-[14px] font-semibold text-[#101828]">{title}</p>
+      {hint && <p className="text-[13px] text-[#98A2B3] mt-0.5">{hint}</p>}
     </div>
   );
 }
@@ -71,46 +108,45 @@ function ShowFormModal({ show, onSaved, onClose }) {
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(2,6,23,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ background: '#fff', borderRadius: 18, padding: 22, width: '100%', maxWidth: 480, border: '1px solid #E2E8F0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: '#0F172A' }}>{show ? 'Edit show' : 'Schedule a show'}</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}><X size={18}/></button>
-        </div>
-
-        <label style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Title</label>
-        <input className="input-field" style={{ marginTop: 6, marginBottom: 12 }}
-          value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
-          placeholder="e.g. Friday Talk Show — Estate Life" />
-
-        <label style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Description</label>
-        <textarea className="input-field" rows={3} style={{ marginTop: 6, marginBottom: 12, resize: 'vertical' }}
-          value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
-          placeholder="What is this episode about?" />
-
-        <label style={{ fontSize: 11, fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Scheduled for (optional)</label>
-        <input className="input-field" type="datetime-local" style={{ marginTop: 6, marginBottom: 12 }}
-          value={form.scheduledAt} onChange={e => setForm({ ...form, scheduledAt: e.target.value })} />
-
-        <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 14 }}>
-          <input type="checkbox" checked={form.isRecurring}
-            onChange={e => setForm({ ...form, isRecurring: e.target.checked })} />
-          <span style={{ fontSize: 13, color: '#334155' }}>Recurring (e.g. every Friday)</span>
-        </label>
-
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={onClose}
-            style={{ flex: '0 0 auto', padding: '10px 18px', borderRadius: 12, border: '1px solid #E2E8F0', background: '#F8FAFC', color: '#64748B', fontWeight: 600, fontSize: 13, cursor: 'pointer' }}>Cancel</button>
-          <button onClick={save} disabled={saving}
-            style={{ flex: 1, padding: '10px 0', borderRadius: 12, border: 'none',
-              background: `linear-gradient(135deg, ${BRAND}, ${BRAND_DARK})`, color: '#fff',
-              fontWeight: 700, fontSize: 13, cursor: saving ? 'wait' : 'pointer',
-              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+    <ModalShell
+      title={show ? 'Edit show' : 'Schedule a show'}
+      subtitle={show ? 'Update the details for this broadcast' : 'Plan a broadcast across every estate'}
+      onClose={onClose}
+      maxWidth={480}
+      footer={(
+        <>
+          <button onClick={onClose} className="btn-outline">Cancel</button>
+          <button onClick={save} disabled={saving} className="btn-primary">
             {saving ? <><Loader2 size={14} className="animate-spin"/> Saving…</> : <><Save size={13}/> {show ? 'Update' : 'Schedule'}</>}
           </button>
+        </>
+      )}
+    >
+      <div className="p-5 space-y-4">
+        <div>
+          <label className="field-label">Title</label>
+          <input className="input-field"
+            value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}
+            placeholder="e.g. Friday Talk Show — Estate Life" />
         </div>
+        <div>
+          <label className="field-label">Description</label>
+          <textarea className="input-field resize-y" rows={3}
+            value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
+            placeholder="What is this episode about?" />
+        </div>
+        <div>
+          <label className="field-label">Scheduled for <span className="text-[#98A2B3] font-normal">(optional)</span></label>
+          <input className="input-field" type="datetime-local"
+            value={form.scheduledAt} onChange={e => setForm({ ...form, scheduledAt: e.target.value })} />
+        </div>
+        <label className="flex items-center gap-2.5 cursor-pointer">
+          <input type="checkbox" className="w-4 h-4 accent-[#059669]" checked={form.isRecurring}
+            onChange={e => setForm({ ...form, isRecurring: e.target.checked })} />
+          <span className="text-[13px] text-[#344054]">Recurring (e.g. every Friday)</span>
+        </label>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
@@ -134,30 +170,40 @@ function InviteModal({ show, onInvited, onClose }) {
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(2,6,23,0.65)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ background: '#fff', borderRadius: 18, padding: 22, width: '100%', maxWidth: 440, border: '1px solid #E2E8F0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-          <div style={{ fontSize: 18, fontWeight: 800, color: '#0F172A' }}>Invite a guest</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}><X size={18}/></button>
+    <ModalShell
+      title="Invite a guest"
+      subtitle="Add a guest and share their one-click join link. They don't need an account."
+      onClose={onClose}
+      maxWidth={440}
+      footer={(
+        <>
+          <button onClick={onClose} className="btn-outline">Cancel</button>
+          <button onClick={invite} disabled={saving} className="btn-primary">
+            {saving ? <><Loader2 size={14} className="animate-spin"/> Creating…</> : <><LinkIcon size={13}/> Generate invite link</>}
+          </button>
+        </>
+      )}
+    >
+      <div className="p-5 space-y-4">
+        <div>
+          <label className="field-label">Name</label>
+          <input className="input-field" placeholder="Name (e.g. Mr. Adebayo — Victoria Gardens)"
+            value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
         </div>
-        <div style={{ fontSize: 12, color: '#64748B', marginBottom: 14 }}>
-          Add a guest and share their one-click join link. They don't need an account.
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="field-label">Estate <span className="text-[#98A2B3] font-normal">(optional)</span></label>
+            <input className="input-field" placeholder="Estate (optional)"
+              value={form.estate} onChange={e => setForm({ ...form, estate: e.target.value })} />
+          </div>
+          <div>
+            <label className="field-label">Phone <span className="text-[#98A2B3] font-normal">(optional)</span></label>
+            <input className="input-field" placeholder="Phone (optional)"
+              value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+          </div>
         </div>
-        <input className="input-field" placeholder="Name (e.g. Mr. Adebayo — Victoria Gardens)"
-          value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={{ marginBottom: 10 }} />
-        <input className="input-field" placeholder="Estate (optional)"
-          value={form.estate} onChange={e => setForm({ ...form, estate: e.target.value })} style={{ marginBottom: 10 }} />
-        <input className="input-field" placeholder="Phone (optional)"
-          value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} style={{ marginBottom: 14 }} />
-        <button onClick={invite} disabled={saving}
-          style={{ width: '100%', padding: '11px 0', borderRadius: 12, border: 'none',
-            background: `linear-gradient(135deg, ${BRAND}, ${BRAND_DARK})`, color: '#fff', fontWeight: 700, fontSize: 13,
-            cursor: saving ? 'wait' : 'pointer',
-            display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-          {saving ? <><Loader2 size={14} className="animate-spin"/> Creating…</> : <><LinkIcon size={13}/> Generate invite link</>}
-        </button>
       </div>
-    </div>
+    </ModalShell>
   );
 }
 
@@ -326,137 +372,153 @@ function LiveStudio({ show, onEnded, onBack }) {
     } finally { setEnding(false); }
   };
 
+
+  const joinedGuests = (show.guests || []).filter(g => g.status === 'joined');
+
   return (
-    <div style={{ background: 'linear-gradient(180deg, #0F172A 0%, #1E1B4B 100%)', borderRadius: 18, minHeight: '70vh', color: '#fff', padding: 20, position: 'relative' }}>
+    <div className="relative space-y-4">
       <AudioSinks streams={live.remoteStreams} />
 
       {/* Top bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 20 }}>
-        <button onClick={onBack} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)', color: '#CBD5E1', borderRadius: 10, padding: '7px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          ← Back
+      <div className="flex items-center justify-between gap-3">
+        <button onClick={onBack} className="btn-ghost !px-2">
+          <ChevronLeft size={15}/> Back
         </button>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ position: 'relative', display: 'inline-flex', width: 10, height: 10 }}>
-            <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#EF4444', animation: 'ping 1.6s infinite' }} />
-            <span style={{ position: 'relative', width: 10, height: 10, borderRadius: '50%', background: '#EF4444' }} />
-          </span>
-          <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.16em', color: '#FCA5A5' }}>ON AIR</span>
-          <span style={{ fontSize: 12, color: '#94A3B8', marginLeft: 4 }}>{fmtDur(elapsed)}</span>
-        </div>
-        <button onClick={endShow} disabled={ending}
-          style={{ padding: '8px 14px', borderRadius: 10, background: '#EF4444', color: '#fff', fontWeight: 700, fontSize: 12, border: 'none', cursor: ending ? 'wait' : 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <button onClick={endShow} disabled={ending} className="btn-danger">
           {ending ? <><Loader2 size={13} className="animate-spin"/> Ending…</> : <><X size={13}/> End show</>}
         </button>
       </div>
 
-      {/* Center — show info + listener/peak */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24, flexWrap: 'wrap' }}>
-        <div style={{ width: 72, height: 72, borderRadius: 20, background: `linear-gradient(135deg, ${BRAND}, ${BRAND_DARK})`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: '0 10px 24px rgba(139,92,246,0.4)' }}>
-          <Radio size={30} color="#fff" />
-        </div>
-        <div style={{ flex: 1, minWidth: 240 }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: '#A5B4FC', letterSpacing: '0.14em', textTransform: 'uppercase' }}>AreaConnect FM</div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: '#fff', letterSpacing: '-0.01em' }}>{show.title}</div>
-          <div style={{ fontSize: 13, color: '#CBD5E1' }}>{show.description || 'Live broadcast across all estates'}</div>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 14, padding: '12px 18px', minWidth: 90 }}>
-            <div style={{ fontSize: 11, color: '#A5B4FC', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Listeners</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{live.listenerCount}</div>
+      {/* Show header */}
+      <div className="card p-5">
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
+            <div className="w-12 h-12 rounded-lg bg-[#ECFDF3] text-[#059669] border border-[#ABEFC6] flex items-center justify-center flex-shrink-0">
+              <Radio size={22} />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#FEF3F2] border border-[#FECDCA] text-[#B42318] text-[11px] font-semibold tracking-wide">
+                  <span className="relative inline-flex w-2 h-2">
+                    <span className="absolute inset-0 rounded-full bg-[#F04438]" style={{ animation: 'ping 1.6s infinite' }} />
+                    <span className="relative w-2 h-2 rounded-full bg-[#F04438]" />
+                  </span>
+                  ON AIR
+                </span>
+                <span className="text-[12px] text-[#475467] tabular-nums font-medium">{fmtDur(elapsed)}</span>
+                <span className="text-[11px] text-[#98A2B3]">· AreaConnect FM</span>
+              </div>
+              <div className="text-[18px] font-semibold text-[#101828] tracking-tight mt-1 truncate">{show.title}</div>
+              <div className="text-[13px] text-[#475467] truncate">{show.description || 'Live broadcast across all estates'}</div>
+            </div>
           </div>
-          <div style={{ textAlign: 'center', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 14, padding: '12px 18px', minWidth: 90 }}>
-            <div style={{ fontSize: 11, color: '#A5B4FC', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Peak</div>
-            <div style={{ fontSize: 26, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{peak}</div>
+          <div className="grid grid-cols-2 gap-px rounded-lg overflow-hidden border border-[#E4E7EC] bg-[#E4E7EC] flex-shrink-0">
+            {[
+              { label: 'Listeners', value: live.listenerCount },
+              { label: 'Peak',      value: peak },
+            ].map(k => (
+              <div key={k.label} className="bg-white px-4 py-2.5 text-center min-w-[84px]">
+                <div className="text-[11px] font-medium text-[#98A2B3]">{k.label}</div>
+                <div className="text-[20px] font-semibold text-[#101828] leading-tight tabular-nums">{k.value}</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Mic + guests + raised hands grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14 }}>
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
         {/* Mic card */}
-        <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 18, display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div className="card p-4 flex items-center gap-4">
           <button onClick={live.toggleMic}
-            style={{ width: 60, height: 60, borderRadius: '50%', border: 'none', cursor: 'pointer',
-              background: live.micOn ? `linear-gradient(135deg, ${BRAND}, ${BRAND_DARK})` : '#334155',
-              color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: live.micOn ? '0 8px 20px rgba(139,92,246,0.5)' : 'none' }}>
-            {live.micOn ? <Mic size={24}/> : <MicOff size={24}/>}
+            className={`w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 transition-colors ${live.micOn ? 'bg-[#059669] hover:bg-[#047857] text-white shadow-[0_0_0_4px_#D1FADF]' : 'bg-[#F2F4F7] hover:bg-[#EAECF0] text-[#475467] border border-[#D0D5DD]'}`}>
+            {live.micOn ? <Mic size={22}/> : <MicOff size={22}/>}
           </button>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, color: '#A5B4FC', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Your mic</div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{live.micOn ? 'Open' : 'Muted'}</div>
-            <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>{user?.name} · Host</div>
+          <div className="min-w-0">
+            <div className="text-[12px] font-medium text-[#98A2B3]">Your mic</div>
+            <div className="text-[15px] font-semibold text-[#101828]">{live.micOn ? 'Open' : 'Muted'}</div>
+            <div className="text-[12px] text-[#475467] truncate">{user?.name} · Host</div>
           </div>
         </div>
 
         {/* Guests */}
-        <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 18 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <Crown size={14} color="#FDE68A" />
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Speakers</span>
-            <span style={{ fontSize: 11, color: '#94A3B8', marginLeft: 'auto' }}>{(show.guests || []).filter(g => g.status === 'joined').length} in</span>
-          </div>
-          {(show.guests || []).filter(g => g.status === 'joined').length === 0 && (
-            <div style={{ fontSize: 12, color: '#64748B', fontStyle: 'italic' }}>Just you right now. Invite guests from the overview page.</div>
-          )}
-          {(show.guests || []).filter(g => g.status === 'joined').map(g => (
-            <div key={g._id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', fontSize: 12, color: '#CBD5E1' }}>
-              <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff' }}>
-                {g.name[0]?.toUpperCase()}
-              </div>
-              <span>{g.name}</span>
-              {g.estate && <span style={{ color: '#64748B' }}>· {g.estate}</span>}
+        <div className="card">
+          <div className="card-header !py-3 !px-4">
+            <div className="flex items-center gap-2">
+              <Crown size={14} className="text-[#98A2B3]" />
+              <span className="card-title">Speakers</span>
             </div>
-          ))}
+            <span className="text-[12px] text-[#98A2B3] tabular-nums">{joinedGuests.length} in</span>
+          </div>
+          <div className="px-4 py-2">
+            {joinedGuests.length === 0 && (
+              <div className="text-[12px] text-[#98A2B3] py-2">Just you right now. Invite guests from the overview page.</div>
+            )}
+            {joinedGuests.map(g => (
+              <div key={g._id} className="flex items-center gap-2 py-1.5 text-[13px]">
+                <div className="w-6 h-6 rounded-full bg-[#F2F4F7] text-[#475467] flex items-center justify-center text-[10px] font-semibold">
+                  {g.name[0]?.toUpperCase()}
+                </div>
+                <span className="text-[#101828] font-medium truncate">{g.name}</span>
+                {g.estate && <span className="text-[#98A2B3] truncate">· {g.estate}</span>}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Raised hands */}
-        <div style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.25)', borderRadius: 16, padding: 18 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <Hand size={14} color="#FBBF24" />
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Raised hands</span>
-            <span style={{ fontSize: 11, color: '#FBBF24', marginLeft: 'auto', fontWeight: 700 }}>{live.handRequests.length}</span>
-          </div>
-          {live.handRequests.length === 0 && (
-            <div style={{ fontSize: 12, color: '#64748B', fontStyle: 'italic' }}>No call-in requests yet.</div>
-          )}
-          {live.handRequests.map(r => (
-            <div key={r.socketId} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
-              <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, color: '#fff' }}>
-                {r.userName?.[0]?.toUpperCase() || '?'}
-              </div>
-              <span style={{ fontSize: 12, color: '#fff', flex: 1 }}>{r.userName || 'Listener'}</span>
-              <button onClick={() => live.approveHand(r.socketId)} title="Promote to speaker"
-                style={{ padding: 5, borderRadius: 8, background: '#10B981', color: '#fff', border: 'none', cursor: 'pointer' }}>
-                <Check size={13}/>
-              </button>
-              <button onClick={() => live.denyHand(r.socketId)} title="Dismiss"
-                style={{ padding: 5, borderRadius: 8, background: 'rgba(239,68,68,0.2)', color: '#FCA5A5', border: '1px solid rgba(239,68,68,0.3)', cursor: 'pointer' }}>
-                <X size={13}/>
-              </button>
+        <div className="card">
+          <div className="card-header !py-3 !px-4">
+            <div className="flex items-center gap-2">
+              <Hand size={14} className="text-[#F79009]" />
+              <span className="card-title">Raised hands</span>
             </div>
-          ))}
+            <span className={`badge ${live.handRequests.length ? 'badge-yellow' : 'badge-gray'} tabular-nums`}>{live.handRequests.length}</span>
+          </div>
+          <div className="px-4 py-2">
+            {live.handRequests.length === 0 && (
+              <div className="text-[12px] text-[#98A2B3] py-2">No call-in requests yet.</div>
+            )}
+            {live.handRequests.map(r => (
+              <div key={r.socketId} className="flex items-center gap-2 py-1.5">
+                <div className="w-6 h-6 rounded-full bg-[#FFFAEB] text-[#B54708] flex items-center justify-center text-[10px] font-semibold">
+                  {r.userName?.[0]?.toUpperCase() || '?'}
+                </div>
+                <span className="text-[13px] text-[#101828] flex-1 truncate">{r.userName || 'Listener'}</span>
+                <button onClick={() => live.approveHand(r.socketId)} title="Promote to speaker"
+                  className="p-1.5 rounded-md bg-[#059669] hover:bg-[#047857] text-white transition-colors">
+                  <Check size={13}/>
+                </button>
+                <button onClick={() => live.denyHand(r.socketId)} title="Dismiss"
+                  className="p-1.5 rounded-md border border-[#D0D5DD] text-[#475467] hover:text-[#B42318] hover:bg-[#FEF3F2] hover:border-[#FECDCA] transition-colors">
+                  <X size={13}/>
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* ── Mixer deck: music + mic sliders (vertical) ────────────────────── */}
-      <div style={{ marginTop: 16, background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: '14px 18px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-          <Sliders size={14} color="#C4B5FD"/>
-          <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Mixer deck</span>
-          <span style={{ fontSize: 11, color: '#94A3B8' }}>· broadcast to the room</span>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      <div className="card">
+        <div className="card-header flex-wrap !py-3 !px-4">
+          <div className="flex items-center gap-2">
+            <Sliders size={14} className="text-[#98A2B3]"/>
+            <span className="card-title">Mixer deck</span>
+            <span className="card-sub hidden sm:inline">· broadcast to the room</span>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
             {currentTrack ? (
               <>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 10px', borderRadius: 999, background: 'rgba(139,92,246,0.2)', border: `1px solid ${BRAND}44`, fontSize: 11, fontWeight: 700, color: '#fff', maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  <Music size={11}/> {currentTrack.title}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#ECFDF3] border border-[#ABEFC6] text-[12px] font-medium text-[#067647] max-w-[240px] min-w-0">
+                  <Music size={12} className="flex-shrink-0"/> <span className="truncate">{currentTrack.title}</span>
                 </div>
-                <button onClick={() => setShowPicker(true)} style={{ padding: '5px 10px', borderRadius: 999, border: 'none', background: 'rgba(255,255,255,0.1)', color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Change</button>
-                <button onClick={clearTrack} style={{ padding: '5px 10px', borderRadius: 999, border: '1px solid rgba(239,68,68,0.4)', background: 'rgba(239,68,68,0.14)', color: '#FCA5A5', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Stop</button>
+                <button onClick={() => setShowPicker(true)} className="btn-outline !py-1 !px-2.5 !text-[12px]">Change</button>
+                <button onClick={clearTrack} className="btn-outline !py-1 !px-2.5 !text-[12px] hover:!text-[#B42318]">Stop</button>
               </>
             ) : (
-              <button onClick={() => setShowPicker(true)} style={{ padding: '5px 12px', borderRadius: 999, border: 'none', background: `linear-gradient(135deg, ${BRAND}, ${BRAND_DARK})`, color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-                <Music size={11}/> Add music
+              <button onClick={() => setShowPicker(true)} className="btn-primary !py-1 !px-2.5 !text-[12px]">
+                <Music size={12}/> Add music
               </button>
             )}
           </div>
@@ -471,7 +533,7 @@ function LiveStudio({ show, onEnded, onBack }) {
             style={{ position: 'absolute', width: 1, height: 1, border: 0, opacity: 0, pointerEvents: 'none' }} />
         )}
 
-        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+        <div className="p-4 flex gap-3 flex-wrap">
           <Fader label="Music" value={musicVol} max={100} unit="%"
             disabled={!currentTrack}
             onChange={applyMusicVolume}
@@ -482,7 +544,7 @@ function LiveStudio({ show, onEnded, onBack }) {
           <Fader label="Mic" value={Math.round((live.micGain || 1) * 100)} max={200} unit="%"
             disabled={false}
             onChange={(v) => live.setMicGain((v || 0) / 100)}
-            color="#10B981"
+            color="#2E90FA"
             icon={<Mic size={13}/>}
             quickActions={[{ label: 'Low',  value: 80 }, { label: 'Hot', value: 150 }]}
           />
@@ -490,63 +552,65 @@ function LiveStudio({ show, onEnded, onBack }) {
       </div>
 
       {/* ── Audience panel: live chat + reactions + likes ─────────────────── */}
-      <div style={{ marginTop: 16, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 220px', gap: 14 }} className="studio-audience">
+      <div className="grid gap-4 studio-audience" style={{ gridTemplateColumns: 'minmax(0,1fr) 240px' }}>
         {/* Chat */}
-        <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 14, display: 'flex', flexDirection: 'column', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <MessageSquare size={14} color="#C4B5FD"/>
-            <span style={{ fontSize: 12, fontWeight: 700, color: '#fff' }}>Live chat</span>
-            <span style={{ fontSize: 11, color: '#94A3B8' }}>· {chat.length}</span>
+        <div className="card flex flex-col overflow-hidden">
+          <div className="card-header !py-3 !px-4">
+            <div className="flex items-center gap-2">
+              <MessageSquare size={14} className="text-[#98A2B3]"/>
+              <span className="card-title">Live chat</span>
+            </div>
+            <span className="text-[12px] text-[#98A2B3] tabular-nums">{chat.length}</span>
           </div>
-          <div ref={chatBoxRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, paddingRight: 4 }}>
+          <div ref={chatBoxRef} className="flex-1 overflow-y-auto flex flex-col gap-1 px-3 py-3 bg-[#FCFCFD]" style={{ maxHeight: 280, minHeight: 160 }}>
             {chat.length === 0 && (
-              <div style={{ color: 'rgba(255,255,255,0.45)', fontSize: 12, textAlign: 'center', padding: '28px 0', fontStyle: 'italic' }}>
+              <div className="text-[12px] text-[#98A2B3] text-center py-8">
                 Audience chat will appear here as listeners type.
               </div>
             )}
             {chat.map(m => (
-              <div key={m.id} style={{ display: 'flex', gap: 8, alignItems: 'flex-start', padding: '6px 8px', borderRadius: 10, background: 'rgba(0,0,0,0.3)' }}>
+              <div key={m.id} className="flex gap-2 items-start px-2 py-1.5 rounded-md hover:bg-[#F2F4F7]">
                 {m.userPhoto ? (
-                  <img src={m.userPhoto} alt="" style={{ width: 22, height: 22, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}/>
+                  <img src={m.userPhoto} alt="" className="w-[22px] h-[22px] rounded-full object-cover flex-shrink-0"/>
                 ) : (
-                  <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(255,255,255,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 800, flexShrink: 0 }}>
+                  <div className="w-[22px] h-[22px] rounded-full bg-[#EAECF0] text-[#475467] flex items-center justify-center text-[10px] font-semibold flex-shrink-0">
                     {(m.userName?.[0] || 'L').toUpperCase()}
                   </div>
                 )}
-                <div style={{ fontSize: 13, color: '#fff', lineHeight: 1.4, minWidth: 0, flex: 1 }}>
-                  <span style={{ fontWeight: 700, color: '#C4B5FD', marginRight: 6 }}>{m.userName || 'Listener'}</span>
-                  <span style={{ wordBreak: 'break-word' }}>{m.text}</span>
+                <div className="text-[13px] text-[#344054] leading-snug min-w-0 flex-1">
+                  <span className="font-semibold text-[#101828] mr-1.5">{m.userName || 'Listener'}</span>
+                  <span className="break-words">{m.text}</span>
                 </div>
               </div>
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
+          <div className="flex gap-2 p-3 border-t border-[#E4E7EC]">
             <input value={hostInput} onChange={e => setHostInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') sendHostChat(); }}
               placeholder="Reply to the room…"
-              style={{ flex: 1, padding: '9px 12px', borderRadius: 10, background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.14)', color: '#fff', fontSize: 13, outline: 'none' }}/>
-            <button onClick={sendHostChat} disabled={!hostInput.trim()}
-              style={{ padding: '0 14px', borderRadius: 10, border: 'none', cursor: hostInput.trim() ? 'pointer' : 'default',
-                background: hostInput.trim() ? `linear-gradient(135deg, ${BRAND}, ${BRAND_DARK})` : 'rgba(255,255,255,0.08)',
-                color: '#fff', fontWeight: 700, fontSize: 13, opacity: hostInput.trim() ? 1 : 0.5,
-                display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              className="input-field flex-1" />
+            <button onClick={sendHostChat} disabled={!hostInput.trim()} className="btn-primary !px-3" title="Send">
               <Send size={13}/>
             </button>
           </div>
         </div>
 
         {/* Right rail: counters + reaction stream */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ background: 'rgba(244,63,94,0.14)', border: '1px solid rgba(244,63,94,0.3)', borderRadius: 16, padding: 14, textAlign: 'center' }}>
-            <Heart size={16} color="#F43F5E" fill="#F43F5E" style={{ margin: '0 auto 4px' }}/>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#FDA4AF', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Likes</div>
-            <div style={{ fontSize: 26, fontWeight: 900, color: '#fff', lineHeight: 1, marginTop: 2 }}>{likes}</div>
+        <div className="flex flex-col gap-4">
+          <div className="card p-4 flex items-center gap-3">
+            <span className="w-8 h-8 rounded-lg bg-[#FEF3F2] text-[#F04438] flex items-center justify-center flex-shrink-0">
+              <Heart size={15} fill="currentColor"/>
+            </span>
+            <div>
+              <div className="text-[12px] font-medium text-[#475467]">Likes</div>
+              <div className="text-[22px] font-semibold text-[#101828] leading-none tabular-nums mt-0.5">{likes}</div>
+            </div>
           </div>
-          <div style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 16, padding: 14, flex: 1, position: 'relative', overflow: 'hidden', minHeight: 120 }}>
-            <div style={{ fontSize: 11, fontWeight: 800, color: '#C4B5FD', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Reactions</div>
-            <div style={{ fontSize: 11, color: '#94A3B8', marginTop: 2 }}>live from the audience</div>
-            <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          <div className="card p-4 flex-1 relative overflow-hidden" style={{ minHeight: 140 }}>
+            <div className="card-title">Reactions</div>
+            <div className="card-sub mt-0.5">Live from the audience</div>
+            <div className="absolute inset-0 pointer-events-none">
               {reactionBurst.map(r => (
                 <div key={r.id} style={{ position: 'absolute', bottom: 10, left: `${r.x}%`, fontSize: 24, animation: 'rx-float 3.2s ease-out forwards' }}>
                   {r.emoji}
@@ -572,29 +636,22 @@ function LiveStudio({ show, onEnded, onBack }) {
 
       {/* Music picker modal */}
       {showPicker && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(2,6,23,0.72)', zIndex: 80, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: '#fff', borderRadius: 18, width: '100%', maxWidth: 480, maxHeight: '80vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            <div style={{ padding: '14px 18px', borderBottom: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>Pick a background track</div>
-              <button onClick={() => setShowPicker(false)} style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}><X size={16}/></button>
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', padding: 12 }}>
-              {library.length === 0 && <div style={{ padding: 24, textAlign: 'center', color: '#94A3B8', fontSize: 13 }}>No tracks in the shared library.</div>}
-              {library.map(t => (
-                <button key={t._id} onClick={() => pickTrack(t)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', width: '100%', textAlign: 'left', background: 'transparent', border: '1px solid transparent', borderRadius: 10, cursor: 'pointer' }}
-                  onMouseEnter={e => { e.currentTarget.style.background = '#F8FAFC'; e.currentTarget.style.borderColor = '#E2E8F0'; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'transparent'; }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 10, background: `${BRAND}18`, color: BRAND_DARK, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><Music size={13}/></div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title}</div>
-                    <div style={{ fontSize: 11, color: '#94A3B8' }}>{t.artist || 'Shared library'}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
+        <ModalShell title="Pick a background track" subtitle="From the lounge house playlist" onClose={() => setShowPicker(false)} maxWidth={480} z={80}>
+          <div className="p-2">
+            {library.length === 0 && <Empty icon={Music} title="No tracks" hint="No tracks in the shared library." />}
+            {library.map(t => (
+              <button key={t._id} onClick={() => pickTrack(t)}
+                className="flex items-center gap-3 px-3 py-2.5 w-full text-left rounded-lg hover:bg-[#F9FAFB] transition-colors">
+                <div className="w-8 h-8 rounded-md bg-[#F2F4F7] text-[#475467] flex items-center justify-center flex-shrink-0"><Music size={13}/></div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-medium text-[#101828] truncate">{t.title}</div>
+                  <div className="text-[12px] text-[#98A2B3]">{t.artist || 'Shared library'}</div>
+                </div>
+                {currentTrack?.videoId === t.videoId && <span className="badge badge-green">Playing</span>}
+              </button>
+            ))}
           </div>
-        </div>
+        </ModalShell>
       )}
     </div>
   );
@@ -606,18 +663,13 @@ function LiveStudio({ show, onEnded, onBack }) {
 
 function Fader({ label, value, max = 100, unit = '%', color, icon, disabled, onChange, quickActions = [] }) {
   return (
-    <div style={{
-      flex: 1, minWidth: 150,
-      background: disabled ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.25)',
-      border: `1px solid ${disabled ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.12)'}`,
-      borderRadius: 14, padding: 14,
-      opacity: disabled ? 0.55 : 1,
-      display: 'flex', flexDirection: 'column', alignItems: 'center',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#CBD5E1', fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+    <div className={`flex-1 min-w-[150px] rounded-lg border p-3.5 flex flex-col items-center ${disabled ? 'bg-[#F9FAFB] border-[#EAECF0] opacity-60' : 'bg-white border-[#E4E7EC]'}`}>
+      <div className="flex items-center gap-1.5 text-[12px] font-medium text-[#475467]">
         {icon}{label}
       </div>
-      <div style={{ fontSize: 24, fontWeight: 900, color: '#fff', marginTop: 4 }}>{value}<span style={{ fontSize: 11, color: '#94A3B8', marginLeft: 2 }}>{unit}</span></div>
+      <div className="text-[22px] font-semibold text-[#101828] mt-1 tabular-nums leading-tight">
+        {value}<span className="text-[11px] text-[#98A2B3] ml-0.5 font-normal">{unit}</span>
+      </div>
       <input type="range" min="0" max={max} value={value}
         disabled={disabled}
         onChange={e => onChange(Number(e.target.value))}
@@ -630,10 +682,10 @@ function Fader({ label, value, max = 100, unit = '%', color, icon, disabled, onC
         }} />
       {/* Fallback horizontal slider for browsers that ignore vertical */}
       <style>{`input[type=range][orient=vertical] { -webkit-appearance: slider-vertical; }`}</style>
-      <div style={{ display: 'flex', gap: 6, marginTop: 4 }}>
+      <div className="flex gap-1.5 mt-1">
         {quickActions.map(q => (
           <button key={q.label} disabled={disabled} onClick={() => onChange(q.value)}
-            style={{ padding: '4px 10px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.14)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: 10, fontWeight: 700, cursor: disabled ? 'not-allowed' : 'pointer' }}>
+            className="px-2.5 py-1 rounded-md border border-[#D0D5DD] bg-white text-[11px] font-medium text-[#344054] hover:bg-[#F9FAFB] disabled:cursor-not-allowed">
             {q.label}
           </button>
         ))}
@@ -675,83 +727,111 @@ function ShowDetail({ show, onBack, onChanged, onGoLive }) {
     } catch (e) { toast.error(e.response?.data?.message || 'Failed'); }
   };
 
-  return (
-    <div style={{ maxWidth: 760, margin: '0 auto' }}>
-      <button onClick={onBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: '#64748B', fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', marginBottom: 14, padding: 0 }}>← Back</button>
+  const statusBadge = current.status === 'scheduled'
+    ? <span className="badge badge-blue">Upcoming</span>
+    : current.status === 'live'
+      ? <span className="badge badge-red">Live now</span>
+      : <span className="badge badge-gray">Past show</span>;
 
-      <div style={{ background: 'linear-gradient(135deg, #F5F3FF, #FAF5FF)', border: '1px solid #DDD6FE', borderRadius: 18, padding: 22, marginBottom: 16 }}>
-        <div style={{ fontSize: 10, fontWeight: 800, color: BRAND_DARK, letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 6 }}>
-          {current.status === 'scheduled' ? 'Upcoming' : current.status === 'live' ? 'Live now' : 'Past show'}
-        </div>
-        <div style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em' }}>{current.title}</div>
-        {current.description && <div style={{ fontSize: 14, color: '#475569', marginTop: 6, lineHeight: 1.55 }}>{current.description}</div>}
-        {current.scheduledAt && (
-          <div style={{ fontSize: 12, color: '#64748B', marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Calendar size={13}/> {niceDate(current.scheduledAt)}
-            {current.isRecurring && <span style={{ marginLeft: 6, padding: '2px 8px', borderRadius: 999, background: '#EDE9FE', color: BRAND_DARK, fontWeight: 700, fontSize: 11 }}>Recurring</span>}
-          </div>
+  const guestStatus = (g) => g.status === 'joined'
+    ? <span className="badge badge-green">Joined</span>
+    : g.status === 'revoked'
+      ? <span className="badge badge-gray">Revoked</span>
+      : <span className="badge badge-yellow">Awaiting join</span>;
+
+  return (
+    <div className="max-w-4xl">
+      <button onClick={onBack} className="btn-ghost !px-2 mb-3">
+        <ChevronLeft size={15}/> Back
+      </button>
+
+      <PageHeader
+        heading title={current.title}
+        description={current.description || undefined}
+        actions={(
+          <>
+            {current.status !== 'live' && (
+              <button onClick={() => setShowEdit(true)} className="btn-outline">
+                <Edit3 size={13}/> Edit
+              </button>
+            )}
+            <button onClick={() => setShowInvite(true)} className="btn-outline">
+              <LinkIcon size={14}/> Invite guest
+            </button>
+            {current.status !== 'ended' && (
+              <button onClick={goLive} className="btn-danger">
+                <Radio size={14}/> Go live now
+              </button>
+            )}
+          </>
         )}
-        <div style={{ display: 'flex', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
-          {current.status !== 'ended' && (
-            <button onClick={goLive}
-              style={{ padding: '10px 18px', borderRadius: 12, border: 'none', fontWeight: 700, fontSize: 13, cursor: 'pointer',
-                background: `linear-gradient(135deg, #EF4444, #DC2626)`, color: '#fff',
-                display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-              <Radio size={14}/> Go live now
-            </button>
+      >
+        <div className="flex items-center gap-3 flex-wrap text-[12.5px] text-[#475467]">
+          {statusBadge}
+          {current.scheduledAt && (
+            <span className="inline-flex items-center gap-1.5">
+              <Calendar size={13} className="text-[#98A2B3]"/> {niceDate(current.scheduledAt)}
+            </span>
           )}
-          <button onClick={() => setShowInvite(true)}
-            style={{ padding: '10px 18px', borderRadius: 12, border: '1px solid #DDD6FE', background: '#fff', color: BRAND_DARK, fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-            <LinkIcon size={14}/> Invite guest
-          </button>
-          {current.status !== 'live' && (
-            <button onClick={() => setShowEdit(true)}
-              style={{ padding: '10px 14px', borderRadius: 12, border: '1px solid #E2E8F0', background: '#fff', color: '#64748B', fontWeight: 600, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-              <Edit3 size={13}/> Edit
-            </button>
-          )}
+          {current.isRecurring && <span className="badge badge-gray">Recurring</span>}
         </div>
-      </div>
+      </PageHeader>
 
       {/* Guest invites */}
-      <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: 16, padding: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-          <Users size={14} color={BRAND_DARK} />
-          <div style={{ fontSize: 14, fontWeight: 800, color: '#0F172A' }}>Guests ({current.guests?.length || 0})</div>
+      <div className="card overflow-hidden">
+        <div className="card-header">
+          <div>
+            <div className="card-title">Guests</div>
+            <div className="card-sub">Estate reps who can join as speakers</div>
+          </div>
+          <span className="badge badge-gray tabular-nums">{current.guests?.length || 0}</span>
         </div>
-        {(current.guests || []).length === 0 && (
-          <div style={{ textAlign: 'center', padding: '24px 0', color: '#94A3B8', fontSize: 13 }}>
-            No guests yet. Invite estate reps to join as speakers.
+        {(current.guests || []).length === 0 ? (
+          <Empty icon={Users} title="No guests yet" hint="Invite estate reps to join as speakers." />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Guest</th>
+                  <th>Estate</th>
+                  <th>Status</th>
+                  <th className="!text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(current.guests || []).map(g => (
+                  <tr key={g._id}>
+                    <td>
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-full bg-[#F2F4F7] text-[#475467] flex items-center justify-center text-[11px] font-semibold flex-shrink-0">
+                          {g.name[0]?.toUpperCase()}
+                        </div>
+                        <span className="cell-strong whitespace-nowrap">{g.name}</span>
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap">{g.estate || <span className="text-[#98A2B3]">—</span>}</td>
+                    <td>{guestStatus(g)}</td>
+                    <td>
+                      {g.status !== 'revoked' && (
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => copyLink(g.inviteToken)} title="Copy invite link"
+                            className="btn-outline !py-1 !px-2 !text-[12px]">
+                            <Copy size={12}/> Copy link
+                          </button>
+                          <button onClick={() => revoke(g._id)} title="Revoke"
+                            className="p-1.5 rounded-md text-[#98A2B3] hover:text-[#D92D20] hover:bg-[#FEF3F2] transition-colors">
+                            <Trash2 size={14}/>
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-        {(current.guests || []).map(g => (
-          <div key={g._id} style={{
-            display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px',
-            borderRadius: 12, border: '1px solid #F1F5F9', background: '#FAFAFA', marginBottom: 6,
-          }}>
-            <div style={{ width: 36, height: 36, borderRadius: 12, background: `${BRAND}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: BRAND_DARK, fontWeight: 800, fontSize: 13 }}>
-              {g.name[0]?.toUpperCase()}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>{g.name}</div>
-              <div style={{ fontSize: 11, color: '#94A3B8' }}>
-                {g.estate ? `${g.estate} · ` : ''}{g.status === 'joined' ? '✓ Joined' : g.status === 'revoked' ? 'Revoked' : 'Awaiting join'}
-              </div>
-            </div>
-            {g.status !== 'revoked' && (
-              <>
-                <button onClick={() => copyLink(g.inviteToken)}
-                  style={{ padding: 6, borderRadius: 9, background: '#EEF2FF', color: BRAND_DARK, border: '1px solid #C7D2FE', cursor: 'pointer' }} title="Copy invite link">
-                  <Copy size={13}/>
-                </button>
-                <button onClick={() => revoke(g._id)}
-                  style={{ padding: 6, borderRadius: 9, background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA', cursor: 'pointer' }} title="Revoke">
-                  <Trash2 size={13}/>
-                </button>
-              </>
-            )}
-          </div>
-        ))}
       </div>
 
       {showInvite && <InviteModal show={current} onInvited={() => { refresh(); setShowInvite(false); }} onClose={() => setShowInvite(false)} />}
@@ -797,11 +877,23 @@ export default function PodcastStudio() {
   const past = useMemo(() => shows.filter(s => s.status === 'ended').sort((a, b) =>
     new Date(b.endedAt || b.createdAt || 0) - new Date(a.endedAt || a.createdAt || 0)), [shows]);
 
-  if (loading) return <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Loader2 className="animate-spin" size={22} color={BRAND}/></div>;
+
+  if (loading) {
+    return (
+      <div className="max-w-[1400px] mx-auto">
+        <div className="skeleton h-8 w-56 mb-2" />
+        <div className="skeleton h-4 w-96 max-w-full mb-6" />
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 mb-5">
+          {[0, 1, 2].map(i => <div key={i} className="skeleton h-[92px]" />)}
+        </div>
+        <div className="skeleton h-64" />
+      </div>
+    );
+  }
 
   if (liveShow) {
     return (
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '12px 16px 40px' }}>
+      <div className="max-w-[1400px] mx-auto">
         <LiveStudio
           show={liveShow}
           onBack={() => setLiveShow(null)}
@@ -813,7 +905,7 @@ export default function PodcastStudio() {
 
   if (selected) {
     return (
-      <div style={{ padding: '20px 16px 40px' }}>
+      <div className="max-w-[1400px] mx-auto">
         <ShowDetail
           show={selected}
           onBack={() => setSelected(null)}
@@ -825,93 +917,125 @@ export default function PodcastStudio() {
   }
 
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto', padding: '20px 16px 40px' }}>
-      {/* Hero */}
-      <div style={{
-        background: 'linear-gradient(135deg, #4C1D95 0%, #6D28D9 50%, #8B5CF6 100%)',
-        borderRadius: 20, padding: 22, marginBottom: 20, color: '#fff', position: 'relative', overflow: 'hidden',
-      }}>
-        <div style={{ position: 'absolute', top: -40, right: -40, width: 180, height: 180, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
-        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Radio size={26} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '0.14em', opacity: 0.8 }}>AREACONNECT FM</div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, letterSpacing: '-0.02em', margin: 0, lineHeight: 1.15 }}>Podcast Studio</h1>
-            <div style={{ fontSize: 13, opacity: 0.9, marginTop: 2 }}>Schedule shows, invite estate reps, go live across every estate.</div>
-          </div>
-          <button onClick={() => setShowForm(true)}
-            style={{ padding: '10px 16px', borderRadius: 12, border: 'none', background: '#fff', color: BRAND_DARK, fontWeight: 800, fontSize: 13, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    <div className="max-w-[1400px] mx-auto animate-fade-in">
+      <PageHeader
+        title="Podcast studio"
+        description="AreaConnect FM — schedule shows, invite estate reps and go live across every estate."
+        actions={(
+          <button onClick={() => setShowForm(true)} className="btn-primary">
             <Plus size={14}/> New show
           </button>
-        </div>
+        )}
+      />
+
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 mb-5">
+        <StatCard label="Upcoming shows" value={upcoming.length} icon={Calendar} color="blue" />
+        <StatCard label="Archived episodes" value={episodes.length} icon={Headphones} color="green" />
+        <StatCard label="Past shows" value={past.length} icon={Radio} color="amber" />
       </div>
 
       {/* Upcoming */}
-      <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <Calendar size={14} color={BRAND_DARK}/>
-          <h2 style={{ fontSize: 14, fontWeight: 800, color: '#0F172A', margin: 0 }}>Upcoming</h2>
-          <span style={{ fontSize: 11, color: '#94A3B8' }}>· {upcoming.length}</span>
+      <div className="card overflow-hidden mb-5">
+        <div className="card-header">
+          <div>
+            <div className="card-title">Upcoming</div>
+            <div className="card-sub">Scheduled broadcasts — open one to invite guests or go live</div>
+          </div>
+          <span className="badge badge-gray tabular-nums">{upcoming.length}</span>
         </div>
-        {upcoming.length === 0 && (
-          <div style={{ background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: 14, padding: '28px 20px', textAlign: 'center', color: '#64748B', fontSize: 13 }}>
-            Nothing scheduled. Click <strong>New show</strong> to plan a Friday Talk Show.
+        {upcoming.length === 0 ? (
+          <Empty icon={Calendar} title="Nothing scheduled" hint="Click New show to plan a Friday Talk Show." />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Show</th>
+                  <th>Scheduled</th>
+                  <th>Guests</th>
+                  <th className="w-8" />
+                </tr>
+              </thead>
+              <tbody>
+                {upcoming.map(s => (
+                  <tr key={s._id} onClick={() => setSelected(s)} className="cursor-pointer">
+                    <td>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-md bg-[#ECFDF3] text-[#059669] flex items-center justify-center flex-shrink-0">
+                          <Radio size={15}/>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="cell-strong truncate max-w-[280px] sm:max-w-[420px]">{s.title}</div>
+                          {s.isRecurring && <span className="badge badge-gray mt-0.5">Recurring</span>}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap">{s.scheduledAt ? niceDate(s.scheduledAt) : <span className="text-[#98A2B3]">Any time</span>}</td>
+                    <td className="tabular-nums whitespace-nowrap">
+                      {s.guests?.length > 0 ? `${s.guests.length} guest${s.guests.length !== 1 ? 's' : ''}` : <span className="text-[#98A2B3]">—</span>}
+                    </td>
+                    <td><ChevronRight size={16} className="text-[#98A2B3]"/></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-        {upcoming.map(s => (
-          <button key={s._id} onClick={() => setSelected(s)}
-            style={{ width: '100%', textAlign: 'left', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, cursor: 'pointer', marginBottom: 8 }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = BRAND}
-            onMouseLeave={e => e.currentTarget.style.borderColor = '#E2E8F0'}>
-            <div style={{ width: 44, height: 44, borderRadius: 14, background: `${BRAND}18`, color: BRAND_DARK, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Radio size={18}/>
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 14, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.title}</div>
-              <div style={{ fontSize: 12, color: '#94A3B8' }}>
-                {s.scheduledAt ? niceDate(s.scheduledAt) : 'Any time'}
-                {s.isRecurring && <span style={{ marginLeft: 6, padding: '1px 6px', borderRadius: 999, background: '#EDE9FE', color: BRAND_DARK, fontWeight: 700, fontSize: 10 }}>Recurring</span>}
-                {s.guests?.length > 0 && <span> · {s.guests.length} guest{s.guests.length !== 1 ? 's' : ''}</span>}
-              </div>
-            </div>
-            <ChevronRight size={16} color="#94A3B8"/>
-          </button>
-        ))}
       </div>
 
       {/* Past episodes */}
-      <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-          <Headphones size={14} color={BRAND_DARK}/>
-          <h2 style={{ fontSize: 14, fontWeight: 800, color: '#0F172A', margin: 0 }}>Archive</h2>
-          <span style={{ fontSize: 11, color: '#94A3B8' }}>· {episodes.length}</span>
+      <div className="card overflow-hidden">
+        <div className="card-header">
+          <div>
+            <div className="card-title">Archive</div>
+            <div className="card-sub">Recorded episodes from past broadcasts</div>
+          </div>
+          <span className="badge badge-gray tabular-nums">{episodes.length}</span>
         </div>
-        {episodes.length === 0 && (
-          <div style={{ background: '#F8FAFC', border: '1px dashed #CBD5E1', borderRadius: 14, padding: '28px 20px', textAlign: 'center', color: '#64748B', fontSize: 13 }}>
-            Past episodes will land here after they end.
+        {episodes.length === 0 ? (
+          <Empty icon={Headphones} title="No episodes yet" hint="Past episodes will land here after they end." />
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Episode</th>
+                  <th>Published</th>
+                  <th className="!text-right">Duration</th>
+                  <th className="!text-right">Peak listeners</th>
+                  <th className="!text-right">Audio</th>
+                </tr>
+              </thead>
+              <tbody>
+                {episodes.map(ep => (
+                  <tr key={ep._id}>
+                    <td>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-8 h-8 rounded-md bg-[#F2F4F7] text-[#475467] flex items-center justify-center flex-shrink-0">
+                          <Play size={13}/>
+                        </div>
+                        <span className="cell-strong truncate max-w-[280px] sm:max-w-[420px]">{ep.title}</span>
+                      </div>
+                    </td>
+                    <td className="whitespace-nowrap">
+                      {new Date(ep.publishedAt).toLocaleDateString('en-NG', { month: 'short', day: 'numeric' })}
+                    </td>
+                    <td className="text-right tabular-nums whitespace-nowrap">{Math.round((ep.durationSec || 0) / 60)} min</td>
+                    <td className="text-right tabular-nums">{ep.peakListeners}</td>
+                    <td className="text-right">
+                      {ep.audioUrl ? (
+                        <a href={ep.audioUrl} target="_blank" rel="noreferrer" title="Play recording"
+                          className="btn-outline !py-1 !px-2 !text-[12px]">
+                          <Volume2 size={12}/> Listen
+                        </a>
+                      ) : <span className="text-[#98A2B3]">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
-        {episodes.map(ep => (
-          <div key={ep._id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, marginBottom: 8 }}>
-            <div style={{ width: 40, height: 40, borderRadius: 12, background: `${BRAND}18`, color: BRAND_DARK, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Play size={14}/>
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ep.title}</div>
-              <div style={{ fontSize: 11, color: '#94A3B8' }}>
-                {new Date(ep.publishedAt).toLocaleDateString('en-NG', { month: 'short', day: 'numeric' })} · {Math.round((ep.durationSec || 0) / 60)} min · peak {ep.peakListeners}
-              </div>
-            </div>
-            {ep.audioUrl && (
-              <a href={ep.audioUrl} target="_blank" rel="noreferrer"
-                style={{ padding: 7, borderRadius: 9, background: '#F1F5F9', color: '#64748B', border: '1px solid #E2E8F0' }}>
-                <Volume2 size={13}/>
-              </a>
-            )}
-          </div>
-        ))}
       </div>
 
       {showForm && <ShowFormModal onSaved={(s) => { setShows(prev => [s, ...prev]); setShowForm(false); setSelected(s); }} onClose={() => setShowForm(false)} />}

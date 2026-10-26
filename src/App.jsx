@@ -13,7 +13,7 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import AdminDashboard from './pages/Dashboard';
 import AdminEstates from './pages/Estates';
-import NewEstate from './pages/NewEstate';
+import Onboarding from './pages/Onboarding';
 import EstateDetail from './pages/EstateDetail';
 import Plans from './pages/Plans';
 import Subscriptions from './pages/Subscriptions';
@@ -60,7 +60,8 @@ function AppRoutes() {
       <Route path="/register" element={user?.role === 'super_admin' ? <Navigate to="/dashboard" replace /> : <Register />} />
       <Route path="/dashboard" element={<RequireAdmin><AdminDashboard /></RequireAdmin>} />
       <Route path="/estates" element={<RequireAdmin><AdminEstates /></RequireAdmin>} />
-      <Route path="/estates/new" element={<RequireAdmin><NewEstate /></RequireAdmin>} />
+      <Route path="/onboarding" element={<RequireAdmin><Onboarding /></RequireAdmin>} />
+      <Route path="/estates/new" element={<Navigate to="/onboarding" replace />} />
       <Route path="/estates/:estateId" element={<RequireAdmin><EstateDetail /></RequireAdmin>} />
       <Route path="/plans" element={<RequireAdmin><Plans /></RequireAdmin>} />
       <Route path="/subscriptions" element={<RequireAdmin><Subscriptions /></RequireAdmin>} />

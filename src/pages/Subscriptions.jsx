@@ -2,17 +2,20 @@ import { useEffect, useState } from 'react';
 import { planAPI, estateAPI } from '../api';
 import toast from 'react-hot-toast';
 import {
-  CreditCard, RefreshCw, Building2, Edit3, X, Search, Filter,
+  CreditCard, RefreshCw, Building2, Edit3, X, Search,
   Gift, Sparkles, Infinity as InfinityIcon, Trash2,
+  CheckCircle2, Clock, AlertCircle, Wallet,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import PageHeader from '../components/ui/PageHeader';
+import StatCard from '../components/ui/StatCard';
 
 const STATUS_STYLE = {
-  active:    { label: 'Active',    bg: '#ECFDF5', color: '#059669', border: '#A7F3D0' },
-  trial:     { label: 'Trial',     bg: '#EFF6FF', color: '#2563EB', border: '#BFDBFE' },
-  expired:   { label: 'Expired',   bg: '#FEF2F2', color: '#DC2626', border: '#FECACA' },
-  suspended: { label: 'Suspended', bg: '#FFFBEB', color: '#D97706', border: '#FDE68A' },
-  cancelled: { label: 'Cancelled', bg: '#F8FAFC', color: '#475569', border: '#E2E8F0' },
+  active:    { label: 'Active',    badge: 'badge-green'  },
+  trial:     { label: 'Trial',     badge: 'badge-blue'   },
+  expired:   { label: 'Expired',   badge: 'badge-red'    },
+  suspended: { label: 'Suspended', badge: 'badge-yellow' },
+  cancelled: { label: 'Cancelled', badge: 'badge-gray'   },
 };
 const STATUS_KEYS = ['all', 'active', 'trial', 'expired', 'suspended', 'cancelled'];
 
@@ -20,11 +23,59 @@ const fmt = (n) => n === 0 ? 'Free' : `₦${n.toLocaleString()}`;
 
 function StatusBadge({ status }) {
   const s = STATUS_STYLE[status] || STATUS_STYLE.expired;
+  return <span className={`badge ${s.badge}`}>{s.label}</span>;
+}
+
+// Shared modal shell — header with title/subtitle + close, scrollable body.
+function ModalShell({ title, subtitle, icon: Icon, onClose, children }) {
   return (
-    <span className="text-xs font-medium px-2.5 py-1 rounded-full"
-      style={{ background: s.bg, color: s.color, border: `1px solid ${s.border}` }}>
-      {s.label}
-    </span>
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={onClose} />
+      <div className="relative card w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl animate-fade-in">
+        <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-[#E4E7EC] sticky top-0 bg-white z-10">
+          <div className="flex items-start gap-3 min-w-0">
+            {Icon && (
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border border-[#E4E7EC] text-[#475467]">
+                <Icon size={16} />
+              </div>
+            )}
+            <div className="min-w-0">
+              <h3 className="text-[16px] font-semibold text-[#101828]">{title}</h3>
+              {subtitle && <p className="text-[12.5px] text-[#475467] mt-0.5">{subtitle}</p>}
+            </div>
+          </div>
+          <button type="button" onClick={onClose}
+            className="p-1.5 rounded-lg text-[#98A2B3] hover:text-[#101828] hover:bg-[#F2F4F7] transition-colors flex-shrink-0">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="px-6 py-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+const EXPIRY_OPTS_LONG = [
+  { v: '7', label: '7 days' }, { v: '30', label: '30 days' }, { v: '90', label: '90 days' },
+  { v: 'custom', label: 'Custom' }, { v: 'never', label: 'Never' },
+];
+const EXPIRY_OPTS_SHORT = [
+  { v: '7', label: '7d' }, { v: '30', label: '30d' }, { v: '90', label: '90d' },
+  { v: 'custom', label: 'Custom' }, { v: 'never', label: 'Never' },
+];
+
+function Segmented({ options, value, onChange }) {
+  return (
+    <div className="grid grid-cols-5 gap-0.5 p-[3px] rounded-[9px] bg-[#F2F4F7] border border-[#E4E7EC]">
+      {options.map(opt => (
+        <button key={opt.v} type="button" onClick={() => onChange(opt.v)}
+          className={`px-1.5 py-1.5 rounded-md text-[12px] font-medium transition-all whitespace-nowrap ${
+            value === opt.v ? 'bg-white text-[#101828] font-semibold shadow-sm' : 'text-[#475467] hover:text-[#101828]'
+          }`}>
+          {opt.label}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -248,122 +299,122 @@ export default function Subscriptions() {
     return acc;
   }, {});
 
+  const iconBtn = 'p-1.5 rounded-md text-[#98A2B3] transition-colors';
+
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: '#0F172A' }}>Subscriptions</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#94A3B8' }}>Manage estate plan assignments and billing</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => openCompModal()}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
-            style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)', boxShadow: '0 1px 6px rgba(245,158,11,0.35)' }}
-            onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-1px)')}
-            onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}
-          >
-            <Gift size={15} /> Grant Comp Access
-          </button>
-          <button onClick={() => setShowNew(true)} className="btn-primary gap-2">
-            <CreditCard size={15} /> Assign Plan
-          </button>
-        </div>
-      </div>
+    <div className="max-w-[1400px] mx-auto animate-fade-in">
+      <PageHeader
+        title="Subscriptions"
+        description="Manage estate plan assignments, billing and comp access."
+        actions={
+          <>
+            <button onClick={() => openCompModal()} className="btn-outline">
+              <Gift size={14} className="text-[#DC6803]" /> Grant comp access
+            </button>
+            <button onClick={() => setShowNew(true)} className="btn-primary">
+              <CreditCard size={14} /> Assign plan
+            </button>
+          </>
+        }
+      />
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-          {[
-            { label: 'Total',             value: stats.total,   color: '#0F172A' },
-            { label: 'Active',            value: stats.active,  color: '#059669' },
-            { label: 'On Trial',          value: stats.trial,   color: '#2563EB' },
-            { label: 'Expired/Suspended', value: stats.expired, color: '#DC2626' },
-            { label: 'Monthly Revenue',   value: fmt(MRR),      color: '#059669' },
-          ].map(({ label, value, color }) => (
-            <div key={label} className="glass-card p-4 text-center">
-              <div className="text-xl font-bold" style={{ color }}>{value}</div>
-              <div className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{label}</div>
-            </div>
-          ))}
+        <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
+          <StatCard label="Total"             value={stats.total ?? 0}   icon={Building2}    color="blue" />
+          <StatCard label="Active"            value={stats.active ?? 0}  icon={CheckCircle2} color="green" />
+          <StatCard label="On trial"          value={stats.trial ?? 0}   icon={Clock}        color="blue" />
+          <StatCard label="Expired/Suspended" value={stats.expired ?? 0} icon={AlertCircle}  color="red" />
+          <div className="col-span-2 lg:col-span-1">
+            <StatCard label="Monthly revenue" value={fmt(MRR)} icon={Wallet} color="green" />
+          </div>
         </div>
       )}
 
       {/* Plan distribution */}
       {stats?.byPlan?.length > 0 && (
-        <div className="glass-card p-5">
-          <p className="text-xs font-semibold uppercase tracking-wider mb-3" style={{ color: '#94A3B8' }}>
-            Distribution by Plan
-          </p>
-          <div className="flex gap-3 flex-wrap">
-            {stats.byPlan.map(p => {
-              const pct = Math.round((p.count / Math.max(stats.total, 1)) * 100);
-              return (
-                <div key={p._id} className="flex items-center gap-2 px-3 py-2 rounded-full"
-                  style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ background: p.color }} />
-                  <span className="text-sm font-medium" style={{ color: '#0F172A' }}>{p.name}</span>
-                  <span className="text-xs" style={{ color: '#94A3B8' }}>{p.count} ({pct}%)</span>
-                </div>
-              );
-            })}
+        <div className="card mt-4">
+          <div className="card-header">
+            <div>
+              <h2 className="card-title">Distribution by plan</h2>
+              <p className="card-sub">Share of {stats.total} subscriptions</p>
+            </div>
+          </div>
+          <div className="px-5 py-4">
+            <div className="flex h-2 rounded-full overflow-hidden bg-[#F2F4F7]">
+              {stats.byPlan.map(p => (
+                <div key={p._id} className="h-full" title={p.name}
+                  style={{ width: `${(p.count / Math.max(stats.total, 1)) * 100}%`, background: p.color }} />
+              ))}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5">
+              {stats.byPlan.map(p => {
+                const pct = Math.round((p.count / Math.max(stats.total, 1)) * 100);
+                return (
+                  <div key={p._id} className="flex items-center gap-1.5 text-[12.5px]">
+                    <span className="w-2.5 h-2.5 rounded-sm" style={{ background: p.color }} />
+                    <span className="font-medium text-[#101828]">{p.name}</span>
+                    <span className="text-[#98A2B3] tabular-nums">{p.count} ({pct}%)</span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}
 
-      {/* Search + Filter */}
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-52">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#94A3B8' }} />
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search estate, code, plan…"
-            className="input-field pl-9" />
-        </div>
-        <div className="flex gap-1.5 flex-wrap">
-          {STATUS_KEYS.map(s => {
-            const style = s !== 'all' ? (STATUS_STYLE[s] || {}) : {};
-            return (
-              <button key={s} onClick={() => setStatusFilter(s)}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize"
-                style={statusFilter === s
-                  ? { background: s === 'all' ? '#0F172A' : style.color, color: '#FFF', border: 'none' }
-                  : { background: '#F1F5F9', color: '#475569', border: '1px solid #E2E8F0' }}>
-                {s === 'all' ? 'All' : STATUS_STYLE[s]?.label || s}
-                <span className="ml-1" style={{ color: statusFilter === s ? 'rgba(255,255,255,0.6)' : '#94A3B8' }}>
-                  {statusCounts[s]}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Table */}
-      <div className="glass-card overflow-hidden">
+      <div className="card overflow-hidden mt-4">
+        {/* Search + Filter toolbar */}
+        <div className="px-4 py-3 border-b border-[#E4E7EC] flex flex-col lg:flex-row lg:items-center gap-3">
+          <div className="overflow-x-auto -mx-1 px-1">
+            <div className="tabs">
+              {STATUS_KEYS.map(s => (
+                <button key={s} onClick={() => setStatusFilter(s)}
+                  className={`tab ${statusFilter === s ? 'active' : ''}`}>
+                  {s === 'all' ? 'All' : STATUS_STYLE[s]?.label || s}
+                  <span className="ml-1.5 text-[11px] text-[#98A2B3] tabular-nums">{statusCounts[s]}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="relative lg:ml-auto lg:w-72">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search estate, code, plan…"
+              className="input-field pl-9" />
+          </div>
+        </div>
+
         {loading ? (
-          <div className="flex justify-center py-16">
-            <RefreshCw size={20} className="animate-spin" style={{ color: '#10B981' }} />
+          <div className="p-4 space-y-2">
+            {[0, 1, 2, 3, 4].map(i => <div key={i} className="skeleton h-11 rounded-lg" />)}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="py-16 text-center">
-            <Building2 size={36} className="mx-auto mb-3" style={{ color: '#CBD5E1' }} />
-            <p className="text-sm" style={{ color: '#94A3B8' }}>
+          <div className="py-14 flex flex-col items-center text-center">
+            <div className="w-10 h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center mb-2.5">
+              <Building2 size={17} className="text-[#98A2B3]" />
+            </div>
+            <p className="text-[13.5px] font-semibold text-[#101828]">
               {search || statusFilter !== 'all' ? 'No matching subscriptions' : 'No subscriptions yet'}
+            </p>
+            <p className="text-[12.5px] text-[#98A2B3] mt-0.5">
+              {search || statusFilter !== 'all' ? 'Try a different search or status filter.' : 'Assign a plan to an estate to get started.'}
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[700px]">
+            <table className="table min-w-[700px]">
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                  <th className="text-left font-medium px-5 py-3" style={{ color: '#94A3B8' }}>Estate</th>
-                  <th className="text-left font-medium px-5 py-3" style={{ color: '#94A3B8' }}>Plan</th>
-                  <th className="text-left font-medium px-5 py-3 hidden sm:table-cell" style={{ color: '#94A3B8' }}>Cycle</th>
-                  <th className="text-left font-medium px-5 py-3 hidden md:table-cell" style={{ color: '#94A3B8' }}>Model</th>
-                  <th className="text-left font-medium px-5 py-3" style={{ color: '#94A3B8' }}>Status</th>
-                  <th className="text-left font-medium px-5 py-3 hidden lg:table-cell" style={{ color: '#94A3B8' }}>Next Billing</th>
-                  <th className="text-left font-medium px-5 py-3 hidden xl:table-cell" style={{ color: '#94A3B8' }}>Notes</th>
-                  <th className="px-5 py-3 w-10" />
+                <tr>
+                  <th className="text-left">Estate</th>
+                  <th className="text-left">Plan</th>
+                  <th className="text-left hidden sm:table-cell">Cycle</th>
+                  <th className="text-left hidden md:table-cell">Model</th>
+                  <th className="text-left">Status</th>
+                  <th className="text-left hidden lg:table-cell">Next billing</th>
+                  <th className="text-left hidden xl:table-cell">Notes</th>
+                  <th className="w-20 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -372,42 +423,36 @@ export default function Subscriptions() {
                   const price = sub.cycle === 'annual' ? plan?.price?.annual : plan?.price?.monthly;
                   const compLive = isCompLive(sub);
                   const compPlan = compLive ? sub.comp.planId : null;
+                  const estateKey = sub.estateId?._id || sub.estateId;
                   return (
-                    <tr key={sub._id} className="transition-colors"
-                      style={{ borderTop: '1px solid rgba(0,0,0,0.04)', background: compLive ? 'rgba(245,158,11,0.04)' : undefined }}
-                      onMouseEnter={ev => ev.currentTarget.style.background = compLive ? 'rgba(245,158,11,0.08)' : '#F8FAFC'}
-                      onMouseLeave={ev => ev.currentTarget.style.background = compLive ? 'rgba(245,158,11,0.04)' : 'transparent'}>
-                      <td className="px-5 py-3.5">
+                    <tr key={sub._id} className={compLive ? 'bg-[#FFFCF5]' : undefined}>
+                      <td>
                         <div className="flex items-center gap-2">
-                          <div className="font-medium" style={{ color: '#0F172A' }}>{sub.estateId?.name || '—'}</div>
+                          <span className="cell-strong">{sub.estateId?.name || '—'}</span>
                           {compLive && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold"
-                                  style={{ background: 'rgba(245,158,11,0.15)', color: '#B45309', border: '1px solid rgba(245,158,11,0.35)' }}
+                            <span className="badge badge-yellow"
                                   title={`Comp: ${compPlan?.name || 'plan'} · ${sub.comp.reason || 'no reason'}`}>
-                              <Sparkles size={9} /> COMP
+                              <Sparkles size={10} /> Comp
                             </span>
                           )}
                         </div>
-                        <div className="text-xs" style={{ color: '#94A3B8' }}>{sub.estateId?.estateCode}</div>
+                        <div className="text-[11.5px] text-[#98A2B3]">{sub.estateId?.estateCode}</div>
                       </td>
-                      <td className="px-5 py-3.5">
+                      <td>
                         {compLive && compPlan ? (
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: compPlan.color || '#F59E0B' }} />
-                              <span className="font-medium" style={{ color: '#0F172A' }}>{compPlan.name}</span>
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded"
-                                    style={{ background: 'rgba(5,150,105,0.10)', color: '#047857' }}>
-                                FREE
-                              </span>
+                              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: compPlan.color || '#F79009' }} />
+                              <span className="font-medium text-[#101828]">{compPlan.name}</span>
+                              <span className="badge badge-green">Free</span>
                             </div>
-                            <div className="text-xs mt-0.5 ml-4 flex items-center gap-1.5" style={{ color: '#B45309' }}>
+                            <div className="text-[11.5px] mt-0.5 ml-4 flex items-center gap-1 text-[#B54708]">
                               {sub.comp.expiresAt
                                 ? <>Promo ends {format(new Date(sub.comp.expiresAt), 'MMM d, yyyy')}</>
                                 : <><InfinityIcon size={11} /> Never expires</>}
                             </div>
                             {plan && (
-                              <div className="text-[10px] mt-0.5 ml-4" style={{ color: '#94A3B8' }}>
+                              <div className="text-[11px] mt-0.5 ml-4 text-[#98A2B3]">
                                 Underlying: {plan.name}
                               </div>
                             )}
@@ -416,63 +461,52 @@ export default function Subscriptions() {
                           <div>
                             <div className="flex items-center gap-2">
                               <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: plan.color }} />
-                              <span className="font-medium" style={{ color: '#0F172A' }}>{plan.name}</span>
+                              <span className="font-medium text-[#101828]">{plan.name}</span>
                             </div>
                             {price > 0 && (
-                              <div className="text-xs mt-0.5 ml-4" style={{ color: '#94A3B8' }}>
+                              <div className="text-[11.5px] mt-0.5 ml-4 text-[#98A2B3] tabular-nums">
                                 ₦{price.toLocaleString()}/{sub.cycle === 'annual' ? 'yr' : 'mo'}
                               </div>
                             )}
                           </div>
-                        ) : <span style={{ color: '#CBD5E1' }}>—</span>}
+                        ) : <span className="text-[#D0D5DD]">—</span>}
                       </td>
-                      <td className="px-5 py-3.5 hidden sm:table-cell capitalize text-xs" style={{ color: '#475569' }}>
-                        {sub.cycle}
-                      </td>
-                      <td className="px-5 py-3.5 hidden md:table-cell text-xs capitalize" style={{ color: '#475569' }}>
+                      <td className="hidden sm:table-cell capitalize">{sub.cycle}</td>
+                      <td className="hidden md:table-cell">
                         {sub.billingModel === 'per_resident' ? 'Per resident' : 'Flat fee'}
                       </td>
-                      <td className="px-5 py-3.5"><StatusBadge status={sub.status} /></td>
-                      <td className="px-5 py-3.5 hidden lg:table-cell text-xs" style={{ color: '#94A3B8' }}>
+                      <td><StatusBadge status={sub.status} /></td>
+                      <td className="hidden lg:table-cell text-[12px] whitespace-nowrap">
                         {sub.nextBillingDate ? format(new Date(sub.nextBillingDate), 'MMM d, yyyy') : '—'}
                       </td>
-                      <td className="px-5 py-3.5 hidden xl:table-cell max-w-[140px]">
+                      <td className="hidden xl:table-cell max-w-[160px]">
                         {sub.notes
-                          ? <span className="text-xs truncate block" style={{ color: '#475569' }} title={sub.notes}>{sub.notes}</span>
-                          : <span className="text-xs" style={{ color: '#CBD5E1' }}>—</span>}
+                          ? <span className="text-[12px] truncate block" title={sub.notes}>{sub.notes}</span>
+                          : <span className="text-[#D0D5DD]">—</span>}
                       </td>
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-1">
+                      <td>
+                        <div className="flex items-center justify-end gap-0.5">
                           <button onClick={() => openEdit(sub)}
                             title="Edit subscription"
-                            className="p-1.5 rounded-lg transition-all"
-                            style={{ color: '#94A3B8' }}
-                            onMouseEnter={e => { e.currentTarget.style.color = '#059669'; e.currentTarget.style.background = 'rgba(16,185,129,0.08)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'transparent'; }}>
+                            className={`${iconBtn} hover:text-[#101828] hover:bg-[#F2F4F7]`}>
                             <Edit3 size={14} />
                           </button>
                           {compLive ? (
                             <button
                               onClick={() => handleRevokeComp(sub)}
-                              disabled={compRevoking === (sub.estateId?._id || sub.estateId)}
+                              disabled={compRevoking === estateKey}
                               title="Revoke comp access"
-                              className="p-1.5 rounded-lg transition-all"
-                              style={{ color: '#B45309' }}
-                              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(245,158,11,0.12)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; }}
+                              className={`${iconBtn} hover:text-[#B42318] hover:bg-[#FEF3F2] disabled:opacity-50`}
                             >
-                              {compRevoking === (sub.estateId?._id || sub.estateId)
+                              {compRevoking === estateKey
                                 ? <RefreshCw size={14} className="animate-spin" />
                                 : <Trash2 size={14} />}
                             </button>
                           ) : (
                             <button
-                              onClick={() => openCompModal({ estateId: sub.estateId?._id || sub.estateId })}
+                              onClick={() => openCompModal({ estateId: estateKey })}
                               title="Grant comp access"
-                              className="p-1.5 rounded-lg transition-all"
-                              style={{ color: '#94A3B8' }}
-                              onMouseEnter={e => { e.currentTarget.style.color = '#B45309'; e.currentTarget.style.background = 'rgba(245,158,11,0.10)'; }}
-                              onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'transparent'; }}
+                              className={`${iconBtn} hover:text-[#B54708] hover:bg-[#FFFAEB]`}
                             >
                               <Gift size={14} />
                             </button>
@@ -487,7 +521,7 @@ export default function Subscriptions() {
           </div>
         )}
         {!loading && (
-          <div className="px-5 py-2.5 text-xs" style={{ borderTop: '1px solid rgba(0,0,0,0.04)', color: '#94A3B8' }}>
+          <div className="px-5 py-2.5 text-[12px] text-[#98A2B3] border-t border-[#E4E7EC] tabular-nums">
             Showing {filtered.length} of {subs.length} subscriptions
           </div>
         )}
@@ -495,67 +529,54 @@ export default function Subscriptions() {
 
       {/* Assign modal */}
       {showNew && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setShowNew(false)} />
-          <div className="relative glass-card w-full max-w-md p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-1">
-              <div>
-                <h3 className="font-bold text-lg" style={{ color: '#0F172A' }}>Assign Plan to Estate</h3>
-                <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>Create a new subscription assignment</p>
-              </div>
-              <button onClick={() => setShowNew(false)}
-                className="p-1.5 rounded-lg transition-all"
-                style={{ color: '#94A3B8' }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#0F172A'; e.currentTarget.style.background = '#F1F5F9'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'transparent'; }}>
-                <X size={16} />
-              </button>
+        <ModalShell title="Assign plan to estate" subtitle="Create a new subscription assignment"
+          icon={CreditCard} onClose={() => setShowNew(false)}>
+          <form onSubmit={handleAssign} className="space-y-3.5">
+            <div>
+              <label className="field-label">Estate *</label>
+              <select className="input-field" value={newForm.estateId}
+                onChange={e => setNewForm({ ...newForm, estateId: e.target.value })} required>
+                <option value="">Select estate…</option>
+                {estates.map(e => <option key={e._id} value={e._id}>{e.name} — {e.estateCode}</option>)}
+              </select>
             </div>
-            <form onSubmit={handleAssign} className="space-y-3">
+            <div>
+              <label className="field-label">Plan *</label>
+              <select className="input-field" value={newForm.planId}
+                onChange={e => setNewForm({ ...newForm, planId: e.target.value })} required>
+                <option value="">Select plan…</option>
+                {plans.map(p => <option key={p._id} value={p._id}>{p.name} — {fmt(p.price.monthly)}/mo</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Estate *</label>
-                <select className="input-field" value={newForm.estateId}
-                  onChange={e => setNewForm({ ...newForm, estateId: e.target.value })} required>
-                  <option value="">Select estate…</option>
-                  {estates.map(e => <option key={e._id} value={e._id}>{e.name} — {e.estateCode}</option>)}
+                <label className="field-label">Billing model</label>
+                <select className="input-field" value={newForm.billingModel}
+                  onChange={e => setNewForm({ ...newForm, billingModel: e.target.value })}>
+                  <option value="flat">Flat fee</option>
+                  <option value="per_resident">Per resident</option>
                 </select>
               </div>
               <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Plan *</label>
-                <select className="input-field" value={newForm.planId}
-                  onChange={e => setNewForm({ ...newForm, planId: e.target.value })} required>
-                  <option value="">Select plan…</option>
-                  {plans.map(p => <option key={p._id} value={p._id}>{p.name} — {fmt(p.price.monthly)}/mo</option>)}
+                <label className="field-label">Billing cycle</label>
+                <select className="input-field" value={newForm.cycle}
+                  onChange={e => setNewForm({ ...newForm, cycle: e.target.value })}
+                  disabled={newForm.billingModel === 'per_resident'}>
+                  <option value="monthly">Monthly</option>
+                  <option value="annual">Annual</option>
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Billing Model</label>
-                  <select className="input-field" value={newForm.billingModel}
-                    onChange={e => setNewForm({ ...newForm, billingModel: e.target.value })}>
-                    <option value="flat">Flat fee</option>
-                    <option value="per_resident">Per resident</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Billing Cycle</label>
-                  <select className="input-field" value={newForm.cycle}
-                    onChange={e => setNewForm({ ...newForm, cycle: e.target.value })}
-                    disabled={newForm.billingModel === 'per_resident'}>
-                    <option value="monthly">Monthly</option>
-                    <option value="annual">Annual</option>
-                  </select>
-                </div>
-              </div>
-              {newForm.billingModel === 'per_resident' && (
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Resident Count</label>
-                  <input type="number" min="1" className="input-field" placeholder="e.g. 80" value={newForm.residentCount}
-                    onChange={e => setNewForm({ ...newForm, residentCount: e.target.value })} />
-                </div>
-              )}
+            </div>
+            {newForm.billingModel === 'per_resident' && (
               <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Initial Status</label>
+                <label className="field-label">Resident count</label>
+                <input type="number" min="1" className="input-field" placeholder="e.g. 80" value={newForm.residentCount}
+                  onChange={e => setNewForm({ ...newForm, residentCount: e.target.value })} />
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className={newForm.status === 'trial' ? '' : 'col-span-2'}>
+                <label className="field-label">Initial status</label>
                 <select className="input-field" value={newForm.status}
                   onChange={e => setNewForm({ ...newForm, status: e.target.value })}>
                   <option value="trial">Trial</option>
@@ -564,311 +585,236 @@ export default function Subscriptions() {
               </div>
               {newForm.status === 'trial' && (
                 <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>
-                    Trial Duration (days)
-                  </label>
+                  <label className="field-label">Trial duration (days)</label>
                   <input type="number" min="1" max="90" className="input-field" value={newForm.trialDays}
                     onChange={e => setNewForm({ ...newForm, trialDays: parseInt(e.target.value) })} />
                 </div>
               )}
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Notes (optional)</label>
-                <input className="input-field" placeholder="Internal notes about this subscription…"
-                  value={newForm.notes} onChange={e => setNewForm({ ...newForm, notes: e.target.value })} />
-              </div>
-              <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setShowNew(false)} className="btn-outline flex-1">Cancel</button>
-                <button type="submit" disabled={assigning} className="btn-primary flex-1">
-                  {assigning ? 'Assigning…' : 'Assign Plan'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            </div>
+            <div>
+              <label className="field-label">Notes (optional)</label>
+              <input className="input-field" placeholder="Internal notes about this subscription…"
+                value={newForm.notes} onChange={e => setNewForm({ ...newForm, notes: e.target.value })} />
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <button type="button" onClick={() => setShowNew(false)} className="btn-outline">Cancel</button>
+              <button type="submit" disabled={assigning} className="btn-primary">
+                {assigning ? 'Assigning…' : 'Assign plan'}
+              </button>
+            </div>
+          </form>
+        </ModalShell>
       )}
 
       {/* Grant Comp modal */}
       {showComp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => setShowComp(false)} />
-          <div className="relative glass-card w-full max-w-md max-h-[90vh] overflow-y-auto p-6 space-y-4">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-start gap-3">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                     style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)' }}>
-                  <Gift size={18} className="text-white" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg" style={{ color: '#0F172A' }}>Grant Comp Access</h3>
-                  <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>Give any estate a free plan — promos, VIPs, beta testers. Overrides billing.</p>
-                </div>
-              </div>
-              <button onClick={() => setShowComp(false)}
-                className="p-1.5 rounded-lg transition-all flex-shrink-0"
-                style={{ color: '#94A3B8' }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#0F172A'; e.currentTarget.style.background = '#F1F5F9'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'transparent'; }}>
-                <X size={16} />
-              </button>
+        <ModalShell title="Grant comp access"
+          subtitle="Give any estate a free plan — promos, VIPs, beta testers. Overrides billing."
+          icon={Gift} onClose={() => setShowComp(false)}>
+          <form onSubmit={handleGrantComp} className="space-y-3.5">
+            <div>
+              <label className="field-label">Estate *</label>
+              <select className="input-field" value={compForm.estateId}
+                onChange={e => setCompForm({ ...compForm, estateId: e.target.value })} required>
+                <option value="">Select estate…</option>
+                {estates.map(e => <option key={e._id} value={e._id}>{e.name} — {e.estateCode}</option>)}
+              </select>
             </div>
 
-            <form onSubmit={handleGrantComp} className="space-y-3">
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Estate *</label>
-                <select className="input-field" value={compForm.estateId}
-                  onChange={e => setCompForm({ ...compForm, estateId: e.target.value })} required>
-                  <option value="">Select estate…</option>
-                  {estates.map(e => <option key={e._id} value={e._id}>{e.name} — {e.estateCode}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Grant plan *</label>
-                <select className="input-field" value={compForm.planId}
-                  onChange={e => setCompForm({ ...compForm, planId: e.target.value })} required>
-                  <option value="">Select plan…</option>
-                  {plans.map(p => (
-                    <option key={p._id} value={p._id}>
-                      {p.name} — normally {fmt(p.price.monthly)}/mo (comp = free)
-                    </option>
-                  ))}
-                </select>
-                <p className="text-[11px] mt-1" style={{ color: '#94A3B8' }}>
-                  Estate gets every feature of this plan for free until the comp expires or is revoked.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-2">
-                  <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Reason</label>
-                  <input className="input-field"
-                    placeholder="e.g. Launch promo, VIP comp, Beta tester"
-                    value={compForm.reason}
-                    onChange={e => setCompForm({ ...compForm, reason: e.target.value })} />
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Shown as</label>
-                  <select className="input-field" value={compForm.cycle}
-                    onChange={e => setCompForm({ ...compForm, cycle: e.target.value })}>
-                    <option value="monthly">Monthly</option>
-                    <option value="annual">Annual</option>
-                  </select>
-                </div>
-              </div>
-              <p className="text-[11px] -mt-1" style={{ color: '#94A3B8' }}>
-                Shown-as price only affects the gift email's "normal price" line. Features are unlocked either way.
+            <div>
+              <label className="field-label">Grant plan *</label>
+              <select className="input-field" value={compForm.planId}
+                onChange={e => setCompForm({ ...compForm, planId: e.target.value })} required>
+                <option value="">Select plan…</option>
+                {plans.map(p => (
+                  <option key={p._id} value={p._id}>
+                    {p.name} — normally {fmt(p.price.monthly)}/mo (comp = free)
+                  </option>
+                ))}
+              </select>
+              <p className="field-hint">
+                Estate gets every feature of this plan for free until the comp expires or is revoked.
               </p>
+            </div>
 
+            <div className="grid grid-cols-3 gap-3">
+              <div className="col-span-2">
+                <label className="field-label">Reason</label>
+                <input className="input-field"
+                  placeholder="e.g. Launch promo, VIP comp, Beta tester"
+                  value={compForm.reason}
+                  onChange={e => setCompForm({ ...compForm, reason: e.target.value })} />
+              </div>
               <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Expires</label>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {[
-                    { v: '7',       label: '7 days'  },
-                    { v: '30',      label: '30 days' },
-                    { v: '90',      label: '90 days' },
-                    { v: 'custom',  label: 'Custom' },
-                    { v: 'never',   label: 'Never'   },
-                  ].map(opt => (
-                    <button key={opt.v} type="button"
-                      onClick={() => setCompForm({ ...compForm, expiryPreset: opt.v })}
-                      className="px-2 py-2 rounded-lg text-xs font-semibold transition-all"
-                      style={compForm.expiryPreset === opt.v
-                        ? { background: '#F59E0B', color: '#FFF', border: '1px solid #D97706' }
-                        : { background: '#F8FAFC', color: '#475569', border: '1px solid #E2E8F0' }}>
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                {compForm.expiryPreset === 'custom' && (
-                  <input type="date" className="input-field mt-2"
-                    min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
-                    value={compForm.customExpiry}
-                    onChange={e => setCompForm({ ...compForm, customExpiry: e.target.value })}
-                    required />
-                )}
-                {compForm.expiryPreset === 'never' && (
-                  <p className="text-[11px] mt-1 flex items-center gap-1" style={{ color: '#B45309' }}>
-                    <InfinityIcon size={11} /> Comp stays active until you revoke it manually.
-                  </p>
-                )}
+                <label className="field-label">Shown as</label>
+                <select className="input-field" value={compForm.cycle}
+                  onChange={e => setCompForm({ ...compForm, cycle: e.target.value })}>
+                  <option value="monthly">Monthly</option>
+                  <option value="annual">Annual</option>
+                </select>
               </div>
+            </div>
+            <p className="field-hint !-mt-1.5">
+              Shown-as price only affects the gift email's "normal price" line. Features are unlocked either way.
+            </p>
 
-              <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setShowComp(false)} className="btn-outline flex-1">Cancel</button>
-                <button type="submit" disabled={compGranting}
-                  className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all"
-                  style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)', boxShadow: '0 1px 6px rgba(245,158,11,0.35)' }}>
-                  {compGranting ? <><RefreshCw size={14} className="animate-spin" /> Granting…</> : <><Sparkles size={14} /> Grant comp</>}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+            <div>
+              <label className="field-label">Expires</label>
+              <Segmented options={EXPIRY_OPTS_LONG} value={compForm.expiryPreset}
+                onChange={v => setCompForm({ ...compForm, expiryPreset: v })} />
+              {compForm.expiryPreset === 'custom' && (
+                <input type="date" className="input-field mt-2"
+                  min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                  value={compForm.customExpiry}
+                  onChange={e => setCompForm({ ...compForm, customExpiry: e.target.value })}
+                  required />
+              )}
+              {compForm.expiryPreset === 'never' && (
+                <p className="field-hint flex items-center gap-1">
+                  <InfinityIcon size={11} /> Comp stays active until you revoke it manually.
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-2 justify-end pt-2">
+              <button type="button" onClick={() => setShowComp(false)} className="btn-outline">Cancel</button>
+              <button type="submit" disabled={compGranting} className="btn-primary">
+                {compGranting ? <><RefreshCw size={14} className="animate-spin" /> Granting…</> : <><Sparkles size={14} /> Grant comp</>}
+              </button>
+            </div>
+          </form>
+        </ModalShell>
       )}
 
       {/* Edit modal */}
       {editing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setEditing(null)} />
-          <div className="relative glass-card w-full max-w-md p-6 space-y-4">
-            <div className="flex items-center justify-between mb-1">
+        <ModalShell title="Edit subscription" subtitle={editing.estateId?.name}
+          icon={Edit3} onClose={() => setEditing(null)}>
+          <form onSubmit={handleUpdate} className="space-y-3.5">
+            <div>
+              <label className="field-label">Plan</label>
+              <select className="input-field" value={editing.planId?._id || editing.planId}
+                onChange={e => setEditing({ ...editing, planId: e.target.value })}>
+                {plans.map(p => <option key={p._id} value={p._id}>{p.name} — {fmt(p.price.monthly)}/mo</option>)}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <h3 className="font-bold text-lg" style={{ color: '#0F172A' }}>Edit Subscription</h3>
-                <p className="text-sm -mt-0.5" style={{ color: '#475569' }}>{editing.estateId?.name}</p>
+                <label className="field-label">Cycle</label>
+                <select className="input-field" value={editing.cycle}
+                  onChange={e => setEditing({ ...editing, cycle: e.target.value })}>
+                  <option value="monthly">Monthly</option>
+                  <option value="annual">Annual</option>
+                </select>
               </div>
-              <button onClick={() => setEditing(null)}
-                className="p-1.5 rounded-lg transition-all"
-                style={{ color: '#94A3B8' }}
-                onMouseEnter={e => { e.currentTarget.style.color = '#0F172A'; e.currentTarget.style.background = '#F1F5F9'; }}
-                onMouseLeave={e => { e.currentTarget.style.color = '#94A3B8'; e.currentTarget.style.background = 'transparent'; }}>
-                <X size={16} />
+              <div>
+                <label className="field-label">Status</label>
+                <select className="input-field" value={editing.status}
+                  onChange={e => setEditing({ ...editing, status: e.target.value })}>
+                  {Object.keys(STATUS_STYLE).map(s => (
+                    <option key={s} value={s}>{STATUS_STYLE[s].label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div>
+              <label className="field-label">Billing model</label>
+              <select className="input-field" value={editing.billingModel || 'flat'}
+                onChange={e => setEditing({ ...editing, billingModel: e.target.value })}>
+                <option value="flat">Flat fee</option>
+                <option value="per_resident">Per resident</option>
+              </select>
+            </div>
+            <div>
+              <label className="field-label">Notes</label>
+              <input className="input-field" placeholder="Internal notes…"
+                value={editing.notes || ''} onChange={e => setEditing({ ...editing, notes: e.target.value })} />
+            </div>
+
+            {/* Comp access panel */}
+            <div className={`rounded-lg border p-3.5 transition-colors ${editCompForm.isActive ? 'border-[#FEDF89] bg-[#FFFCF5]' : 'border-[#E4E7EC] bg-[#FCFCFD]'}`}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Gift size={15} className={editCompForm.isActive ? 'text-[#DC6803]' : 'text-[#98A2B3]'} />
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-semibold text-[#101828]">Comp access</div>
+                    <div className="text-[11.5px] text-[#98A2B3]">
+                      {editing.comp?.isActive && editing.comp?.planId
+                        ? 'Currently granted — update or toggle off to revoke'
+                        : 'Grant a free promo plan on top of billing'}
+                    </div>
+                  </div>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                  <input type="checkbox" className="sr-only peer"
+                    checked={editCompForm.isActive}
+                    onChange={e => setEditCompForm({ ...editCompForm, isActive: e.target.checked })} />
+                  <div className={`w-9 h-5 rounded-full transition-colors ${editCompForm.isActive ? 'bg-[#059669]' : 'bg-[#D0D5DD]'}`} />
+                  <span className="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
+                        style={{ transform: editCompForm.isActive ? 'translateX(16px)' : 'translateX(0)' }} />
+                </label>
+              </div>
+
+              {editCompForm.isActive && (
+                <div className="space-y-3 mt-3.5 pt-3.5 border-t border-[#FEF0C7]">
+                  <div>
+                    <label className="field-label">Comp plan *</label>
+                    <select className="input-field" value={editCompForm.planId}
+                      onChange={e => setEditCompForm({ ...editCompForm, planId: e.target.value })} required>
+                      <option value="">Select plan…</option>
+                      {plans.map(p => (
+                        <option key={p._id} value={p._id}>
+                          {p.name} — normally {fmt(p.price.monthly)}/mo (comp = free)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="field-label">Reason</label>
+                    <input className="input-field" placeholder="e.g. Launch promo, VIP, Beta tester"
+                      value={editCompForm.reason}
+                      onChange={e => setEditCompForm({ ...editCompForm, reason: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="field-label">Expires</label>
+                    <Segmented options={EXPIRY_OPTS_SHORT} value={editCompForm.expiryPreset}
+                      onChange={v => setEditCompForm({ ...editCompForm, expiryPreset: v })} />
+                    {editCompForm.expiryPreset === 'custom' && (
+                      <input type="date" className="input-field mt-2"
+                        min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+                        value={editCompForm.customExpiry}
+                        onChange={e => setEditCompForm({ ...editCompForm, customExpiry: e.target.value })}
+                        required />
+                    )}
+                    {editCompForm.expiryPreset === 'never' && (
+                      <p className="field-hint flex items-center gap-1">
+                        <InfinityIcon size={11} /> Stays active until revoked manually.
+                      </p>
+                    )}
+                    {editing.comp?.expiresAt && editCompForm.expiryPreset !== 'never' && (
+                      <p className="field-hint">
+                        Current expiry: {format(new Date(editing.comp.expiresAt), 'MMM d, yyyy')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {!editCompForm.isActive && editing.comp?.isActive && editing.comp?.planId && (
+                <p className="text-[11.5px] mt-2.5 text-[#B42318]">
+                  Comp will be revoked when you save.
+                </p>
+              )}
+            </div>
+
+            <div className="flex gap-2 justify-end pt-2">
+              <button type="button" onClick={() => setEditing(null)} className="btn-outline">Cancel</button>
+              <button type="submit" disabled={saving} className="btn-primary">
+                {saving ? 'Saving…' : 'Save changes'}
               </button>
             </div>
-            <form onSubmit={handleUpdate} className="space-y-3">
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Plan</label>
-                <select className="input-field" value={editing.planId?._id || editing.planId}
-                  onChange={e => setEditing({ ...editing, planId: e.target.value })}>
-                  {plans.map(p => <option key={p._id} value={p._id}>{p.name} — {fmt(p.price.monthly)}/mo</option>)}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Cycle</label>
-                  <select className="input-field" value={editing.cycle}
-                    onChange={e => setEditing({ ...editing, cycle: e.target.value })}>
-                    <option value="monthly">Monthly</option>
-                    <option value="annual">Annual</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Status</label>
-                  <select className="input-field" value={editing.status}
-                    onChange={e => setEditing({ ...editing, status: e.target.value })}>
-                    {Object.keys(STATUS_STYLE).map(s => (
-                      <option key={s} value={s}>{STATUS_STYLE[s].label}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Billing Model</label>
-                <select className="input-field" value={editing.billingModel || 'flat'}
-                  onChange={e => setEditing({ ...editing, billingModel: e.target.value })}>
-                  <option value="flat">Flat fee</option>
-                  <option value="per_resident">Per resident</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Notes</label>
-                <input className="input-field" placeholder="Internal notes…"
-                  value={editing.notes || ''} onChange={e => setEditing({ ...editing, notes: e.target.value })} />
-              </div>
-
-              <div className="pt-3" style={{ borderTop: '1px dashed #E2E8F0' }}>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center"
-                         style={{ background: 'linear-gradient(135deg,#F59E0B,#D97706)' }}>
-                      <Gift size={13} className="text-white" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold" style={{ color: '#0F172A' }}>Comp Access</div>
-                      <div className="text-[10px]" style={{ color: '#94A3B8' }}>
-                        {editing.comp?.isActive && editing.comp?.planId
-                          ? 'Currently granted — update or toggle off to revoke'
-                          : 'Grant a free promo plan on top of billing'}
-                      </div>
-                    </div>
-                  </div>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" className="sr-only peer"
-                      checked={editCompForm.isActive}
-                      onChange={e => setEditCompForm({ ...editCompForm, isActive: e.target.checked })} />
-                    <div className="w-9 h-5 rounded-full transition-all"
-                         style={{ background: editCompForm.isActive ? '#F59E0B' : '#CBD5E1' }} />
-                    <span className="absolute left-0.5 top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform"
-                          style={{ transform: editCompForm.isActive ? 'translateX(16px)' : 'translateX(0)' }} />
-                  </label>
-                </div>
-
-                {editCompForm.isActive && (
-                  <div className="space-y-3 mt-3">
-                    <div>
-                      <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Comp plan *</label>
-                      <select className="input-field" value={editCompForm.planId}
-                        onChange={e => setEditCompForm({ ...editCompForm, planId: e.target.value })} required>
-                        <option value="">Select plan…</option>
-                        {plans.map(p => (
-                          <option key={p._id} value={p._id}>
-                            {p.name} — normally {fmt(p.price.monthly)}/mo (comp = free)
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Reason</label>
-                      <input className="input-field" placeholder="e.g. Launch promo, VIP, Beta tester"
-                        value={editCompForm.reason}
-                        onChange={e => setEditCompForm({ ...editCompForm, reason: e.target.value })} />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium mb-1 block" style={{ color: '#475569' }}>Expires</label>
-                      <div className="grid grid-cols-5 gap-1.5">
-                        {[
-                          { v: '7',      label: '7d'     },
-                          { v: '30',     label: '30d'    },
-                          { v: '90',     label: '90d'    },
-                          { v: 'custom', label: 'Custom' },
-                          { v: 'never',  label: 'Never'  },
-                        ].map(opt => (
-                          <button key={opt.v} type="button"
-                            onClick={() => setEditCompForm({ ...editCompForm, expiryPreset: opt.v })}
-                            className="px-2 py-2 rounded-lg text-xs font-semibold transition-all"
-                            style={editCompForm.expiryPreset === opt.v
-                              ? { background: '#F59E0B', color: '#FFF', border: '1px solid #D97706' }
-                              : { background: '#F8FAFC', color: '#475569', border: '1px solid #E2E8F0' }}>
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                      {editCompForm.expiryPreset === 'custom' && (
-                        <input type="date" className="input-field mt-2"
-                          min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
-                          value={editCompForm.customExpiry}
-                          onChange={e => setEditCompForm({ ...editCompForm, customExpiry: e.target.value })}
-                          required />
-                      )}
-                      {editCompForm.expiryPreset === 'never' && (
-                        <p className="text-[11px] mt-1 flex items-center gap-1" style={{ color: '#B45309' }}>
-                          <InfinityIcon size={11} /> Stays active until revoked manually.
-                        </p>
-                      )}
-                      {editing.comp?.expiresAt && editCompForm.expiryPreset !== 'never' && (
-                        <p className="text-[11px] mt-1" style={{ color: '#94A3B8' }}>
-                          Current expiry: {format(new Date(editing.comp.expiresAt), 'MMM d, yyyy')}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {!editCompForm.isActive && editing.comp?.isActive && editing.comp?.planId && (
-                  <p className="text-[11px] mt-2" style={{ color: '#DC2626' }}>
-                    Comp will be revoked when you save.
-                  </p>
-                )}
-              </div>
-
-              <div className="flex gap-3 pt-1">
-                <button type="button" onClick={() => setEditing(null)} className="btn-outline flex-1">Cancel</button>
-                <button type="submit" disabled={saving} className="btn-primary flex-1">
-                  {saving ? 'Saving…' : 'Save Changes'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+          </form>
+        </ModalShell>
       )}
     </div>
   );

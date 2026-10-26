@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { pitchAPI } from '../api';
 import toast from 'react-hot-toast';
 import LeadSearchPanel from '../components/LeadSearchPanel';
+import PageHeader from '../components/ui/PageHeader';
+import StatCard from '../components/ui/StatCard';
 import { NIGERIA_STATES } from '../utils/nigeriaStates';
 import {
   Send, Users, Building2, Shield, CreditCard, MessageSquare,
@@ -263,20 +265,20 @@ const WELCOME_SLIDES = [
 ];
 
 const TYPE_COLORS = {
-  developer:        { bg: '#EEF2FF', color: '#6366F1', label: 'Developer' },
-  estate_manager:   { bg: '#F0FDF4', color: '#059669', label: 'Est. Manager' },
-  property_company: { bg: '#FEF3C7', color: '#D97706', label: 'Prop. Company' },
-  investment_firm:  { bg: '#FDF4FF', color: '#9333EA', label: 'Investment' },
-  government:       { bg: '#F0F9FF', color: '#0284C7', label: 'Government' },
-  residents_assoc:  { bg: '#FFF1F2', color: '#E11D48', label: 'Residents Assoc.' },
+  developer:        { badge: 'blue',   label: 'Developer' },
+  estate_manager:   { badge: 'green',  label: 'Est. Manager' },
+  property_company: { badge: 'yellow', label: 'Prop. Company' },
+  investment_firm:  { badge: 'purple', label: 'Investment' },
+  government:       { badge: 'gray',   label: 'Government' },
+  residents_assoc:  { badge: 'red',    label: 'Residents Assoc.' },
 };
 
 const STATUS_COLORS = {
-  new:       { bg: '#F1F5F9', color: '#64748B', label: 'New' },
-  contacted: { bg: '#EEF2FF', color: '#6366F1', label: 'Contacted' },
-  interested:{ bg: '#FEF3C7', color: '#D97706', label: 'Interested' },
-  converted: { bg: '#F0FDF4', color: '#059669', label: 'Converted' },
-  declined:  { bg: '#FEF2F2', color: '#DC2626', label: 'Declined' },
+  new:       { bg: '#F9FAFB', color: '#344054', border: '#EAECF0', label: 'New' },
+  contacted: { bg: '#EFF8FF', color: '#175CD3', border: '#B2DDFF', label: 'Contacted' },
+  interested:{ bg: '#FFFAEB', color: '#B54708', border: '#FEDF89', label: 'Interested' },
+  converted: { bg: '#ECFDF3', color: '#067647', border: '#ABEFC6', label: 'Converted' },
+  declined:  { bg: '#FEF3F2', color: '#B42318', border: '#FECDCA', label: 'Declined' },
 };
 
 // ─── Slide Renderer ───────────────────────────────────────────────────────────
@@ -359,7 +361,7 @@ function Slide({ slide }) {
 
   if (s.type === 'tech') return (
     <div className="h-full flex flex-col p-8 overflow-y-auto" style={{ background:'#fff' }}>
-      <SlideHeader title={s.title} subtitle={s.subtitle} color="#8B5CF6" />
+      <SlideHeader title={s.title} subtitle={s.subtitle} color="#7A5AF8" />
       <div className="space-y-2 flex-1 mt-4">
         {s.stack.map((item, i) => (
           <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:14, background:'#F8FAFC', borderRadius:10, padding:'12px 16px', border:'1px solid #E2E8F0' }}>
@@ -486,7 +488,7 @@ function Slide({ slide }) {
 
   if (s.type === 'team') return (
     <div className="h-full flex flex-col p-8 overflow-y-auto" style={{ background:'#fff' }}>
-      <SlideHeader title={s.title} subtitle={s.subtitle} color="#8B5CF6" />
+      <SlideHeader title={s.title} subtitle={s.subtitle} color="#7A5AF8" />
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginTop:16, flex:1 }}>
         {s.advantages.map((a, i) => (
           <div key={i} style={{ background:'#F8FAFC', borderRadius:12, padding:'16px', border:'1px solid #E2E8F0' }}>
@@ -768,295 +770,273 @@ export default function PitchDeck() {
   const slide = SLIDES[currentSlide];
   const totalSlides = SLIDES.length;
 
+  const navBtn = 'btn-outline !px-3 disabled:opacity-40 disabled:cursor-not-allowed';
+
   return (
-    <div className="h-full flex flex-col" style={{ minHeight: 0 }}>
-      {/* Page header */}
-      <div className="px-6 pt-5 pb-4 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background:'linear-gradient(135deg,#8B5CF6,#7C3AED)' }}>
-              <Presentation size={18} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold" style={{ color:'#0F172A' }}>Pitch Deck</h1>
-              <p className="text-sm" style={{ color:'#94A3B8' }}>AreaConnect investor deck & prospect outreach</p>
-            </div>
-          </div>
-          {/* Tabs */}
-          <div style={{ display:'flex', gap:4, background:'#F1F5F9', borderRadius:10, padding:4 }}>
+    <div className="max-w-[1400px] mx-auto">
+      <PageHeader
+        title="Pitch deck"
+        description="AreaConnect investor deck, new-lead welcome script and prospect outreach."
+        actions={activeTab === 'prospects' ? (
+          <>
+            <button onClick={() => setLeadPanelOpen(true)} className="btn-outline">
+              <Zap size={14} /> Find leads
+            </button>
+            <button onClick={() => handleSendEmails('all')} disabled={sending} className="btn-primary">
+              <Mail size={14} /> Blast all
+            </button>
+          </>
+        ) : null}
+      >
+        <div className="overflow-x-auto -mx-1 px-1">
+          <div className="tabs">
             {[
-              { id:'deck',       label:'Investor Deck' },
-              { id:'welcome',    label:'Welcome Deck' },
-              { id:'prospects',  label:`Prospects (${prospects.length})` },
+              { id:'deck',       label:'Investor deck' },
+              { id:'welcome',    label:'Welcome deck' },
+              { id:'prospects',  label:'Prospects', count: prospects.length },
             ].map(tab => (
               <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                style={{
-                  padding:'7px 18px', borderRadius:7, fontSize:13, fontWeight:600, border:'none', cursor:'pointer',
-                  background: activeTab === tab.id ? '#fff' : 'transparent',
-                  color: activeTab === tab.id ? '#0F172A' : '#94A3B8',
-                  boxShadow: activeTab === tab.id ? '0 1px 4px rgba(0,0,0,0.08)' : 'none',
-                }}>
+                className={`tab inline-flex items-center gap-1.5 ${activeTab === tab.id ? 'active' : ''}`}>
                 {tab.label}
+                {tab.count !== undefined && (
+                  <span className="text-[11px] tabular-nums px-1.5 rounded-full bg-[#F2F4F7] text-[#475467] border border-[#EAECF0]">{tab.count}</span>
+                )}
               </button>
             ))}
           </div>
         </div>
-      </div>
+      </PageHeader>
 
-      {/* Content */}
-      <div className="flex-1 overflow-hidden px-6 pb-6" style={{ minHeight:0 }}>
-
-        {/* ── Deck tab ─────────────────────────────────────────────────── */}
-        {activeTab === 'deck' && (
-          <div className="h-full flex gap-4" style={{ minHeight:0 }}>
-            {/* Slide panel */}
-            <div className="flex-1 flex flex-col" style={{ minWidth:0 }}>
-              <div className="flex-1 rounded-2xl overflow-hidden" style={{ border:'1px solid #E2E8F0', minHeight:0, position:'relative' }}>
-                <Slide slide={slide} />
-              </div>
-              {/* Slide nav */}
-              <div className="flex items-center justify-between mt-3">
-                <button onClick={() => setCurrentSlide(i => Math.max(0, i - 1))}
-                  disabled={currentSlide === 0}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                  style={{ background:'#F1F5F9', color: currentSlide === 0 ? '#CBD5E1' : '#0F172A', cursor: currentSlide === 0 ? 'not-allowed' : 'pointer', border:'1px solid #E2E8F0' }}>
-                  <ChevronLeft size={15} /> Previous
-                </button>
-                <span style={{ fontSize:13, color:'#94A3B8', fontWeight:600 }}>
-                  {currentSlide + 1} / {totalSlides} — {slide.title}
-                </span>
-                <button onClick={() => setCurrentSlide(i => Math.min(totalSlides - 1, i + 1))}
-                  disabled={currentSlide === totalSlides - 1}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                  style={{ background:'#F1F5F9', color: currentSlide === totalSlides - 1 ? '#CBD5E1' : '#0F172A', cursor: currentSlide === totalSlides - 1 ? 'not-allowed' : 'pointer', border:'1px solid #E2E8F0' }}>
-                  Next <ChevronRight size={15} />
-                </button>
-              </div>
+      {/* ── Deck tab ─────────────────────────────────────────────────── */}
+      {activeTab === 'deck' && (
+        <div className="flex flex-col lg:flex-row gap-4">
+          {/* Slide panel */}
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="card overflow-hidden h-[560px] lg:h-[620px] relative">
+              <Slide slide={slide} />
             </div>
+            {/* Slide nav */}
+            <div className="flex items-center justify-between gap-3 mt-3">
+              <button onClick={() => setCurrentSlide(i => Math.max(0, i - 1))}
+                disabled={currentSlide === 0} className={navBtn}>
+                <ChevronLeft size={15} /> <span className="hidden sm:inline">Previous</span>
+              </button>
+              <span className="text-[12.5px] text-[#475467] font-medium truncate text-center">
+                <span className="tabular-nums text-[#101828]">{currentSlide + 1} / {totalSlides}</span>
+                <span className="text-[#98A2B3]"> · {slide.title}</span>
+              </span>
+              <button onClick={() => setCurrentSlide(i => Math.min(totalSlides - 1, i + 1))}
+                disabled={currentSlide === totalSlides - 1} className={navBtn}>
+                <span className="hidden sm:inline">Next</span> <ChevronRight size={15} />
+              </button>
+            </div>
+          </div>
 
-            {/* Slide index panel */}
-            <div className="w-44 flex-shrink-0 flex flex-col overflow-y-auto" style={{ gap:4 }}>
-              <div style={{ fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>Slides</div>
+          {/* Slide index panel */}
+          <div className="card lg:w-56 flex-shrink-0 self-start w-full overflow-hidden">
+            <div className="card-header !py-2.5 !px-3.5"><span className="card-title !text-[13px]">Slides</span><span className="card-sub tabular-nums">{totalSlides}</span></div>
+            <div className="p-1.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-0.5 lg:max-h-[560px] overflow-y-auto">
               {SLIDES.map((s, i) => (
                 <button key={s.id} onClick={() => setCurrentSlide(i)}
-                  style={{
-                    textAlign:'left', padding:'9px 12px', borderRadius:10, border:'none', cursor:'pointer',
-                    background: currentSlide === i ? '#0F172A' : '#F8FAFC',
-                    borderLeft: currentSlide === i ? '3px solid #10B981' : '3px solid transparent',
-                    transition:'all 0.15s',
-                  }}>
-                  <div style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color: currentSlide === i ? '#94A3B8' : '#CBD5E1' }}>Slide {i + 1}</div>
-                  <div style={{ fontSize:11, fontWeight:600, marginTop:1, color: currentSlide === i ? '#fff' : '#64748B', lineHeight:1.3 }}>{s.title}</div>
+                  className={`text-left flex items-start gap-2 px-2.5 py-2 rounded-md transition-colors ${currentSlide === i ? 'bg-[#ECFDF3]' : 'hover:bg-[#F9FAFB]'}`}>
+                  <span className={`text-[11px] tabular-nums font-medium w-4 flex-shrink-0 mt-px ${currentSlide === i ? 'text-[#059669]' : 'text-[#98A2B3]'}`}>{i + 1}</span>
+                  <span className={`text-[12.5px] leading-snug ${currentSlide === i ? 'text-[#047857] font-semibold' : 'text-[#475467] font-medium'}`}>{s.title}</span>
                 </button>
               ))}
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* ── Welcome deck tab ─────────────────────────────────────────── */}
-        {activeTab === 'welcome' && (() => {
-          const wSlide = WELCOME_SLIDES[currentWelcomeSlide];
-          const wTotal = WELCOME_SLIDES.length;
-          return (
-            <div className="h-full flex gap-4" style={{ minHeight:0 }}>
-              {/* Slide panel */}
-              <div className="flex-1 flex flex-col" style={{ minWidth:0 }}>
-                <div className="flex-1 rounded-2xl overflow-hidden" style={{ border:'1px solid #BBF7D0', minHeight:0, position:'relative', background:'#F0FDF4' }}>
-                  <Slide slide={wSlide} />
-                </div>
-                {/* Nav */}
-                <div className="flex items-center justify-between mt-3">
-                  <button onClick={() => setCurrentWelcomeSlide(i => Math.max(0, i - 1))}
-                    disabled={currentWelcomeSlide === 0}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                    style={{ background:'#F1F5F9', color: currentWelcomeSlide === 0 ? '#CBD5E1' : '#0F172A', cursor: currentWelcomeSlide === 0 ? 'not-allowed' : 'pointer', border:'1px solid #E2E8F0' }}>
-                    <ChevronLeft size={15} /> Previous
-                  </button>
-                  <span style={{ fontSize:13, color:'#94A3B8', fontWeight:600 }}>
-                    {currentWelcomeSlide + 1} / {wTotal} — {wSlide.title}
-                  </span>
-                  <button onClick={() => setCurrentWelcomeSlide(i => Math.min(wTotal - 1, i + 1))}
-                    disabled={currentWelcomeSlide === wTotal - 1}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all"
-                    style={{ background:'#F1F5F9', color: currentWelcomeSlide === wTotal - 1 ? '#CBD5E1' : '#0F172A', cursor: currentWelcomeSlide === wTotal - 1 ? 'not-allowed' : 'pointer', border:'1px solid #E2E8F0' }}>
-                    Next <ChevronRight size={15} />
-                  </button>
+      {/* ── Welcome deck tab ─────────────────────────────────────────── */}
+      {activeTab === 'welcome' && (() => {
+        const wSlide = WELCOME_SLIDES[currentWelcomeSlide];
+        const wTotal = WELCOME_SLIDES.length;
+        return (
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* Slide panel */}
+            <div className="flex-1 flex flex-col min-w-0">
+              <div className="card overflow-hidden h-[560px] lg:h-[620px] relative">
+                <Slide slide={wSlide} />
+              </div>
+              {/* Nav */}
+              <div className="flex items-center justify-between gap-3 mt-3">
+                <button onClick={() => setCurrentWelcomeSlide(i => Math.max(0, i - 1))}
+                  disabled={currentWelcomeSlide === 0} className={navBtn}>
+                  <ChevronLeft size={15} /> <span className="hidden sm:inline">Previous</span>
+                </button>
+                <span className="text-[12.5px] text-[#475467] font-medium truncate text-center">
+                  <span className="tabular-nums text-[#101828]">{currentWelcomeSlide + 1} / {wTotal}</span>
+                  <span className="text-[#98A2B3]"> · {wSlide.title}</span>
+                </span>
+                <button onClick={() => setCurrentWelcomeSlide(i => Math.min(wTotal - 1, i + 1))}
+                  disabled={currentWelcomeSlide === wTotal - 1} className={navBtn}>
+                  <span className="hidden sm:inline">Next</span> <ChevronRight size={15} />
+                </button>
+              </div>
+            </div>
+
+            {/* Slide index */}
+            <div className="lg:w-64 flex-shrink-0 self-start w-full space-y-3">
+              <div className="card overflow-hidden">
+                <div className="card-header !py-2.5 !px-3.5"><span className="card-title !text-[13px]">Welcome flow</span><span className="card-sub tabular-nums">{wTotal}</span></div>
+                <div className="p-1.5 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-1 gap-0.5">
+                  {WELCOME_SLIDES.map((s, i) => (
+                    <button key={s.id} onClick={() => setCurrentWelcomeSlide(i)}
+                      className={`text-left px-2.5 py-2 rounded-md transition-colors ${currentWelcomeSlide === i ? 'bg-[#ECFDF3]' : 'hover:bg-[#F9FAFB]'}`}>
+                      <div className={`text-[11px] font-medium ${currentWelcomeSlide === i ? 'text-[#059669]' : 'text-[#98A2B3]'}`}>
+                        {s.type === 'w-step' ? `Step ${s.stepNum}` : `Slide ${i + 1}`}
+                      </div>
+                      <div className={`text-[12.5px] leading-snug mt-0.5 ${currentWelcomeSlide === i ? 'text-[#047857] font-semibold' : 'text-[#475467] font-medium'}`}>
+                        {s.title}
+                      </div>
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Slide index */}
-              <div className="w-56 flex-shrink-0 flex flex-col overflow-y-auto" style={{ gap:4 }}>
-                <div style={{ fontSize:10, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'0.08em', marginBottom:4 }}>
-                  Welcome flow
-                </div>
-                {WELCOME_SLIDES.map((s, i) => (
-                  <button key={s.id} onClick={() => setCurrentWelcomeSlide(i)}
-                    style={{
-                      textAlign:'left', padding:'10px 12px', borderRadius:10, border:'none', cursor:'pointer',
-                      background: currentWelcomeSlide === i ? '#064E3B' : '#F0FDF4',
-                      borderLeft: currentWelcomeSlide === i ? '3px solid #10B981' : '3px solid transparent',
-                      transition:'all 0.15s',
-                    }}>
-                    <div style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color: currentWelcomeSlide === i ? '#A7F3D0' : '#059669' }}>
-                      {s.type === 'w-step' ? `Step ${s.stepNum}` : `Slide ${i + 1}`}
-                    </div>
-                    <div style={{ fontSize:11, fontWeight:600, marginTop:1, color: currentWelcomeSlide === i ? '#fff' : '#064E3B', lineHeight:1.3 }}>
-                      {s.title}
-                    </div>
-                  </button>
-                ))}
-
-                <div style={{ marginTop:14, background:'#FFFBEB', border:'1px solid #FDE68A', borderRadius:10, padding:'10px 12px' }}>
-                  <div style={{ fontSize:10, fontWeight:800, color:'#92400E', letterSpacing:'0.08em', textTransform:'uppercase', marginBottom:4 }}>How to use</div>
-                  <div style={{ fontSize:11, color:'#78350F', lineHeight:1.55 }}>
-                    Share-screen with the new lead and walk through each slide. Read the <strong>Script · Say this</strong> block to stay consistent across the team.
-                  </div>
+              <div className="rounded-lg border border-[#EAECF0] bg-[#F9FAFB] px-3.5 py-3">
+                <div className="text-[12px] font-semibold text-[#344054] mb-1">How to use</div>
+                <div className="text-[12px] text-[#475467] leading-relaxed">
+                  Share-screen with the new lead and walk through each slide. Read the <strong className="text-[#101828]">Script · Say this</strong> block to stay consistent across the team.
                 </div>
               </div>
             </div>
-          );
-        })()}
+          </div>
+        );
+      })()}
 
-        {/* ── Prospects tab ─────────────────────────────────────────────── */}
-        {activeTab === 'prospects' && (
-          <div className="h-full flex flex-col" style={{ minHeight:0 }}>
-            {/* Stats row */}
-            {stats && (
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:10, marginBottom:14, flexShrink:0 }}>
-                {[
-                  { label:'Total',     value: stats.total,     color:'#6366F1' },
-                  { label:'Contacted', value: stats.contacted, color:'#8B5CF6' },
-                  { label:'Interested',value: stats.interested,color:'#F59E0B' },
-                  { label:'Converted', value: stats.converted, color:'#10B981' },
-                  { label:'Declined',  value: stats.declined,  color:'#EF4444' },
-                ].map(stat => (
-                  <div key={stat.label} className="glass-card p-4 text-center">
-                    <div style={{ fontSize:24, fontWeight:900, color:stat.color }}>{stat.value}</div>
-                    <div style={{ fontSize:11, color:'#94A3B8', marginTop:2 }}>{stat.label}</div>
-                  </div>
-                ))}
-              </div>
-            )}
+      {/* ── Prospects tab ─────────────────────────────────────────────── */}
+      {activeTab === 'prospects' && (
+        <div>
+          {/* Stats row */}
+          {stats && (
+            <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 mb-5">
+              <StatCard label="Total"      value={stats.total}      icon={Users}       color="blue" />
+              <StatCard label="Contacted"  value={stats.contacted}  icon={Mail}        color="purple" />
+              <StatCard label="Interested" value={stats.interested} icon={Star}        color="amber" />
+              <StatCard label="Converted"  value={stats.converted}  icon={TrendingUp}  color="green" />
+              <StatCard label="Declined"   value={stats.declined}   icon={X}           color="red" />
+            </div>
+          )}
 
+          <div className="card overflow-hidden">
             {/* Toolbar */}
-            <div style={{ display:'flex', gap:8, marginBottom:12, alignItems:'center', flexWrap:'wrap', flexShrink:0 }}>
-              <div style={{ position:'relative', flex:'1', minWidth:160 }}>
-                <Search size={14} style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', color:'#94A3B8' }} />
-                <input className="input-field" value={search} onChange={e => setSearch(e.target.value)}
-                  placeholder="Search name, company, city, state…"
-                  style={{ paddingLeft:32, height:36, fontSize:13 }} />
+            <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center px-4 py-3 border-b border-[#E4E7EC]">
+              <div className="relative flex-1 min-w-0 lg:max-w-xs">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
+                <input className="input-field !pl-8" value={search} onChange={e => setSearch(e.target.value)}
+                  placeholder="Search name, company, city, state…" />
               </div>
-              <select className="input-field" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
-                style={{ height:36, fontSize:13, width:130 }}>
-                <option value="">All Statuses</option>
-                {Object.entries(STATUS_COLORS).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
-              </select>
-              <select className="input-field" value={filterType} onChange={e => setFilterType(e.target.value)}
-                style={{ height:36, fontSize:13, width:145 }}>
-                <option value="">All Types</option>
-                {Object.entries(TYPE_COLORS).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
-              </select>
-              <select className="input-field" value={filterState} onChange={e => setFilterState(e.target.value)}
-                style={{ height:36, fontSize:13, width:140 }}>
-                <option value="">All States</option>
-                {NIGERIA_STATES.map(st => <option key={st} value={st}>{st}</option>)}
-              </select>
-              <button onClick={loadProspects} className="btn-outline flex items-center gap-1.5" style={{ height:36, fontSize:13 }}>
-                <RefreshCw size={13} /> Refresh
-              </button>
-
-              <button onClick={() => setLeadPanelOpen(true)}
-                style={{ height:36, fontSize:13, padding:'0 14px', borderRadius:8, background:'linear-gradient(135deg,#8B5CF6,#7C3AED)', color:'#fff', fontWeight:600, border:'none', cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                <Zap size={13} /> Find Leads
-              </button>
-
-              {selected.size > 0 && (
-                <button onClick={() => handleSendEmails(selected)} disabled={sending}
-                  className="btn-primary flex items-center gap-1.5" style={{ height:36, fontSize:13 }}>
-                  {sending ? <RefreshCw size={13} className="animate-spin" /> : <Send size={13} />}
-                  Send to {selected.size} selected
+              <div className="grid grid-cols-3 gap-2 lg:flex lg:items-center">
+                <select className="input-field lg:!w-[140px]" value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+                  <option value="">All statuses</option>
+                  {Object.entries(STATUS_COLORS).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
+                </select>
+                <select className="input-field lg:!w-[150px]" value={filterType} onChange={e => setFilterType(e.target.value)}>
+                  <option value="">All types</option>
+                  {Object.entries(TYPE_COLORS).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
+                </select>
+                <select className="input-field lg:!w-[140px]" value={filterState} onChange={e => setFilterState(e.target.value)}>
+                  <option value="">All states</option>
+                  {NIGERIA_STATES.map(st => <option key={st} value={st}>{st}</option>)}
+                </select>
+              </div>
+              <div className="flex items-center gap-2 lg:ml-auto flex-wrap">
+                {selected.size > 0 && (
+                  <button onClick={() => handleSendEmails(selected)} disabled={sending} className="btn-primary">
+                    {sending ? <RefreshCw size={13} className="animate-spin" /> : <Send size={13} />}
+                    Send to {selected.size} selected
+                  </button>
+                )}
+                <button onClick={loadProspects} className="btn-outline" title="Refresh">
+                  <RefreshCw size={13} /> Refresh
                 </button>
-              )}
-
-              <button onClick={() => handleSendEmails('all')} disabled={sending}
-                style={{ height:36, fontSize:13, padding:'0 14px', borderRadius:8, border:'1px solid #E2E8F0', background:'#fff', color:'#0F172A', fontWeight:600, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                <Mail size={13} /> Blast all
-              </button>
+              </div>
             </div>
 
             {/* Table */}
-            <div className="flex-1 overflow-auto rounded-xl" style={{ border:'1px solid #E2E8F0', minHeight:0 }}>
-              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+            <div className="overflow-auto max-h-[calc(100vh-260px)] min-h-[320px]">
+              <table className="table">
                 <thead>
-                  <tr style={{ background:'#F8FAFC', borderBottom:'1px solid #E2E8F0', position:'sticky', top:0, zIndex:1 }}>
-                    <th style={{ padding:'10px 12px', textAlign:'left', width:36 }}>
-                      <button onClick={toggleAll} style={{ background:'none', border:'none', cursor:'pointer', color:'#94A3B8', padding:0, display:'flex', alignItems:'center' }}>
-                        {selected.size === prospects.length && prospects.length > 0 ? <CheckSquare size={15} style={{ color:'#6366F1' }} /> : <Square size={15} />}
+                  <tr>
+                    <th className="sticky top-0 z-[1] !pr-0" style={{ width:40 }}>
+                      <button onClick={toggleAll} className="flex items-center text-[#98A2B3] hover:text-[#475467]" title="Select all">
+                        {selected.size === prospects.length && prospects.length > 0 ? <CheckSquare size={15} className="text-[#059669]" /> : <Square size={15} />}
                       </button>
                     </th>
-                    {['Name & Company','Location','Type','Website','Status','Last Emailed','Actions'].map(h => (
-                      <th key={h} style={{ padding:'10px 12px', textAlign:'left', fontSize:11, fontWeight:700, color:'#94A3B8', textTransform:'uppercase', letterSpacing:'0.06em', whiteSpace:'nowrap' }}>{h}</th>
+                    {['Name & company','Location','Type','Website','Status','Last emailed',''].map((h, idx) => (
+                      <th key={idx} className="sticky top-0 z-[1]">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={8} style={{ padding:40, textAlign:'center', color:'#94A3B8' }}>Loading prospects…</td></tr>
+                    [0,1,2,3,4].map(i => (
+                      <tr key={i}><td colSpan={8}><div className="skeleton h-8" /></td></tr>
+                    ))
                   ) : prospects.length === 0 ? (
-                    <tr><td colSpan={8} style={{ padding:40, textAlign:'center', color:'#94A3B8' }}>No prospects found</td></tr>
-                  ) : prospects.map((p, i) => {
+                    <tr>
+                      <td colSpan={8} className="!py-14 text-center">
+                        <div className="w-10 h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center mx-auto mb-3">
+                          <Users size={18} className="text-[#98A2B3]" />
+                        </div>
+                        <div className="text-[14px] font-semibold text-[#101828]">No prospects found</div>
+                        <div className="text-[13px] text-[#475467] mt-1">Adjust the filters or use Find leads to search across Nigeria.</div>
+                      </td>
+                    </tr>
+                  ) : prospects.map((p) => {
                     const tc = TYPE_COLORS[p.type] || TYPE_COLORS.estate_manager;
                     const sc = STATUS_COLORS[p.status] || STATUS_COLORS.new;
                     const isSelected = selected.has(p._id);
                     return (
-                      <tr key={p._id} style={{ borderBottom:'1px solid #F1F5F9', background: isSelected ? '#EEF2FF' : (i % 2 === 0 ? '#fff' : '#FAFAFA') }}>
-                        <td style={{ padding:'10px 12px' }}>
-                          <button onClick={() => toggleSelect(p._id)} style={{ background:'none', border:'none', cursor:'pointer', color:'#94A3B8', padding:0, display:'flex', alignItems:'center' }}>
-                            {isSelected ? <CheckSquare size={15} style={{ color:'#6366F1' }} /> : <Square size={15} />}
+                      <tr key={p._id} style={isSelected ? { background:'#F0FDF9' } : undefined}>
+                        <td className="!pr-0">
+                          <button onClick={() => toggleSelect(p._id)} className="flex items-center text-[#98A2B3] hover:text-[#475467]">
+                            {isSelected ? <CheckSquare size={15} className="text-[#059669]" /> : <Square size={15} />}
                           </button>
                         </td>
-                        <td style={{ padding:'10px 12px' }}>
-                          <div style={{ fontWeight:600, color:'#0F172A' }}>{p.name}</div>
-                          {p.title && <div style={{ fontSize:10, fontWeight:700, color:'#8B5CF6', marginTop:1, textTransform:'uppercase', letterSpacing:'0.04em' }}>{p.title}</div>}
-                          <div style={{ fontSize:11, color:'#64748B', marginTop:1 }}>{p.company}</div>
-                          <div style={{ fontSize:11, color:'#94A3B8' }}>{p.email}</div>
+                        <td className="min-w-[220px]">
+                          <div className="cell-strong">{p.name}</div>
+                          {p.title && <div className="text-[11.5px] font-medium text-[#475467] mt-px">{p.title}</div>}
+                          <div className="text-[12px] text-[#475467] mt-px">{p.company}</div>
+                          <div className="text-[12px] text-[#98A2B3]">{p.email}</div>
                         </td>
-                        <td style={{ padding:'10px 12px', color:'#64748B' }}>
-                          <div>{p.city || '—'}</div>
-                          {p.state && p.state !== p.city && <div style={{ fontSize:10, color:'#94A3B8' }}>{p.state}</div>}
+                        <td className="whitespace-nowrap">
+                          <div className="text-[#344054]">{p.city || '—'}</div>
+                          {p.state && p.state !== p.city && <div className="text-[11.5px] text-[#98A2B3]">{p.state}</div>}
                         </td>
-                        <td style={{ padding:'10px 12px' }}>
-                          <span style={{ background:tc.bg, color:tc.color, fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20 }}>{tc.label}</span>
+                        <td>
+                          <span className={`badge badge-${tc.badge} whitespace-nowrap`}>{tc.label}</span>
                         </td>
-                        <td style={{ padding:'10px 12px' }}>
+                        <td>
                           {p.website
                             ? <a href={p.website} target="_blank" rel="noreferrer"
-                                style={{ fontSize:11, color:'#6366F1', fontWeight:600, textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
+                                className="inline-flex items-center gap-1 text-[12px] font-medium text-[#047857] hover:underline whitespace-nowrap">
                                 <Globe size={11} />
                                 {p.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '').slice(0, 22)}
                               </a>
-                            : <span style={{ fontSize:11, color:'#CBD5E1' }}>—</span>}
+                            : <span className="text-[#D0D5DD]">—</span>}
                         </td>
-                        <td style={{ padding:'10px 12px' }}>
+                        <td>
                           <select
                             value={p.status}
                             onChange={e => handleStatusChange(p._id, e.target.value)}
                             disabled={statusChanging === p._id}
-                            style={{ background:sc.bg, color:sc.color, fontSize:11, fontWeight:700, border:`1px solid ${sc.color}40`, borderRadius:8, padding:'3px 8px', cursor:'pointer', outline:'none' }}>
+                            style={{ background:sc.bg, color:sc.color, fontSize:12, fontWeight:500, border:`1px solid ${sc.border}`, borderRadius:16, padding:'2px 8px', cursor:'pointer', outline:'none' }}>
                             {Object.entries(STATUS_COLORS).map(([k,v]) => <option key={k} value={k}>{v.label}</option>)}
                           </select>
                         </td>
-                        <td style={{ padding:'10px 12px', fontSize:11, color:'#94A3B8' }}>
+                        <td className="whitespace-nowrap text-[12px] text-[#98A2B3] tabular-nums">
                           {p.emailSentAt ? new Date(p.emailSentAt).toLocaleDateString('en-NG', { day:'2-digit', month:'short', year:'numeric' }) : '—'}
                         </td>
-                        <td style={{ padding:'10px 12px' }}>
+                        <td className="text-right">
                           <button
                             onClick={() => handleSendEmails(new Set([p._id]))}
                             disabled={sending}
                             title="Send pitch email"
-                            style={{ background:'#EEF2FF', border:'none', borderRadius:7, padding:'5px 10px', cursor:'pointer', display:'flex', alignItems:'center', gap:5, fontSize:11, fontWeight:600, color:'#6366F1' }}>
-                            <Send size={11} /> Send
+                            className="btn-outline !py-1 !px-2.5 !text-[12px]">
+                            <Send size={12} /> Send
                           </button>
                         </td>
                       </tr>
@@ -1066,8 +1046,8 @@ export default function PitchDeck() {
               </table>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
       <LeadSearchPanel open={leadPanelOpen} onClose={() => setLeadPanelOpen(false)} onDone={loadProspects} />
     </div>
   );

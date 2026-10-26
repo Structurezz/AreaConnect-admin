@@ -5,6 +5,8 @@ import {
 } from 'lucide-react';
 import { defaultTrackAPI } from '../api';
 import toast from 'react-hot-toast';
+import PageHeader from '../components/ui/PageHeader';
+import StatCard from '../components/ui/StatCard';
 
 // Pull the 11-char YouTube videoId out of either a raw id or a full URL.
 function extractVideoId(input) {
@@ -24,7 +26,7 @@ function TrackThumb({ videoId, size = 48 }) {
       alt=""
       width={size}
       height={size}
-      style={{ borderRadius: 8, objectFit: 'cover', background: '#F1F5F9', flexShrink: 0 }}
+      style={{ borderRadius: 6, objectFit: 'cover', background: '#F2F4F7', flexShrink: 0, border: '1px solid #E4E7EC' }}
       onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
     />
   );
@@ -152,220 +154,199 @@ export default function DefaultTracks() {
     }
   };
 
+  const FILTERS = [
+    { k: 'all',    label: 'All',    count: stats.total },
+    { k: 'active', label: 'Active', count: stats.active },
+    { k: 'hidden', label: 'Hidden', count: stats.hidden },
+  ];
+
   return (
-    <div className="space-y-5 animate-fade-in">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900" style={{ letterSpacing: '-0.02em' }}>
-            Lounge House Playlist
-          </h1>
-          <p className="text-slate-500 text-xs sm:text-sm mt-0.5 max-w-xl">
-            Default tracks seeded into every estate's Resident Lounge. Changes here apply to every estate instantly.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={handleReseed} disabled={reseeding}
-            className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-all"
-            style={{ background: '#F1F5F9', color: '#475569', border: '1px solid #E2E8F0' }}>
-            <Download size={13} />{reseeding ? 'Importing…' : 'Import seed'}
-          </button>
-          <button onClick={openCreate}
-            className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl text-white"
-            style={{
-              background: 'linear-gradient(135deg, #7C3AED, #4F46E5)',
-              boxShadow: '0 4px 12px rgba(124,58,237,0.30)',
-            }}>
-            <Plus size={14} /> Add track
-          </button>
-        </div>
+    <div className="max-w-[1400px] mx-auto animate-fade-in">
+      <PageHeader
+        title="Lounge house playlist"
+        description="Default tracks seeded into every estate's Resident Lounge. Changes here apply to every estate instantly."
+        actions={(
+          <>
+            <button onClick={handleReseed} disabled={reseeding} className="btn-outline">
+              <Download size={14} />{reseeding ? 'Importing…' : 'Import seed'}
+            </button>
+            <button onClick={openCreate} className="btn-primary">
+              <Plus size={14} /> Add track
+            </button>
+          </>
+        )}
+      />
+
+      {/* KPIs */}
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-3 mb-5">
+        {loading ? (
+          [0, 1, 2].map((i) => <div key={i} className="skeleton h-[92px]" />)
+        ) : (
+          <>
+            <StatCard label="Total tracks" value={stats.total} icon={Music} color="blue" />
+            <StatCard label="Active" value={stats.active} icon={Eye} color="green" />
+            <StatCard label="Hidden" value={stats.hidden} icon={EyeOff} color="amber" />
+          </>
+        )}
       </div>
 
-      {/* Stat strip */}
-      {!loading && (
-        <div className="grid grid-cols-3 gap-2 sm:gap-3">
-          <StatChip label="Total"   value={stats.total}   tone="slate" />
-          <StatChip label="Active"  value={stats.active}  tone="green" />
-          <StatChip label="Hidden"  value={stats.hidden}  tone="amber" />
-        </div>
-      )}
-
-      {/* Search + filter */}
-      {!loading && (
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
-          <div className="relative flex-1">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#94A3B8' }} />
+      <div className="card overflow-hidden">
+        {/* Toolbar */}
+        <div className="card-header flex-col sm:flex-row gap-3 sm:items-center">
+          <div className="relative flex-1 w-full sm:max-w-sm">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search title, artist or video ID…"
-              className="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm outline-none"
-              style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', color: '#0F172A' }}
+              className="input-field !pl-9"
             />
           </div>
-          <div className="flex items-center gap-1.5">
-            {[
-              { k: 'all',    label: 'All' },
-              { k: 'active', label: 'Active' },
-              { k: 'hidden', label: 'Hidden' },
-            ].map(({ k, label }) => {
-              const active = filter === k;
-              return (
-                <button key={k}
-                  onClick={() => setFilter(k)}
-                  className="inline-flex items-center text-xs font-bold px-3 py-2 rounded-xl transition-all"
-                  style={{
-                    background: active ? 'linear-gradient(135deg, #7C3AED, #4F46E5)' : '#FFFFFF',
-                    color: active ? '#fff' : '#475569',
-                    border: `1px solid ${active ? 'transparent' : '#E2E8F0'}`,
-                    boxShadow: active ? '0 4px 12px rgba(124,58,237,0.25)' : 'none',
-                  }}>
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+            <span className="text-[12px] text-[#98A2B3] tabular-nums whitespace-nowrap">
+              {loading ? '—' : `${filtered.length} of ${tracks.length}`}
+            </span>
+            <div className="tabs">
+              {FILTERS.map(({ k, label, count }) => (
+                <button key={k} type="button" onClick={() => setFilter(k)}
+                  className={`tab ${filter === k ? 'active' : ''}`}>
                   {label}
+                  {!loading && <span className="ml-1.5 text-[11px] text-[#98A2B3] tabular-nums">{count}</span>}
                 </button>
-              );
-            })}
+              ))}
+            </div>
           </div>
         </div>
-      )}
 
-      {/* List */}
-      {loading ? (
-        <div className="flex justify-center py-12">
-          <RefreshCw size={22} className="animate-spin" style={{ color: '#94A3B8' }} />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="glass-card p-10 text-center">
-          <Music size={28} className="mx-auto mb-2" style={{ color: '#CBD5E1' }} />
-          <p className="text-sm font-semibold" style={{ color: '#334155' }}>No tracks match</p>
-          {tracks.length === 0 && (
-            <button onClick={handleReseed} disabled={reseeding}
-              className="mt-3 text-xs font-bold" style={{ color: '#7C3AED' }}>
-              Import the seed playlist →
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="glass-card overflow-hidden">
-          <div className="px-4 py-2 flex items-center justify-between text-[11px] font-semibold"
-            style={{ color: '#64748B', background: '#F8FAFC', borderBottom: '1px solid rgba(15,23,42,0.05)' }}>
-            <span>Showing {filtered.length} of {tracks.length}</span>
-            <span>Scroll inside this list</span>
+        {/* Body */}
+        {loading ? (
+          <div className="p-4 space-y-3">
+            {[0, 1, 2, 3, 4].map((i) => <div key={i} className="skeleton h-11" />)}
           </div>
-          <div className="divide-y overflow-y-auto"
-            style={{ borderColor: 'rgba(15,23,42,0.05)', maxHeight: 'calc(100vh - 420px)', minHeight: 320 }}>
-            {filtered.map((t) => (
-              <div key={t._id}
-                className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50">
-                <GripVertical size={14} style={{ color: '#CBD5E1' }} className="hidden sm:block flex-shrink-0" />
-                <TrackThumb videoId={t.videoId} />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm font-bold truncate" style={{ color: '#0F172A' }}>{t.title}</span>
-                    {!t.isActive && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md"
-                        style={{ background: 'rgba(245,158,11,0.10)', color: '#B45309' }}>Hidden</span>
-                    )}
-                  </div>
-                  <div className="text-xs truncate mt-0.5" style={{ color: '#64748B' }}>
-                    {t.artist || <span style={{ color: '#94A3B8' }}>No artist</span>}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1 text-[10px]" style={{ color: '#94A3B8' }}>
-                    <span className="font-mono">{t.videoId}</span>
-                    <a href={`https://youtu.be/${t.videoId}`} target="_blank" rel="noreferrer"
-                      className="inline-flex items-center gap-0.5 font-semibold hover:underline" style={{ color: '#7C3AED' }}>
-                      <ExternalLink size={9} /> Preview
-                    </a>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <button onClick={() => toggleActive(t)}
-                    title={t.isActive ? 'Hide from lounge' : 'Show in lounge'}
-                    className="p-2 rounded-lg transition-all"
-                    style={{ color: t.isActive ? '#059669' : '#94A3B8' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#F1F5F9'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
-                    {t.isActive ? <Eye size={15} /> : <EyeOff size={15} />}
-                  </button>
-                  <button onClick={() => openEdit(t)}
-                    title="Edit"
-                    className="p-2 rounded-lg transition-all"
-                    style={{ color: '#475569' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = '#F1F5F9'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}>
-                    <Pencil size={15} />
-                  </button>
-                  <button onClick={() => handleDelete(t)}
-                    title="Delete"
-                    className="p-2 rounded-lg transition-all"
-                    style={{ color: '#CBD5E1' }}
-                    onMouseEnter={(e) => { e.currentTarget.style.color = '#EF4444'; e.currentTarget.style.background = '#FEF2F2'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.color = '#CBD5E1'; e.currentTarget.style.background = 'transparent'; }}>
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              </div>
-            ))}
+        ) : filtered.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-14 px-4 text-center">
+            <div className="w-10 h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center mb-3">
+              <Music size={18} className="text-[#98A2B3]" />
+            </div>
+            <p className="text-[14px] font-semibold text-[#101828]">No tracks match</p>
+            <p className="text-[13px] text-[#98A2B3] mt-0.5">
+              {tracks.length === 0 ? 'The house playlist is empty.' : 'Try a different search or filter.'}
+            </p>
+            {tracks.length === 0 && (
+              <button onClick={handleReseed} disabled={reseeding} className="btn-outline mt-4">
+                <Download size={14} /> Import the seed playlist
+              </button>
+            )}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="overflow-auto" style={{ maxHeight: 'calc(100vh - 380px)', minHeight: 320 }}>
+            <table className="table">
+              <thead className="sticky top-0 z-[1]">
+                <tr>
+                  <th className="w-8 hidden sm:table-cell" />
+                  <th>Track</th>
+                  <th className="hidden md:table-cell">Video ID</th>
+                  <th>Status</th>
+                  <th className="!text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((t) => (
+                  <tr key={t._id}>
+                    <td className="hidden sm:table-cell !pr-0">
+                      <GripVertical size={14} className="text-[#D0D5DD]" />
+                    </td>
+                    <td>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <TrackThumb videoId={t.videoId} size={40} />
+                        <div className="min-w-0">
+                          <div className="cell-strong truncate max-w-[220px] sm:max-w-[360px]">{t.title}</div>
+                          <div className="text-[12px] text-[#475467] truncate max-w-[220px] sm:max-w-[360px]">
+                            {t.artist || <span className="text-[#98A2B3]">No artist</span>}
+                          </div>
+                          <div className="md:hidden font-mono text-[11px] text-[#98A2B3] mt-0.5">{t.videoId}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="hidden md:table-cell">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-[12px] text-[#475467]">{t.videoId}</span>
+                        <a href={`https://youtu.be/${t.videoId}`} target="_blank" rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-[12px] font-medium text-[#059669] hover:underline">
+                          <ExternalLink size={11} /> Preview
+                        </a>
+                      </div>
+                    </td>
+                    <td>
+                      {t.isActive
+                        ? <span className="badge badge-green">Active</span>
+                        : <span className="badge badge-yellow">Hidden</span>}
+                    </td>
+                    <td>
+                      <div className="flex items-center justify-end gap-0.5">
+                        <button onClick={() => toggleActive(t)}
+                          title={t.isActive ? 'Hide from lounge' : 'Show in lounge'}
+                          className={`p-2 rounded-md hover:bg-[#F2F4F7] transition-colors ${t.isActive ? 'text-[#059669]' : 'text-[#98A2B3]'}`}>
+                          {t.isActive ? <Eye size={15} /> : <EyeOff size={15} />}
+                        </button>
+                        <button onClick={() => openEdit(t)} title="Edit"
+                          className="p-2 rounded-md text-[#475467] hover:bg-[#F2F4F7] transition-colors">
+                          <Pencil size={15} />
+                        </button>
+                        <button onClick={() => handleDelete(t)} title="Delete"
+                          className="p-2 rounded-md text-[#98A2B3] hover:text-[#D92D20] hover:bg-[#FEF3F2] transition-colors">
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Modal */}
       {showForm && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: 16, background: 'rgba(15,23,42,0.70)', backdropFilter: 'blur(6px)',
-        }}>
-          <form onSubmit={handleSave} style={{
-            background: '#fff', borderRadius: 20, width: '100%', maxWidth: 460,
-            overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.25)',
-          }}>
-            <div style={{
-              background: 'linear-gradient(135deg, #7C3AED, #4F46E5)',
-              padding: '18px 20px', position: 'relative',
-            }}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-[#101828]/50 backdrop-blur-[2px]">
+          <form onSubmit={handleSave}
+            className="bg-white rounded-xl w-full max-w-[460px] overflow-hidden border border-[#E4E7EC] shadow-[0_20px_48px_-12px_rgba(16,24,40,0.25)] animate-fade-in">
+            <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-[#E4E7EC]">
+              <div className="min-w-0">
+                <div className="text-[15px] font-semibold text-[#101828] truncate">
+                  {editing ? form.title || 'Edit track' : 'Add track'}
+                </div>
+                <div className="text-[12px] text-[#98A2B3] mt-0.5">
+                  {editing ? 'Edit track in the house playlist' : 'Add to house playlist'}
+                </div>
+              </div>
               <button type="button" onClick={() => setShowForm(false)}
-                style={{
-                  position: 'absolute', top: 12, right: 12,
-                  background: 'rgba(255,255,255,0.2)', border: 'none',
-                  borderRadius: 8, width: 28, height: 28,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: '#fff',
-                }}><X size={14} /></button>
-              <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                {editing ? 'Edit track' : 'Add to house playlist'}
-              </div>
-              <div style={{ color: '#fff', fontSize: 17, fontWeight: 800, marginTop: 2 }}>
-                {editing ? form.title || 'Edit track' : 'New track'}
-              </div>
+                className="p-1.5 rounded-md text-[#98A2B3] hover:bg-[#F2F4F7] hover:text-[#101828] transition-colors">
+                <X size={16} />
+              </button>
             </div>
 
-            <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div className="p-5 space-y-4">
               {/* VideoId */}
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
-                  YouTube video ID or URL
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <Youtube size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#EF4444' }} />
+                <label className="field-label">YouTube video ID or URL</label>
+                <div className="relative">
+                  <Youtube size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#F04438]" />
                   <input
                     value={form.videoId}
                     onChange={(e) => setForm((f) => ({ ...f, videoId: e.target.value }))}
                     onBlur={handleVideoIdBlur}
                     placeholder="dQw4w9WgXcQ or https://youtu.be/…"
-                    style={{
-                      width: '100%', padding: '10px 12px 10px 34px', borderRadius: 10,
-                      border: '1.5px solid #E2E8F0', fontSize: 13, outline: 'none',
-                      background: '#F8FAFC', color: '#0F172A', fontFamily: 'monospace',
-                    }} />
+                    className="input-field !pl-9 font-mono" />
                 </div>
                 {form.videoId && (
-                  <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <TrackThumb videoId={extractVideoId(form.videoId)} size={56} />
+                  <div className="mt-2 flex items-center gap-3">
+                    <TrackThumb videoId={extractVideoId(form.videoId)} size={48} />
                     <a href={`https://youtu.be/${extractVideoId(form.videoId)}`} target="_blank" rel="noreferrer"
-                      style={{ fontSize: 11, fontWeight: 600, color: '#7C3AED', textDecoration: 'none' }}>
-                      Preview on YouTube →
+                      className="inline-flex items-center gap-1 text-[12px] font-medium text-[#059669] hover:underline">
+                      <ExternalLink size={11} /> Preview on YouTube
                     </a>
                   </div>
                 )}
@@ -373,111 +354,52 @@ export default function DefaultTracks() {
 
               {/* Title */}
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
-                  Title
-                </label>
+                <label className="field-label">Title</label>
                 <input
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                   placeholder="e.g. Calm Down"
-                  style={{
-                    width: '100%', padding: '10px 12px', borderRadius: 10,
-                    border: '1.5px solid #E2E8F0', fontSize: 13, outline: 'none',
-                    background: '#F8FAFC', color: '#0F172A',
-                  }} />
+                  className="input-field" />
               </div>
 
               {/* Artist */}
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#475569', marginBottom: 6 }}>
-                  Artist (optional)
-                </label>
+                <label className="field-label">Artist <span className="text-[#98A2B3] font-normal">(optional)</span></label>
                 <input
                   value={form.artist}
                   onChange={(e) => setForm((f) => ({ ...f, artist: e.target.value }))}
                   placeholder="e.g. Rema"
-                  style={{
-                    width: '100%', padding: '10px 12px', borderRadius: 10,
-                    border: '1.5px solid #E2E8F0', fontSize: 13, outline: 'none',
-                    background: '#F8FAFC', color: '#0F172A',
-                  }} />
+                  className="input-field" />
               </div>
 
               {/* Active toggle */}
               <button type="button" onClick={() => setForm((f) => ({ ...f, isActive: !f.isActive }))}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10, padding: 12, borderRadius: 12,
-                  background: form.isActive ? 'rgba(16,185,129,0.06)' : '#F8FAFC',
-                  border: `1.5px solid ${form.isActive ? 'rgba(16,185,129,0.22)' : '#E2E8F0'}`,
-                  cursor: 'pointer', textAlign: 'left',
-                }}>
-                <div style={{
-                  width: 36, height: 36, borderRadius: 10,
-                  background: form.isActive ? 'rgba(16,185,129,0.14)' : 'rgba(148,163,184,0.15)',
-                  color: form.isActive ? '#059669' : '#64748B',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {form.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#0F172A' }}>
+                className="w-full flex items-center gap-3 p-3 rounded-lg border border-[#E4E7EC] hover:bg-[#F9FAFB] text-left transition-colors">
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-medium text-[#101828]">
                     {form.isActive ? 'Visible in every estate' : 'Hidden from the lounge'}
                   </div>
-                  <div style={{ fontSize: 11, color: '#64748B', marginTop: 2 }}>
+                  <div className="text-[12px] text-[#98A2B3] mt-0.5">
                     Toggle to show or hide this track without deleting it
                   </div>
                 </div>
-                <div style={{
-                  width: 40, height: 22, borderRadius: 999, position: 'relative',
-                  background: form.isActive ? '#10B981' : '#CBD5E1',
-                }}>
-                  <div style={{
-                    position: 'absolute', top: 2,
-                    left: form.isActive ? 'calc(100% - 20px)' : 2,
-                    width: 18, height: 18, borderRadius: 999, background: '#fff',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
-                    transition: 'left 0.15s',
-                  }} />
+                <div className={`relative w-9 h-5 rounded-full flex-shrink-0 transition-colors ${form.isActive ? 'bg-[#059669]' : 'bg-[#D0D5DD]'}`}>
+                  <div className="absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-all"
+                    style={{ left: form.isActive ? 'calc(100% - 18px)' : 2 }} />
                 </div>
               </button>
+            </div>
 
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: 10, marginTop: 2 }}>
-                <button type="button" onClick={() => setShowForm(false)}
-                  style={{
-                    flex: 1, padding: '12px', background: '#F1F5F9',
-                    color: '#64748B', border: 'none', borderRadius: 12,
-                    fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                  }}>Cancel</button>
-                <button type="submit" disabled={saving}
-                  style={{
-                    flex: 2, padding: '12px',
-                    background: saving ? '#94A3B8' : 'linear-gradient(135deg, #7C3AED, #4F46E5)',
-                    color: '#fff', border: 'none', borderRadius: 12,
-                    fontSize: 13, fontWeight: 800, cursor: saving ? 'not-allowed' : 'pointer',
-                    boxShadow: saving ? 'none' : '0 8px 20px rgba(124,58,237,0.30)',
-                  }}>
-                  {saving ? 'Saving…' : (editing ? 'Save changes' : 'Add track')}
-                </button>
-              </div>
+            {/* Actions */}
+            <div className="flex justify-end gap-2 px-5 py-3.5 border-t border-[#E4E7EC] bg-[#F9FAFB]">
+              <button type="button" onClick={() => setShowForm(false)} className="btn-outline">Cancel</button>
+              <button type="submit" disabled={saving} className="btn-primary">
+                {saving ? 'Saving…' : (editing ? 'Save changes' : 'Add track')}
+              </button>
             </div>
           </form>
         </div>
       )}
-    </div>
-  );
-}
-
-function StatChip({ label, value, tone }) {
-  const tones = {
-    slate: { bg: 'rgba(15,23,42,0.05)',   color: '#0F172A' },
-    green: { bg: 'rgba(16,185,129,0.08)', color: '#047857' },
-    amber: { bg: 'rgba(245,158,11,0.08)', color: '#B45309' },
-  }[tone] || {};
-  return (
-    <div className="rounded-xl px-3 py-2.5" style={{ background: tones.bg, border: '1px solid rgba(15,23,42,0.06)' }}>
-      <div className="text-xl font-black leading-none" style={{ color: tones.color }}>{value}</div>
-      <div className="text-[10px] font-bold uppercase tracking-wider mt-1" style={{ color: tones.color, opacity: 0.75 }}>{label}</div>
     </div>
   );
 }

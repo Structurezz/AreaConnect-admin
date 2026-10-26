@@ -7,21 +7,29 @@ import { Link } from 'react-router-dom';
 import { planAPI, passwordResetAPI, alertAPI, withdrawalAPI } from '../api';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
+import PageHeader from '../components/ui/PageHeader';
 
 const fmtNGN = (n) => `₦${Number(n || 0).toLocaleString()}`;
 
-function Section({ title, Icon, color, count, children }) {
+const TONE = {
+  red:    { fg: '#B42318', bg: '#FEF3F2' },
+  blue:   { fg: '#175CD3', bg: '#EFF8FF' },
+  green:  { fg: '#067647', bg: '#ECFDF3' },
+  amber:  { fg: '#B54708', bg: '#FFFAEB' },
+};
+
+function Section({ title, Icon, tone = 'green', count, children }) {
+  const t = TONE[tone] || TONE.green;
   return (
-    <div className="glass-card overflow-hidden">
-      <div className="px-5 py-4 flex items-center justify-between flex-wrap gap-2" style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: color + '14' }}>
-            <Icon size={14} style={{ color }} />
-          </div>
-          <h2 className="text-sm font-bold" style={{ color: '#0F172A' }}>{title}</h2>
+    <div className="card overflow-hidden flex flex-col">
+      <div className="card-header">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0" style={{ background: t.bg, color: t.fg }}>
+            <Icon size={14} />
+          </span>
+          <h2 className="card-title truncate">{title}</h2>
         </div>
-        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full"
-          style={{ background: count ? color + '14' : '#F1F5F9', color: count ? color : '#64748B', border: `1px solid ${count ? color + '30' : '#E2E8F0'}` }}>
+        <span className="badge badge-gray tabular-nums" style={count ? { background: t.bg, color: t.fg, borderColor: 'transparent' } : undefined}>
           {count}
         </span>
       </div>
@@ -32,12 +40,20 @@ function Section({ title, Icon, color, count, children }) {
 
 function EmptyRow({ icon: Icon, message }) {
   return (
-    <div className="px-5 py-10 text-center">
-      <Icon size={28} className="mx-auto mb-2" style={{ color: '#CBD5E1' }} />
-      <div className="text-xs" style={{ color: '#94A3B8' }}>{message}</div>
+    <div className="px-5 py-10 flex flex-col items-center text-center">
+      <div className="w-9 h-9 rounded-full bg-[#F2F4F7] flex items-center justify-center mb-2.5">
+        <Icon size={16} className="text-[#98A2B3]" />
+      </div>
+      <div className="text-[12.5px] text-[#98A2B3]">{message}</div>
     </div>
   );
 }
+
+const rowCls = 'px-5 py-3 flex items-center gap-3';
+const titleCls = 'text-[13px] font-semibold text-[#101828] truncate';
+const subCls = 'text-[12px] text-[#475467] truncate';
+const metaCls = 'text-[11.5px] text-[#98A2B3] mt-0.5';
+const smallBtn = '!h-8 !px-2.5 !text-[12px]';
 
 export default function Operations() {
   const [loading, setLoading] = useState(true);
@@ -91,7 +107,7 @@ export default function Operations() {
 
   const totalIssues = failedRenewals.length + pendingResets.length + pendingWithdrawals.length + openAlerts.length + expiringComps.length;
   const healthScore = Math.max(0, 100 - Math.min(totalIssues * 5, 100));
-  const healthColor = healthScore >= 85 ? '#059669' : healthScore >= 60 ? '#D97706' : '#DC2626';
+  const healthColor = healthScore >= 85 ? '#059669' : healthScore >= 60 ? '#DC6803' : '#D92D20';
 
   const markBusy = (id, v = true) => setBusy(prev => ({ ...prev, [id]: v }));
 
@@ -140,73 +156,72 @@ export default function Operations() {
   };
 
   return (
-    <div className="space-y-5 animate-fade-in pb-12">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: '#0F172A' }}>Operations</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#94A3B8' }}>Platform-wide queues that need admin action</p>
-        </div>
-        <button onClick={load}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold"
-          style={{ background: '#F1F5F9', color: '#0F172A' }} disabled={loading}>
-          <RefreshCw size={13} className={loading ? 'animate-spin' : ''} /> Refresh
-        </button>
-      </div>
+    <div className="max-w-[1400px] mx-auto animate-fade-in pb-12">
+      <PageHeader
+        title="Operations"
+        description="Platform-wide queues that need admin action."
+        actions={(
+          <button onClick={load} className="btn-outline gap-2" disabled={loading}>
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
+          </button>
+        )}
+      />
 
-      {/* Health hero */}
-      <div className="glass-card p-5">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-                 style={{ background: healthColor + '14', color: healthColor }}>
-              <Zap size={22} />
-            </div>
+      {/* Health summary */}
+      <div className="card p-5 mb-5">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-5">
+          <div className="flex items-center gap-4 lg:min-w-[260px]">
+            <span className="w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: healthColor + '14', color: healthColor }}>
+              <Zap size={20} />
+            </span>
             <div>
-              <div className="text-xs font-bold uppercase tracking-wider" style={{ color: '#94A3B8' }}>Platform health</div>
-              <div className="text-3xl font-black" style={{ color: healthColor }}>{healthScore}<span className="text-base" style={{ color: '#94A3B8' }}>/100</span></div>
-              <div className="text-xs mt-0.5" style={{ color: '#64748B' }}>
+              <div className="text-[12px] font-medium text-[#475467]">Platform health</div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-[28px] leading-tight font-semibold tracking-tight tabular-nums" style={{ color: healthColor }}>{healthScore}</span>
+                <span className="text-[13px] text-[#98A2B3]">/100</span>
+              </div>
+              <div className="text-[12px] text-[#98A2B3]">
                 {totalIssues === 0 ? 'All quiet — nothing needs admin action' : `${totalIssues} item${totalIssues === 1 ? '' : 's'} across 5 queues`}
               </div>
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center flex-1 min-w-[280px]">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-px bg-[#E4E7EC] border border-[#E4E7EC] rounded-lg overflow-hidden flex-1">
             {[
-              { label: 'Failed renewals', value: failedRenewals.length,     color: '#DC2626' },
-              { label: 'Password resets', value: pendingResets.length,      color: '#4F46E5' },
-              { label: 'Withdrawals',     value: pendingWithdrawals.length, color: '#059669' },
-              { label: 'Open alerts',     value: openAlerts.length,         color: '#F59E0B' },
-              { label: 'Expiring comps',  value: expiringComps.length,      color: '#B45309' },
+              { label: 'Failed renewals', value: failedRenewals.length,     color: '#B42318' },
+              { label: 'Password resets', value: pendingResets.length,      color: '#175CD3' },
+              { label: 'Withdrawals',     value: pendingWithdrawals.length, color: '#067647' },
+              { label: 'Open alerts',     value: openAlerts.length,         color: '#B54708' },
+              { label: 'Expiring comps',  value: expiringComps.length,      color: '#B54708' },
             ].map(x => (
-              <div key={x.label} className="rounded-lg py-2" style={{ background: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-                <div className="text-xl font-black" style={{ color: x.value ? x.color : '#94A3B8' }}>{x.value}</div>
-                <div className="text-[10px]" style={{ color: '#64748B' }}>{x.label}</div>
+              <div key={x.label} className="bg-white px-3 py-2.5">
+                <div className="text-[11.5px] text-[#475467] truncate">{x.label}</div>
+                <div className="text-[18px] font-semibold tabular-nums mt-0.5" style={{ color: x.value ? x.color : '#98A2B3' }}>{x.value}</div>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-5">
+      <div className="grid lg:grid-cols-2 gap-4">
         {/* Failed renewals */}
-        <Section title="Failed auto-renewals" Icon={AlertTriangle} color="#DC2626" count={failedRenewals.length}>
+        <Section title="Failed auto-renewals" Icon={AlertTriangle} tone="red" count={failedRenewals.length}>
           {failedRenewals.length === 0 ? (
             <EmptyRow icon={AlertTriangle} message="No stuck renewals — all cards charging cleanly" />
           ) : (
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-[#F2F4F7]">
               {failedRenewals.slice(0, 10).map(sub => (
-                <div key={sub._id} className="px-5 py-3 flex items-center gap-3">
+                <div key={sub._id} className={rowCls}>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-sm truncate" style={{ color: '#0F172A' }}>{sub.estateId?.name || 'Unknown'}</div>
-                    <div className="text-xs truncate" style={{ color: '#DC2626' }}>{sub.lastRenewalError || 'Unknown error'}</div>
-                    <div className="text-[11px] mt-0.5" style={{ color: '#94A3B8' }}>
+                    <div className={titleCls}>{sub.estateId?.name || 'Unknown'}</div>
+                    <div className="text-[12px] text-[#B42318] truncate">{sub.lastRenewalError || 'Unknown error'}</div>
+                    <div className={metaCls}>
                       {sub.renewalAttempts > 1 && <>{sub.renewalAttempts} attempts · </>}
                       {sub.lastRenewalAttemptAt && formatDistanceToNow(new Date(sub.lastRenewalAttemptAt), { addSuffix: true })}
                     </div>
                   </div>
-                  <Link to={`/estates/${sub.estateId?._id || sub.estateId}`}
-                    className="text-xs font-bold px-3 py-1.5 rounded-lg"
-                    style={{ background: '#FEE2E2', color: '#B91C1C' }}>
-                    Resolve <ArrowRight size={10} className="inline"/>
+                  <Link to={`/estates/${sub.estateId?._id || sub.estateId}`} className={`btn-outline ${smallBtn} gap-1`}>
+                    Resolve <ArrowRight size={12} />
                   </Link>
                 </div>
               ))}
@@ -215,39 +230,36 @@ export default function Operations() {
         </Section>
 
         {/* Pending password resets */}
-        <Section title="Pending password resets" Icon={KeyRound} color="#4F46E5" count={pendingResets.length}>
+        <Section title="Pending password resets" Icon={KeyRound} tone="blue" count={pendingResets.length}>
           {pendingResets.length === 0 ? (
             <EmptyRow icon={KeyRound} message="No pending reset requests" />
           ) : (
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-[#F2F4F7]">
               {pendingResets.slice(0, 10).map(req => (
-                <div key={req._id} className="px-5 py-3 flex items-center gap-3">
+                <div key={req._id} className={rowCls}>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-sm truncate" style={{ color: '#0F172A' }}>
-                      {req.requesterName || req.userId?.name || 'Unknown'}
-                      <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full capitalize"
-                            style={{ background: '#F1F5F9', color: '#475569' }}>{req.requesterRole}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={titleCls}>{req.requesterName || req.userId?.name || 'Unknown'}</span>
+                      {req.requesterRole && <span className="badge badge-gray capitalize">{req.requesterRole}</span>}
                     </div>
-                    <div className="text-xs truncate" style={{ color: '#64748B' }}>
+                    <div className={subCls}>
                       {req.requesterEmail}
                       {req.requesterUnit ? ` · ${req.requesterUnit}` : ''}
                       {req.estateId?.name ? ` · ${req.estateId.name}` : ''}
                     </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: '#94A3B8' }}>
-                      <Clock size={9} className="inline mr-1" />
+                    <div className={`${metaCls} flex items-center gap-1`}>
+                      <Clock size={11} />
                       {formatDistanceToNow(new Date(req.requestedAt), { addSuffix: true })}
                     </div>
                   </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => approveReset(req)} disabled={busy[req._id]}
-                      className="text-xs font-bold px-2.5 py-1.5 rounded-lg disabled:opacity-50"
-                      style={{ background: '#059669', color: '#fff' }}>
-                      {busy[req._id] ? '…' : <Check size={13}/>}
+                  <div className="flex gap-1.5 flex-shrink-0">
+                    <button onClick={() => approveReset(req)} disabled={busy[req._id]} title="Approve"
+                      className={`btn-primary ${smallBtn}`}>
+                      {busy[req._id] ? '…' : <Check size={14} />}
                     </button>
-                    <button onClick={() => denyReset(req)} disabled={busy[req._id]}
-                      className="text-xs font-bold px-2.5 py-1.5 rounded-lg disabled:opacity-50"
-                      style={{ background: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA' }}>
-                      <X size={13}/>
+                    <button onClick={() => denyReset(req)} disabled={busy[req._id]} title="Deny"
+                      className={`btn-outline ${smallBtn} hover:!text-[#B42318]`}>
+                      <X size={14} />
                     </button>
                   </div>
                 </div>
@@ -257,31 +269,28 @@ export default function Operations() {
         </Section>
 
         {/* Pending withdrawals */}
-        <Section title="Pending withdrawals" Icon={Wallet} color="#059669" count={pendingWithdrawals.length}>
+        <Section title="Pending withdrawals" Icon={Wallet} tone="green" count={pendingWithdrawals.length}>
           {pendingWithdrawals.length === 0 ? (
             <EmptyRow icon={Wallet} message="No manager payout requests pending" />
           ) : (
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-[#F2F4F7]">
               {pendingWithdrawals.slice(0, 10).map(w => (
-                <Link key={w._id} to="/withdrawals"
-                  className="px-5 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors"
-                  style={{ textDecoration: 'none' }}>
+                <Link key={w._id} to="/withdrawals" className={`${rowCls} hover:bg-[#F9FAFB] transition-colors no-underline`}>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-sm truncate" style={{ color: '#0F172A' }}>
-                      {fmtNGN(w.amount)} <span className="font-normal text-xs" style={{ color: '#64748B' }}>· {w.estateId?.name || '—'}</span>
+                    <div className={titleCls}>
+                      <span className="tabular-nums">{fmtNGN(w.amount)}</span>
+                      <span className="font-normal text-[12px] text-[#475467]"> · {w.estateId?.name || '—'}</span>
                     </div>
-                    <div className="text-xs truncate" style={{ color: '#64748B' }}>
-                      {w.bankName || '—'} · {w.accountName || ''}
-                    </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: '#94A3B8' }}>
+                    <div className={subCls}>{w.bankName || '—'} · {w.accountName || ''}</div>
+                    <div className={metaCls}>
                       {w.createdAt && formatDistanceToNow(new Date(w.createdAt), { addSuffix: true })}
                     </div>
                   </div>
-                  <ArrowRight size={14} style={{ color: '#CBD5E1' }} />
+                  <ArrowRight size={14} className="text-[#D0D5DD]" />
                 </Link>
               ))}
               {pendingWithdrawals.length > 10 && (
-                <Link to="/withdrawals" className="block px-5 py-3 text-center text-xs font-semibold" style={{ color: '#059669' }}>
+                <Link to="/withdrawals" className="block px-5 py-2.5 text-center text-[12.5px] font-semibold text-[#059669] hover:bg-[#F9FAFB]">
                   View all {pendingWithdrawals.length} →
                 </Link>
               )}
@@ -290,45 +299,35 @@ export default function Operations() {
         </Section>
 
         {/* Open security alerts */}
-        <Section title="Open security alerts" Icon={Siren} color="#F59E0B" count={openAlerts.length}>
+        <Section title="Open security alerts" Icon={Siren} tone="amber" count={openAlerts.length}>
           {openAlerts.length === 0 ? (
             <EmptyRow icon={Siren} message="No open alerts" />
           ) : (
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-[#F2F4F7]">
               {openAlerts.slice(0, 10).map(a => (
-                <div key={a._id} className="px-5 py-3 flex items-center gap-3">
+                <div key={a._id} className={rowCls}>
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-sm truncate flex items-center gap-1.5" style={{ color: '#0F172A' }}>
-                      {a.title || a.type || 'Alert'}
-                      {a.severity === 'critical' && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                              style={{ background: '#DC2626', color: '#fff' }}>CRITICAL</span>
-                      )}
-                      {a.isEmergencyBroadcast && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                              style={{ background: '#F59E0B', color: '#fff' }}>BROADCAST</span>
-                      )}
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className={titleCls}>{a.title || a.type || 'Alert'}</span>
+                      {a.severity === 'critical' && <span className="badge badge-red">Critical</span>}
+                      {a.isEmergencyBroadcast && <span className="badge badge-yellow">Broadcast</span>}
                     </div>
-                    <div className="text-xs truncate" style={{ color: '#64748B' }}>
+                    <div className={subCls}>
                       {(a.note || a.message || '').slice(0, 100)}
                       {a.estateId?.name ? ` · ${a.estateId.name}` : ''}
                     </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: '#94A3B8' }}>
+                    <div className={metaCls}>
                       {a.createdAt && formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}
                     </div>
                   </div>
-                  <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => ackAlert(a)} disabled={busy[a._id]}
-                      className="text-xs font-bold px-2.5 py-1.5 rounded-lg disabled:opacity-50"
-                      style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' }}
-                      title="Acknowledge">
-                      {busy[a._id] ? '…' : <Check size={13}/>}
+                  <div className="flex gap-1.5 flex-shrink-0">
+                    <button onClick={() => ackAlert(a)} disabled={busy[a._id]} title="Acknowledge"
+                      className={`btn-outline ${smallBtn}`}>
+                      {busy[a._id] ? '…' : 'Ack'}
                     </button>
-                    <button onClick={() => resolveAlert(a)} disabled={busy[a._id]}
-                      className="text-xs font-bold px-2.5 py-1.5 rounded-lg disabled:opacity-50"
-                      style={{ background: '#059669', color: '#fff' }}
-                      title="Resolve">
-                      ✓
+                    <button onClick={() => resolveAlert(a)} disabled={busy[a._id]} title="Resolve"
+                      className={`btn-primary ${smallBtn}`}>
+                      <Check size={14} />
                     </button>
                   </div>
                 </div>
@@ -338,33 +337,26 @@ export default function Operations() {
         </Section>
 
         {/* Comps expiring within 7 days */}
-        <Section title="Comps expiring in 7 days" Icon={Gift} color="#B45309" count={expiringComps.length}>
+        <Section title="Comps expiring in 7 days" Icon={Gift} tone="amber" count={expiringComps.length}>
           {expiringComps.length === 0 ? (
             <EmptyRow icon={Gift} message="No comps expiring soon" />
           ) : (
-            <div className="divide-y divide-slate-50">
+            <div className="divide-y divide-[#F2F4F7]">
               {expiringComps.map(sub => {
                 const expires = new Date(sub.comp.expiresAt);
                 const daysLeft = Math.max(1, Math.ceil((expires.getTime() - Date.now()) / 86400000));
                 return (
-                  <Link key={sub._id} to="/subscriptions"
-                    className="px-5 py-3 flex items-center gap-3 hover:bg-slate-50 transition-colors"
-                    style={{ textDecoration: 'none' }}>
+                  <Link key={sub._id} to="/subscriptions" className={`${rowCls} hover:bg-[#F9FAFB] transition-colors no-underline`}>
                     <div className="flex-1 min-w-0">
-                      <div className="font-bold text-sm truncate" style={{ color: '#0F172A' }}>
-                        {sub.estateId?.name || '—'}
-                        <span className="ml-2 text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                              style={{ background: '#FEF3C7', color: '#B45309', border: '1px solid #FDE68A' }}>
-                          <Gift size={9} className="inline"/> {sub.comp.planId?.name || 'Comp'}
-                        </span>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className={titleCls}>{sub.estateId?.name || '—'}</span>
+                        <span className="badge badge-yellow"><Gift size={10} /> {sub.comp.planId?.name || 'Comp'}</span>
                       </div>
-                      <div className="text-xs" style={{ color: '#64748B' }}>
-                        {sub.comp.reason || 'No reason set'}
-                      </div>
+                      <div className={subCls}>{sub.comp.reason || 'No reason set'}</div>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <div className="text-sm font-black" style={{ color: '#B45309' }}>{daysLeft}d</div>
-                      <div className="text-[10px]" style={{ color: '#94A3B8' }}>left</div>
+                      <div className="text-[14px] font-semibold text-[#B54708] tabular-nums">{daysLeft}d</div>
+                      <div className="text-[11px] text-[#98A2B3]">left</div>
                     </div>
                   </Link>
                 );
@@ -374,36 +366,28 @@ export default function Operations() {
         </Section>
 
         {/* MRR health summary */}
-        <Section title="MRR health" Icon={CreditCard} color="#059669" count={subStats?.trial ?? 0}>
-          <div className="divide-y divide-slate-50">
-            <div className="px-5 py-3 flex items-center justify-between">
-              <div>
-                <div className="text-sm font-bold" style={{ color: '#0F172A' }}>Paid MRR</div>
-                <div className="text-xs" style={{ color: '#64748B' }}>Live, excludes comps</div>
+        <Section title="MRR health" Icon={CreditCard} tone="green" count={subStats?.trial ?? 0}>
+          <div className="divide-y divide-[#F2F4F7]">
+            {[
+              { title: 'Paid MRR', sub: 'Live, excludes comps', value: fmtNGN(subStats?.mrrPaid || subStats?.mrr || 0), color: '#067647' },
+              { title: 'Gift MRR foregone', sub: `${subStats?.activeComp || 0} live comp${subStats?.activeComp === 1 ? '' : 's'}`, value: fmtNGN(subStats?.mrrComp || 0), color: '#B54708' },
+              { title: 'Trial pipeline', sub: `${subStats?.trial || 0} on trial`, value: fmtNGN(subStats?.trialPipelineMrr || 0), color: '#175CD3' },
+            ].map(r => (
+              <div key={r.title} className="px-5 py-3 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className={titleCls}>{r.title}</div>
+                  <div className={subCls}>{r.sub}</div>
+                </div>
+                <div className="text-[16px] font-semibold tabular-nums" style={{ color: r.color }}>{r.value}</div>
               </div>
-              <div className="text-lg font-black" style={{ color: '#059669' }}>{fmtNGN(subStats?.mrrPaid || subStats?.mrr || 0)}</div>
-            </div>
-            <div className="px-5 py-3 flex items-center justify-between">
-              <div>
-                <div className="text-sm font-bold" style={{ color: '#0F172A' }}>Gift MRR foregone</div>
-                <div className="text-xs" style={{ color: '#64748B' }}>{subStats?.activeComp || 0} live comp{subStats?.activeComp === 1 ? '' : 's'}</div>
+            ))}
+            <div className="px-5 py-3 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <div className={titleCls}>Renewals this week</div>
+                <div className={subCls}>{subStats?.renewalsDue7d || 0} subs due</div>
               </div>
-              <div className="text-lg font-black" style={{ color: '#B45309' }}>{fmtNGN(subStats?.mrrComp || 0)}</div>
-            </div>
-            <div className="px-5 py-3 flex items-center justify-between">
-              <div>
-                <div className="text-sm font-bold" style={{ color: '#0F172A' }}>Trial pipeline</div>
-                <div className="text-xs" style={{ color: '#64748B' }}>{subStats?.trial || 0} on trial</div>
-              </div>
-              <div className="text-lg font-black" style={{ color: '#2563EB' }}>{fmtNGN(subStats?.trialPipelineMrr || 0)}</div>
-            </div>
-            <div className="px-5 py-3 flex items-center justify-between">
-              <div>
-                <div className="text-sm font-bold" style={{ color: '#0F172A' }}>Renewals this week</div>
-                <div className="text-xs" style={{ color: '#64748B' }}>{subStats?.renewalsDue7d || 0} subs due</div>
-              </div>
-              <Link to="/revenue" className="text-xs font-semibold flex items-center gap-1" style={{ color: '#7C3AED' }}>
-                View schedule <ArrowRight size={10}/>
+              <Link to="/revenue" className="text-[12.5px] font-semibold flex items-center gap-1 text-[#059669] hover:text-[#047857]">
+                View schedule <ArrowRight size={12} />
               </Link>
             </div>
           </div>

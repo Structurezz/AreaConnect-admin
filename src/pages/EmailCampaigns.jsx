@@ -7,12 +7,14 @@ import {
 } from 'lucide-react';
 import { campaignAPI } from '../api';
 import QuickEmailGenerator from '../components/QuickEmailGenerator';
+import PageHeader from '../components/ui/PageHeader';
+import StatCard from '../components/ui/StatCard';
 
 const STATUS_STYLES = {
-  draft:  { bg: '#F1F5F9', color: '#475569', label: 'Draft' },
-  active: { bg: '#DCFCE7', color: '#166534', label: 'Active' },
-  paused: { bg: '#FEF3C7', color: '#92400E', label: 'Paused' },
-  ended:  { bg: '#FEE2E2', color: '#991B1B', label: 'Ended' },
+  draft:  { badge: 'gray',   label: 'Draft' },
+  active: { badge: 'green',  label: 'Active' },
+  paused: { badge: 'yellow', label: 'Paused' },
+  ended:  { badge: 'red',    label: 'Ended' },
 };
 
 const SEGMENT_LABEL = {
@@ -89,232 +91,165 @@ export default function EmailCampaigns() {
     }
   };
 
-  return (
-    <>
-      <div className="p-6 md:p-8">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-6 flex-wrap gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#EC4899,#F472B6)' }}>
-                <Mail size={20} color="#fff" />
-              </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold" style={{ color: '#0F172A', letterSpacing: '-0.02em' }}>
-                  Email Campaigns
-                </h1>
-                <p className="text-sm mt-0.5" style={{ color: '#64748B' }}>
-                  Schedule blasts, auto-welcome new signups, and track what's landed.
-                </p>
-              </div>
-            </div>
-          </div>
+  const iconBtn = 'inline-flex items-center justify-center w-7 h-7 rounded-md border border-[#E4E7EC] bg-white text-[#475467] hover:bg-[#F9FAFB] hover:text-[#101828] transition-colors';
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <Link
-              to="/campaigns"
-              className="px-3 py-2.5 rounded-xl text-sm font-semibold"
-              style={{ background: '#F1F5F9', color: '#475569', textDecoration: 'none' }}
-            >
-              All Campaigns
+  return (
+    <div className="max-w-[1400px] mx-auto">
+      <PageHeader
+        title="Email campaigns"
+        description="Schedule blasts, auto-welcome new signups, and track what's landed."
+        actions={
+          <>
+            <Link to="/campaigns" className="btn-ghost" style={{ textDecoration: 'none' }}>
+              All campaigns
             </Link>
-            <Link
-              to="/campaigns/new?type=email"
-              className="inline-flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold"
-              style={{ background: '#fff', color: '#0F172A', border: '1px solid #E2E8F0', textDecoration: 'none' }}
-            >
+            <Link to="/campaigns/new?type=email" className="btn-outline" style={{ textDecoration: 'none' }}>
               <Plus size={14} /> Manual
             </Link>
-            <button
-              onClick={() => setShowGenerator(true)}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm text-white transition-transform hover:scale-[1.02]"
-              style={{ background: 'linear-gradient(135deg,#EC4899 0%,#F472B6 100%)' }}
-            >
-              <Wand2 size={16} /> Generate Campaign Email
+            <button onClick={() => setShowGenerator(true)} className="btn-primary">
+              <Wand2 size={15} /> Generate campaign email
             </button>
-          </div>
-        </div>
+          </>
+        }
+      />
 
-        {showGenerator && (
-          <QuickEmailGenerator
-            onClose={() => setShowGenerator(false)}
-            onPublished={() => { setShowGenerator(false); load(); }}
-          />
-        )}
+      {showGenerator && (
+        <QuickEmailGenerator
+          onClose={() => setShowGenerator(false)}
+          onPublished={() => { setShowGenerator(false); load(); }}
+        />
+      )}
 
-        {/* Stat tiles */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-          <StatTile icon={CheckCircle2} label="Active" value={totals.active} tint="#DCFCE7" tintFg="#166534" />
-          <StatTile icon={Send}         label="Emails sent" value={totals.sent.toLocaleString()} tint="#FDF2F8" tintFg="#BE185D" />
-          <StatTile icon={Sparkles}     label="On-signup auto" value={totals.signup} tint="#FEF3C7" tintFg="#92400E" />
-          <StatTile icon={Clock}        label="Scheduled" value={totals.scheduled} tint="#E0F2FE" tintFg="#075985" />
-        </div>
+      {/* KPIs */}
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-5">
+        <StatCard icon={CheckCircle2} label="Active"         value={totals.active}    color="green" />
+        <StatCard icon={Send}         label="Emails sent"    value={totals.sent}      color="blue" />
+        <StatCard icon={Sparkles}     label="On-signup auto" value={totals.signup}    color="amber" />
+        <StatCard icon={Clock}        label="Scheduled"      value={totals.scheduled} color="purple" />
+      </div>
 
-        {/* Filters */}
-        <div className="flex items-center gap-3 mb-4 flex-wrap">
-          <div className="relative flex-1 min-w-[240px] max-w-md">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#94A3B8' }} />
+      <div className="card overflow-hidden">
+        {/* Toolbar */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 py-3 border-b border-[#E4E7EC]">
+          <div className="relative w-full sm:max-w-xs">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
             <input
               value={q}
               onChange={e => setQ(e.target.value)}
               placeholder="Search name or subject…"
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm outline-none"
-              style={{ background: '#fff', border: '1px solid #E2E8F0' }}
+              className="input-field !pl-9"
             />
           </div>
-          <div className="flex gap-1.5">
-            {['', 'active', 'draft', 'paused', 'ended'].map(s => (
-              <button
-                key={s || 'all'}
-                onClick={() => setStatusFilter(s)}
-                className="px-3 py-2 rounded-lg text-xs font-semibold transition"
-                style={{
-                  background: statusFilter === s ? '#0F172A' : '#fff',
-                  color: statusFilter === s ? '#fff' : '#475569',
-                  border: '1px solid #E2E8F0',
-                }}
-              >
-                {s ? STATUS_STYLES[s]?.label : 'All'}
-              </button>
-            ))}
+          <div className="overflow-x-auto -mx-1 px-1">
+            <div className="tabs">
+              {['', 'active', 'draft', 'paused', 'ended'].map(s => (
+                <button
+                  key={s || 'all'}
+                  onClick={() => setStatusFilter(s)}
+                  className={`tab ${statusFilter === s ? 'active' : ''}`}
+                >
+                  {s ? STATUS_STYLES[s]?.label : 'All'}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Table */}
         {loading ? (
-          <div className="py-16 text-center text-sm" style={{ color: '#94A3B8' }}>Loading email campaigns…</div>
+          <div className="p-4 space-y-2">
+            {[0, 1, 2, 3].map(i => <div key={i} className="skeleton h-10" />)}
+          </div>
         ) : filtered.length === 0 ? (
-          <div className="py-20 text-center rounded-2xl" style={{ background: '#fff', border: '1px dashed #E2E8F0' }}>
-            <Mail size={40} className="mx-auto mb-3" style={{ color: '#CBD5E1' }} />
-            <h3 className="text-lg font-semibold" style={{ color: '#0F172A' }}>No email campaigns yet</h3>
-            <p className="text-sm mt-1 mb-4" style={{ color: '#64748B' }}>
+          <div className="py-14 text-center">
+            <div className="w-10 h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center mx-auto mb-3">
+              <Mail size={18} className="text-[#98A2B3]" />
+            </div>
+            <h3 className="text-[14px] font-semibold text-[#101828]">No email campaigns yet</h3>
+            <p className="text-[13px] text-[#475467] mt-1 mb-4">
               Send a welcome, a monthly digest, or a one-time announcement.
             </p>
-            <Link
-              to="/campaigns/new?type=email"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm text-white"
-              style={{ background: '#EC4899', textDecoration: 'none' }}
-            >
-              <Plus size={14} /> Create Email Campaign
+            <Link to="/campaigns/new?type=email" className="btn-outline" style={{ textDecoration: 'none' }}>
+              <Plus size={14} /> Create email campaign
             </Link>
           </div>
         ) : (
-          <div className="rounded-2xl overflow-hidden" style={{ background: '#fff', border: '1px solid #E2E8F0' }}>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead style={{ background: '#F8FAFC' }}>
-                  <tr>
-                    <Th>Campaign</Th>
-                    <Th>Subject</Th>
-                    <Th>Audience</Th>
-                    <Th>Sent</Th>
-                    <Th>Status</Th>
-                    <Th align="right">Actions</Th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(c => {
-                    const st = STATUS_STYLES[c.status] || STATUS_STYLES.draft;
-                    const primary = c.content?.theme?.primaryColor || '#EC4899';
-                    return (
-                      <tr key={c._id} style={{ borderTop: '1px solid #F1F5F9' }}>
-                        <Td>
-                          <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: `${primary}22`, color: primary }}>
-                              <Mail size={16} />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-sm font-bold truncate" style={{ color: '#0F172A' }}>{c.name}</div>
-                              {c.email?.sendOnUserSignup && (
-                                <div className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider mt-0.5" style={{ color: '#BE185D' }}>
-                                  <Sparkles size={9} /> Auto on signup
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </Td>
-                        <Td>
-                          <div className="text-sm max-w-[280px]" style={{ color: '#0F172A' }}>
-                            {c.email?.subject || <span style={{ color: '#CBD5E1', fontStyle: 'italic' }}>No subject</span>}
-                          </div>
-                          {c.email?.preheader && (
-                            <div className="text-xs mt-0.5 max-w-[280px] truncate" style={{ color: '#94A3B8' }}>{c.email.preheader}</div>
-                          )}
-                        </Td>
-                        <Td>
-                          <div className="inline-flex items-center gap-1 text-xs px-2 py-1 rounded-full" style={{ background: '#F1F5F9', color: '#475569' }}>
-                            <Users size={11} /> {SEGMENT_LABEL[c.audience?.segment] || 'All'}
-                          </div>
-                        </Td>
-                        <Td>
-                          <div className="text-sm font-bold" style={{ color: '#0F172A' }}>{(c.metrics?.emailsSent || 0).toLocaleString()}</div>
-                        </Td>
-                        <Td>
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider" style={{ background: st.bg, color: st.color }}>
-                            {st.label}
+          <div className="overflow-x-auto">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Campaign</th>
+                  <th>Subject</th>
+                  <th>Audience</th>
+                  <th className="text-right">Sent</th>
+                  <th>Status</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(c => {
+                  const st = STATUS_STYLES[c.status] || STATUS_STYLES.draft;
+                  return (
+                    <tr key={c._id}>
+                      <td className="min-w-[200px]">
+                        <div className="flex items-center gap-2.5">
+                          <span className="w-7 h-7 rounded-md bg-[#F2F4F7] text-[#475467] flex items-center justify-center flex-shrink-0">
+                            <Mail size={14} />
                           </span>
-                        </Td>
-                        <Td align="right">
-                          <div className="flex items-center justify-end gap-1">
-                            <button title="Send blast now" onClick={() => blast(c._id)} className="p-1.5 rounded-lg" style={{ background: '#FCE7F3', color: '#BE185D' }}>
-                              <Send size={14} />
-                            </button>
-                            {c.status === 'active' ? (
-                              <button title="Pause" onClick={() => setStatus(c._id, 'paused')} className="p-1.5 rounded-lg" style={{ background: '#FEF3C7', color: '#92400E' }}>
-                                <Pause size={14} />
-                              </button>
-                            ) : (
-                              <button title="Activate" onClick={() => setStatus(c._id, 'active')} className="p-1.5 rounded-lg" style={{ background: '#DCFCE7', color: '#166534' }}>
-                                <Play size={14} />
-                              </button>
+                          <div className="min-w-0">
+                            <div className="cell-strong truncate">{c.name}</div>
+                            {c.email?.sendOnUserSignup && (
+                              <div className="inline-flex items-center gap-1 text-[11px] text-[#067647] mt-0.5">
+                                <Sparkles size={10} /> Auto on signup
+                              </div>
                             )}
-                            <button title="Edit" onClick={() => navigate(`/campaigns/${c._id}`)} className="p-1.5 rounded-lg" style={{ background: '#F1F5F9', color: '#0F172A' }}>
-                              <Edit3 size={14} />
-                            </button>
-                            <button title="Delete" onClick={() => remove(c._id, c.name)} className="p-1.5 rounded-lg" style={{ background: '#FEE2E2', color: '#991B1B' }}>
-                              <Trash2 size={14} />
-                            </button>
                           </div>
-                        </Td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="max-w-[280px] text-[#101828]">
+                          {c.email?.subject || <span className="text-[#98A2B3] italic">No subject</span>}
+                        </div>
+                        {c.email?.preheader && (
+                          <div className="text-[12px] mt-0.5 max-w-[280px] truncate text-[#98A2B3]">{c.email.preheader}</div>
+                        )}
+                      </td>
+                      <td>
+                        <span className="badge badge-gray inline-flex items-center gap-1">
+                          <Users size={11} /> {SEGMENT_LABEL[c.audience?.segment] || 'All'}
+                        </span>
+                      </td>
+                      <td className="text-right tabular-nums cell-strong">{(c.metrics?.emailsSent || 0).toLocaleString()}</td>
+                      <td><span className={`badge badge-${st.badge}`}>{st.label}</span></td>
+                      <td>
+                        <div className="flex items-center justify-end gap-1">
+                          <button title="Send blast now" onClick={() => blast(c._id)} className={`${iconBtn} hover:!text-[#175CD3]`}>
+                            <Send size={13} />
+                          </button>
+                          {c.status === 'active' ? (
+                            <button title="Pause" onClick={() => setStatus(c._id, 'paused')} className={`${iconBtn} hover:!text-[#B54708]`}>
+                              <Pause size={13} />
+                            </button>
+                          ) : (
+                            <button title="Activate" onClick={() => setStatus(c._id, 'active')} className={`${iconBtn} hover:!text-[#067647]`}>
+                              <Play size={13} />
+                            </button>
+                          )}
+                          <button title="Edit" onClick={() => navigate(`/campaigns/${c._id}`)} className={iconBtn}>
+                            <Edit3 size={13} />
+                          </button>
+                          <button title="Delete" onClick={() => remove(c._id, c.name)} className={`${iconBtn} hover:!text-[#B42318]`}>
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
-    </>
-  );
-}
-
-function Th({ children, align = 'left' }) {
-  return (
-    <th className="px-4 py-3 text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94A3B8', textAlign: align }}>
-      {children}
-    </th>
-  );
-}
-
-function Td({ children, align = 'left' }) {
-  return (
-    <td className="px-4 py-3 align-middle" style={{ textAlign: align }}>
-      {children}
-    </td>
-  );
-}
-
-function StatTile({ icon: Icon, label, value, tint, tintFg }) {
-  return (
-    <div className="rounded-2xl p-4" style={{ background: '#fff', border: '1px solid #E2E8F0' }}>
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: tint, color: tintFg }}>
-          <Icon size={15} />
-        </div>
-        <span className="text-[11px] font-bold uppercase tracking-wider" style={{ color: '#94A3B8' }}>{label}</span>
-      </div>
-      <div className="text-2xl font-bold" style={{ color: '#0F172A', letterSpacing: '-0.02em' }}>{value}</div>
     </div>
   );
 }

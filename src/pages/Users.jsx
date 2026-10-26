@@ -1,25 +1,42 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Search, Plus, RefreshCw, UserCheck, UserX, X, Edit3, Phone, Mail, Building2, KeyRound, Clock, ShieldAlert, CheckSquare, Square } from 'lucide-react';
+import { Search, Plus, RefreshCw, UserCheck, UserX, X, Edit3, Phone, Mail, Building2, KeyRound, Clock, ShieldAlert, CheckSquare, Square, Users as UsersIcon, ShieldCheck, Home, Briefcase } from 'lucide-react';
 import { userAPI, estateAPI } from '../api';
 import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
+import PageHeader from '../components/ui/PageHeader';
+import StatCard from '../components/ui/StatCard';
 
 const ROLES = ['all', 'super_admin', 'estate_manager', 'resident', 'security'];
 const ROLE_META = {
-  super_admin:    { label: 'Super Admin',  bg: 'rgba(124,58,237,0.10)', color: '#7C3AED', border: 'rgba(124,58,237,0.20)' },
-  estate_manager: { label: 'Estate Mgr',  bg: 'rgba(16,185,129,0.10)',  color: '#059669', border: 'rgba(16,185,129,0.20)' },
-  resident:       { label: 'Resident',    bg: 'rgba(37,99,235,0.10)',   color: '#2563EB', border: 'rgba(37,99,235,0.20)' },
-  security:       { label: 'Security',    bg: 'rgba(245,158,11,0.10)',  color: '#D97706', border: 'rgba(245,158,11,0.20)' },
+  super_admin:    { label: 'Super Admin', badge: 'gray',   avBg: '#F2F4F7', avFg: '#344054' },
+  estate_manager: { label: 'Estate Mgr',  badge: 'green',  avBg: '#ECFDF3', avFg: '#067647' },
+  resident:       { label: 'Resident',    badge: 'blue',   avBg: '#EFF8FF', avFg: '#175CD3' },
+  security:       { label: 'Security',    badge: 'yellow', avBg: '#FFFAEB', avFg: '#B54708' },
 };
+const STATUS_LABELS = { all: 'All', active: 'Active', suspended: 'Suspended', 'pending-reset': 'Pending reset' };
 const STATUS_FILTERS = ['all', 'active', 'suspended', 'pending-reset'];
 
 function RoleBadge({ role }) {
-  const m = ROLE_META[role] || { label: role, bg: 'rgba(71,85,105,0.08)', color: '#475569', border: '#E2E8F0' };
+  const m = ROLE_META[role] || { label: role, badge: 'gray' };
+  return <span className={`badge badge-${m.badge}`}>{m.label}</span>;
+}
+
+function ModalShell({ title, subtitle, onClose, children, scroll }) {
   return (
-    <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
-      style={{ background: m.bg, color: m.color, border: `1px solid ${m.border}` }}>
-      {m.label}
-    </span>
+    <div className="fixed inset-0 bg-[#101828]/40 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
+      <div className={`card w-full max-w-md overflow-hidden ${scroll ? 'max-h-[90vh] flex flex-col' : ''}`}>
+        <div className="card-header">
+          <div className="min-w-0">
+            <h2 className="text-[15px] font-semibold text-[#101828]">{title}</h2>
+            {subtitle && <div className="text-[12px] text-[#98A2B3] mt-0.5 flex items-center gap-1.5 flex-wrap">{subtitle}</div>}
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-md text-[#98A2B3] hover:text-[#101828] hover:bg-[#F2F4F7] transition-colors">
+            <X size={16} />
+          </button>
+        </div>
+        <div className={`p-5 ${scroll ? 'overflow-y-auto' : ''}`}>{children}</div>
+      </div>
+    </div>
   );
 }
 
@@ -169,255 +186,236 @@ export default function Users() {
   const activeCount    = users.filter(u => u.isActive).length;
   const suspendedCount = users.length - activeCount;
 
+  const allSelected = filtered.length > 0 && filtered.every(u => selected.has(u._id));
+  const iconBtn = 'p-1.5 rounded-md text-[#98A2B3] transition-colors disabled:opacity-40';
+
   return (
-    <div className="space-y-5 animate-fade-in pb-12">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: '#0F172A' }}>Users</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#94A3B8' }}>Manage all platform users and roles</p>
+    <div className="max-w-[1400px] mx-auto animate-fade-in pb-12">
+      <PageHeader
+        title="Users"
+        description="Manage all platform users, roles and access."
+        actions={(
+          <>
+            <button onClick={load} className="btn-outline gap-2" title="Refresh">
+              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
+            </button>
+            <button onClick={() => setShowCreate(true)} className="btn-primary gap-2">
+              <Plus size={15} /> New user
+            </button>
+          </>
+        )}
+      >
+        <div className="overflow-x-auto -mx-1 px-1">
+          <div className="tabs">
+            {ROLES.map(r => (
+              <button key={r} onClick={() => setRoleFilter(r)} className={`tab ${roleFilter === r ? 'active' : ''}`}>
+                {r === 'all' ? 'All roles' : ROLE_META[r]?.label || r}
+                <span className="ml-1.5 text-[11px] text-[#98A2B3] tabular-nums">{counts[r]}</span>
+              </button>
+            ))}
+          </div>
         </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary gap-2">
-          <Plus size={15} /> New User
-        </button>
-      </div>
+      </PageHeader>
 
       {/* Summary stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {[
-          { label: 'Total',            value: users.length,          color: '#0F172A' },
-          { label: 'Active',           value: activeCount,           color: '#059669' },
-          { label: 'Suspended',        value: suspendedCount,        color: '#DC2626' },
-          { label: 'Managers',         value: counts.estate_manager, color: '#7C3AED' },
-          { label: 'Residents',        value: counts.resident,       color: '#2563EB' },
-          { label: 'Security',         value: counts.security,       color: '#D97706' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="glass-card p-4 text-center">
-            <div className="text-xl font-bold" style={{ color }}>{value}</div>
-            <div className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>{label}</div>
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-6 mb-5">
+        <StatCard label="Total users" value={users.length}          icon={UsersIcon}   color="green" />
+        <StatCard label="Active"      value={activeCount}           icon={UserCheck}   color="green" />
+        <StatCard label="Suspended"   value={suspendedCount}        icon={UserX}       color="red" />
+        <StatCard label="Managers"    value={counts.estate_manager} icon={Briefcase}   color="green" />
+        <StatCard label="Residents"   value={counts.resident}       icon={Home}        color="blue" />
+        <StatCard label="Security"    value={counts.security}       icon={ShieldCheck} color="amber" />
+      </div>
+
+      <div className="card overflow-hidden">
+        {/* Toolbar */}
+        <div className="px-4 py-3 border-b border-[#E4E7EC] flex flex-col lg:flex-row lg:items-center gap-3">
+          <div className="relative flex-1 min-w-0 lg:max-w-sm">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
+            <input value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Search name, email, phone…"
+              className="input-field pl-9" />
           </div>
-        ))}
-      </div>
-
-      {/* Bulk action bar — only shows when something is selected */}
-      {selected.size > 0 && (
-        <div className="glass-card p-3 flex items-center gap-3 flex-wrap"
-          style={{ background: 'linear-gradient(135deg,#EEF2FF,#F5F3FF)', border: '1px solid #C7D2FE' }}>
-          <span className="text-sm font-bold" style={{ color: '#4F46E5' }}>{selected.size} selected</span>
-          <button onClick={() => doBulk('activate')} disabled={bulking}
-            className="text-xs font-bold px-3 py-1.5 rounded-lg"
-            style={{ background: '#059669', color: '#fff' }}>
-            {bulking ? '…' : 'Activate'}
-          </button>
-          <button onClick={() => doBulk('suspend')} disabled={bulking}
-            className="text-xs font-bold px-3 py-1.5 rounded-lg"
-            style={{ background: '#DC2626', color: '#fff' }}>
-            {bulking ? '…' : 'Suspend'}
-          </button>
-          <button onClick={() => setSelected(new Set())}
-            className="text-xs font-semibold px-3 py-1.5 rounded-lg ml-auto"
-            style={{ background: '#F1F5F9', color: '#475569' }}>Clear</button>
+          <div className="flex flex-wrap items-center gap-2 lg:ml-auto">
+            <div className="overflow-x-auto max-w-full">
+              <div className="tabs">
+                {STATUS_FILTERS.map(s => (
+                  <button key={s} onClick={() => setStatusFilter(s)} className={`tab ${statusFilter === s ? 'active' : ''}`}>
+                    {STATUS_LABELS[s] || s}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <select className="input-field !w-auto min-w-[150px] !h-[34px] !text-[12.5px]"
+              value={estateFilter} onChange={e => setEstateFilter(e.target.value)}>
+              <option value="all">All estates</option>
+              {estates.map(e => <option key={e._id} value={e._id}>{e.name}</option>)}
+            </select>
+            <select className="input-field !w-auto min-w-[130px] !h-[34px] !text-[12.5px]"
+              value={sortBy} onChange={e => setSortBy(e.target.value)}>
+              <option value="new">Newest first</option>
+              <option value="lastseen">Last seen</option>
+              <option value="name">Name A→Z</option>
+            </select>
+          </div>
         </div>
-      )}
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        <div className="relative flex-1 min-w-52">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#94A3B8' }} />
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search name, email, phone…"
-            className="input-field pl-9" />
-        </div>
-        <div className="flex gap-1.5 flex-wrap">
-          {STATUS_FILTERS.map(s => (
-            <button key={s} onClick={() => setStatusFilter(s)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize"
-              style={statusFilter === s
-                ? { background: s === 'active' ? '#059669' : s === 'suspended' ? '#DC2626' : '#0F172A', color: '#FFF' }
-                : { background: '#F1F5F9', color: '#475569', border: '1px solid #E2E8F0' }}>
-              {s}
+        {/* Bulk action bar — only shows when something is selected */}
+        {selected.size > 0 && (
+          <div className="px-4 py-2.5 flex items-center gap-2 flex-wrap bg-[#ECFDF3] border-b border-[#ABEFC6]">
+            <span className="text-[13px] font-semibold text-[#067647] tabular-nums">{selected.size} selected</span>
+            <button onClick={() => doBulk('activate')} disabled={bulking} className="btn-primary !h-8 !px-3 !text-[12.5px]">
+              {bulking ? '…' : 'Activate'}
             </button>
-          ))}
-        </div>
-        <div className="flex gap-1.5 flex-wrap">
-          {ROLES.map(r => (
-            <button key={r} onClick={() => setRoleFilter(r)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-              style={roleFilter === r
-                ? { background: '#10B981', color: '#FFF' }
-                : { background: '#F1F5F9', color: '#475569', border: '1px solid #E2E8F0' }}>
-              {r === 'all' ? 'All Roles' : ROLE_META[r]?.label || r}
-              <span className="ml-1.5" style={{ color: roleFilter === r ? 'rgba(255,255,255,0.7)' : '#94A3B8' }}>
-                {counts[r]}
-              </span>
+            <button onClick={() => doBulk('suspend')} disabled={bulking} className="btn-danger !h-8 !px-3 !text-[12.5px]">
+              {bulking ? '…' : 'Suspend'}
             </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <select className="input-field" style={{ width: 170, height: 32, fontSize: 12 }}
-            value={estateFilter} onChange={e => setEstateFilter(e.target.value)}>
-            <option value="all">All estates</option>
-            {estates.map(e => <option key={e._id} value={e._id}>{e.name}</option>)}
-          </select>
-          <select className="input-field" style={{ width: 150, height: 32, fontSize: 12 }}
-            value={sortBy} onChange={e => setSortBy(e.target.value)}>
-            <option value="new">Newest first</option>
-            <option value="lastseen">Last seen</option>
-            <option value="name">Name A→Z</option>
-          </select>
-        </div>
-      </div>
+            <button onClick={() => setSelected(new Set())} className="btn-ghost !h-8 !px-3 !text-[12.5px] ml-auto">Clear</button>
+          </div>
+        )}
 
-      {/* Table */}
-      <div className="glass-card overflow-hidden">
+        {/* Table */}
         {loading ? (
-          <div className="flex justify-center py-16">
-            <RefreshCw size={20} className="animate-spin" style={{ color: '#10B981' }} />
+          <div className="p-4 space-y-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="skeleton w-8 h-8 !rounded-full" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="skeleton h-3 w-40" />
+                  <div className="skeleton h-2.5 w-56" />
+                </div>
+                <div className="skeleton h-5 w-20 hidden sm:block" />
+                <div className="skeleton h-5 w-16" />
+              </div>
+            ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="py-16 text-center text-sm" style={{ color: '#94A3B8' }}>No users found</div>
+          <div className="flex flex-col items-center justify-center py-14 text-center">
+            <div className="w-10 h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center mb-3">
+              <UsersIcon size={18} className="text-[#98A2B3]" />
+            </div>
+            <p className="text-[14px] font-semibold text-[#101828]">No users found</p>
+            <p className="text-[12.5px] text-[#98A2B3] mt-0.5">Try changing the search or filters.</p>
+          </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm min-w-[800px]">
+            <table className="table min-w-[900px]">
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-                  <th className="px-3 py-3 w-10">
+                <tr>
+                  <th className="w-10 !pr-0">
                     <button onClick={() => {
                       if (filtered.every(u => selected.has(u._id))) setSelected(new Set());
                       else setSelected(new Set(filtered.map(u => u._id)));
-                    }} className="text-slate-400" style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                      {filtered.length > 0 && filtered.every(u => selected.has(u._id))
-                        ? <CheckSquare size={15} style={{ color: '#4F46E5' }}/>
-                        : <Square size={15}/>}
+                    }} className="flex items-center" aria-label="Select all">
+                      {allSelected
+                        ? <CheckSquare size={15} className="text-[#059669]" />
+                        : <Square size={15} className="text-[#D0D5DD]" />}
                     </button>
                   </th>
-                  <th className="text-left font-medium px-5 py-3" style={{ color: '#94A3B8' }}>User</th>
-                  <th className="text-left font-medium px-4 py-3" style={{ color: '#94A3B8' }}>Role</th>
-                  <th className="text-left font-medium px-4 py-3 hidden sm:table-cell" style={{ color: '#94A3B8' }}>Phone</th>
-                  <th className="text-left font-medium px-4 py-3 hidden md:table-cell" style={{ color: '#94A3B8' }}>Estate / Unit</th>
-                  <th className="text-left font-medium px-4 py-3 hidden lg:table-cell" style={{ color: '#94A3B8' }}>Last seen</th>
-                  <th className="text-center font-medium px-4 py-3" style={{ color: '#94A3B8' }}>Status</th>
-                  <th className="px-4 py-3 w-28 text-right font-medium" style={{ color: '#94A3B8' }}>Actions</th>
+                  <th className="text-left">User</th>
+                  <th className="text-left">Role</th>
+                  <th className="text-left">Estate / Unit</th>
+                  <th className="text-left">Phone</th>
+                  <th className="text-left">Status</th>
+                  <th className="text-left">Last seen</th>
+                  <th className="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map(u => {
-                  const meta = ROLE_META[u.role] || { bg: 'rgba(71,85,105,0.08)', color: '#475569' };
+                  const meta = ROLE_META[u.role] || { avBg: '#F2F4F7', avFg: '#344054' };
                   const estateName = typeof u.estateId === 'object' ? (u.estateId?.name || '—') : '—';
                   const unit = typeof u.unitId === 'object' && u.unitId
                     ? `${u.unitId.block ? `Block ${u.unitId.block} · ` : ''}Unit ${u.unitId.unitNumber}`
                     : null;
                   const isSelected = selected.has(u._id);
                   return (
-                    <tr key={u._id} className="transition-colors"
-                      style={{ borderTop: '1px solid rgba(0,0,0,0.04)', background: isSelected ? '#EEF2FF' : undefined }}
-                      onMouseEnter={ev => { if (!isSelected) ev.currentTarget.style.background = '#F8FAFC'; }}
-                      onMouseLeave={ev => { if (!isSelected) ev.currentTarget.style.background = 'transparent'; }}>
-                      <td className="px-3 py-3">
-                        <button onClick={() => toggleSelect(u._id)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: isSelected ? '#4F46E5' : '#CBD5E1' }}>
-                          {isSelected ? <CheckSquare size={15}/> : <Square size={15}/>}
+                    <tr key={u._id} className={isSelected ? '!bg-[#F6FEF9]' : ''}>
+                      <td className="!pr-0">
+                        <button onClick={() => toggleSelect(u._id)} className="flex items-center" aria-label="Select user">
+                          {isSelected
+                            ? <CheckSquare size={15} className="text-[#059669]" />
+                            : <Square size={15} className="text-[#D0D5DD]" />}
                         </button>
                       </td>
-                      <td className="px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 overflow-hidden"
-                            style={{ background: meta.bg, color: meta.color }}>
+                      <td>
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-[12px] font-semibold flex-shrink-0 overflow-hidden"
+                            style={{ background: meta.avBg, color: meta.avFg }}>
                             {u.profilePhoto
-                              ? <img src={u.profilePhoto} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }}/>
+                              ? <img src={u.profilePhoto} alt="" className="w-full h-full object-cover" />
                               : (u.name?.[0]?.toUpperCase() || '?')}
                           </div>
                           <div className="min-w-0">
-                            <div className="font-medium leading-tight flex items-center gap-1.5" style={{ color: '#0F172A' }}>
-                              <span className="truncate">{u.name}</span>
+                            <div className="cell-strong leading-tight flex items-center gap-1.5">
+                              <span className="truncate max-w-[200px]">{u.name}</span>
                               {u.mustChangePassword && (
-                                <span title="Must change password on next sign-in"
-                                      className="inline-flex items-center text-[9px] font-bold px-1.5 py-0.5 rounded-full"
-                                      style={{ background: '#FEF3C7', color: '#92400E', border: '1px solid #FDE68A' }}>
-                                  <ShieldAlert size={9}/> RESET
+                                <span title="Must change password on next sign-in" className="badge badge-yellow !text-[10px] !py-0 gap-0.5">
+                                  <ShieldAlert size={10} /> Reset
                                 </span>
                               )}
                             </div>
                             <a href={`mailto:${u.email}`}
-                              className="text-xs hover:underline flex items-center gap-1"
-                              style={{ color: '#94A3B8' }}>
-                              <Mail size={10} />{u.email}
+                              className="text-[12px] text-[#98A2B3] hover:text-[#475467] hover:underline flex items-center gap-1 mt-0.5">
+                              <Mail size={11} /><span className="truncate max-w-[220px]">{u.email}</span>
                             </a>
                           </div>
                         </div>
                       </td>
-                      <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
-                      <td className="px-4 py-3 hidden sm:table-cell">
-                        {u.phone
-                          ? <a href={`tel:${u.phone}`} className="text-xs flex items-center gap-1 hover:underline"
-                              style={{ color: '#475569' }}>
-                              <Phone size={11} />{u.phone}
-                            </a>
-                          : <span className="text-xs" style={{ color: '#CBD5E1' }}>—</span>}
-                      </td>
-                      <td className="px-4 py-3 hidden md:table-cell">
+                      <td><RoleBadge role={u.role} /></td>
+                      <td>
                         {estateName !== '—' ? (
                           <>
-                            <div className="flex items-center gap-1.5 text-xs" style={{ color: '#475569' }}>
-                              <Building2 size={11} style={{ flexShrink: 0 }} />
-                              <span className="truncate" style={{ maxWidth: 140 }}>{estateName}</span>
+                            <div className="flex items-center gap-1.5 text-[13px] text-[#344054]">
+                              <Building2 size={12} className="text-[#98A2B3] flex-shrink-0" />
+                              <span className="truncate max-w-[160px]">{estateName}</span>
                             </div>
-                            {unit && <div className="text-[11px] mt-0.5" style={{ color: '#94A3B8' }}>{unit}</div>}
+                            {unit && <div className="text-[11.5px] text-[#98A2B3] mt-0.5">{unit}</div>}
                           </>
-                        ) : <span className="text-xs" style={{ color: '#CBD5E1' }}>—</span>}
+                        ) : <span className="text-[#D0D5DD]">—</span>}
                       </td>
-                      <td className="px-4 py-3 hidden lg:table-cell">
-                        <div className="text-xs flex items-center gap-1" style={{ color: u.lastSeen ? '#475569' : '#CBD5E1' }}>
-                          <Clock size={10} style={{ color: '#CBD5E1' }}/>
-                          {u.lastSeen ? formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true }) : 'Never'}
-                        </div>
-                        <div className="text-[11px] mt-0.5" style={{ color: '#CBD5E1' }}>
-                          joined {u.createdAt ? format(new Date(u.createdAt), 'MMM d, yy') : '—'}
-                        </div>
+                      <td>
+                        {u.phone
+                          ? <a href={`tel:${u.phone}`} className="text-[12.5px] flex items-center gap-1 text-[#475467] hover:underline tabular-nums whitespace-nowrap">
+                              <Phone size={11} className="text-[#98A2B3]" />{u.phone}
+                            </a>
+                          : <span className="text-[#D0D5DD]">—</span>}
                       </td>
-                      <td className="px-4 py-3 text-center">
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                          style={u.isActive
-                            ? { background: '#ECFDF5', color: '#059669', border: '1px solid #A7F3D0' }
-                            : { background: '#FEF2F2', color: '#DC2626', border: '1px solid #FECACA' }}>
+                      <td>
+                        <span className={`badge ${u.isActive ? 'badge-green' : 'badge-red'}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${u.isActive ? 'bg-[#12B76A]' : 'bg-[#F04438]'}`} />
                           {u.isActive ? 'Active' : 'Suspended'}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => openEdit(u)}
-                            title="Edit user"
-                            className="p-1.5 rounded-lg transition-all"
-                            style={{ color: '#CBD5E1' }}
-                            onMouseEnter={ev => { ev.currentTarget.style.color = '#7C3AED'; ev.currentTarget.style.background = 'rgba(124,58,237,0.08)'; }}
-                            onMouseLeave={ev => { ev.currentTarget.style.color = '#CBD5E1'; ev.currentTarget.style.background = 'transparent'; }}>
-                            <Edit3 size={13} />
+                      <td className="whitespace-nowrap">
+                        <div className="text-[12.5px] flex items-center gap-1 text-[#475467]">
+                          <Clock size={11} className="text-[#98A2B3]" />
+                          {u.lastSeen ? formatDistanceToNow(new Date(u.lastSeen), { addSuffix: true }) : <span className="text-[#98A2B3]">Never</span>}
+                        </div>
+                        <div className="text-[11.5px] text-[#98A2B3] mt-0.5">
+                          Joined {u.createdAt ? format(new Date(u.createdAt), 'MMM d, yy') : '—'}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="flex items-center justify-end gap-0.5">
+                          <button onClick={() => openEdit(u)} title="Edit user"
+                            className={`${iconBtn} hover:text-[#101828] hover:bg-[#F2F4F7]`}>
+                            <Edit3 size={14} />
                           </button>
                           {u.role !== 'super_admin' && (
                             <button onClick={() => resetPassword(u)} disabled={resetting === u._id}
                               title="Email a new temporary password"
-                              className="p-1.5 rounded-lg transition-all disabled:opacity-40"
-                              style={{ color: '#CBD5E1' }}
-                              onMouseEnter={ev => { ev.currentTarget.style.color = '#4F46E5'; ev.currentTarget.style.background = 'rgba(79,70,229,0.08)'; }}
-                              onMouseLeave={ev => { ev.currentTarget.style.color = '#CBD5E1'; ev.currentTarget.style.background = 'transparent'; }}>
-                              {resetting === u._id ? <RefreshCw size={13} className="animate-spin"/> : <KeyRound size={13}/>}
+                              className={`${iconBtn} hover:text-[#175CD3] hover:bg-[#EFF8FF]`}>
+                              {resetting === u._id ? <RefreshCw size={14} className="animate-spin" /> : <KeyRound size={14} />}
                             </button>
                           )}
                           {u.role !== 'super_admin' && (
                             <button onClick={() => toggleActive(u)} disabled={toggling === u._id}
                               title={u.isActive ? 'Suspend user' : 'Activate user'}
-                              className="p-1.5 rounded-lg transition-all disabled:opacity-40"
-                              style={{ color: '#CBD5E1' }}
-                              onMouseEnter={ev => {
-                                ev.currentTarget.style.color = u.isActive ? '#DC2626' : '#059669';
-                                ev.currentTarget.style.background = u.isActive ? '#FEF2F2' : '#ECFDF5';
-                              }}
-                              onMouseLeave={ev => {
-                                ev.currentTarget.style.color = '#CBD5E1';
-                                ev.currentTarget.style.background = 'transparent';
-                              }}>
+                              className={`${iconBtn} ${u.isActive ? 'hover:text-[#B42318] hover:bg-[#FEF3F2]' : 'hover:text-[#067647] hover:bg-[#ECFDF3]'}`}>
                               {toggling === u._id
-                                ? <RefreshCw size={13} className="animate-spin" />
-                                : u.isActive ? <UserX size={13} /> : <UserCheck size={13} />}
+                                ? <RefreshCw size={14} className="animate-spin" />
+                                : u.isActive ? <UserX size={14} /> : <UserCheck size={14} />}
                             </button>
                           )}
                         </div>
@@ -430,7 +428,7 @@ export default function Users() {
           </div>
         )}
         {!loading && (
-          <div className="px-5 py-2.5 text-xs" style={{ borderTop: '1px solid rgba(0,0,0,0.04)', color: '#94A3B8' }}>
+          <div className="px-4 py-2.5 text-[12px] text-[#98A2B3] border-t border-[#E4E7EC] tabular-nums">
             Showing {filtered.length} of {users.length} users
           </div>
         )}
@@ -438,143 +436,113 @@ export default function Users() {
 
       {/* Create User Modal */}
       {showCreate && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-card w-full max-w-md p-6 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-5">
+        <ModalShell title="Create user" subtitle="Add a new user to the platform" onClose={() => setShowCreate(false)} scroll>
+          <form onSubmit={handleCreate} className="space-y-3.5">
+            <div>
+              <label className="field-label">Full name *</label>
+              <input required value={form.name}
+                onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
+                className="input-field" placeholder="John Doe" />
+            </div>
+            <div>
+              <label className="field-label">Email *</label>
+              <input required type="email" value={form.email}
+                onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
+                className="input-field" placeholder="john@example.com" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <h2 className="text-lg font-bold" style={{ color: '#0F172A' }}>Create User</h2>
-                <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>Add a new user to the platform</p>
+                <label className="field-label">Phone</label>
+                <input value={form.phone}
+                  onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
+                  className="input-field" placeholder="+234…" />
               </div>
-              <button onClick={() => setShowCreate(false)} className="transition-colors"
-                style={{ color: '#94A3B8' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#0F172A'}
-                onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'}>
-                <X size={18} />
+              <div>
+                <label className="field-label">Password *</label>
+                <input required type="password" minLength={6} value={form.password}
+                  onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
+                  className="input-field" placeholder="Min. 6 chars" />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="field-label">Role *</label>
+                <select value={form.role}
+                  onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
+                  className="input-field">
+                  <option value="super_admin">Super Admin</option>
+                  <option value="estate_manager">Estate Manager</option>
+                  <option value="resident">Resident</option>
+                  <option value="security">Security</option>
+                </select>
+              </div>
+              <div>
+                <label className="field-label">Estate</label>
+                <select value={form.estateId}
+                  onChange={e => setForm(p => ({ ...p, estateId: e.target.value }))}
+                  className="input-field">
+                  <option value="">— None —</option>
+                  {estates.map(e => <option key={e._id} value={e._id}>{e.name}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2 justify-end">
+              <button type="button" onClick={() => setShowCreate(false)} className="btn-outline">Cancel</button>
+              <button type="submit" disabled={saving} className="btn-primary gap-2">
+                {saving ? <><RefreshCw size={13} className="animate-spin" /> Creating…</> : 'Create user'}
               </button>
             </div>
-            <form onSubmit={handleCreate} className="space-y-3">
-              <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: '#475569' }}>Full Name *</label>
-                <input required value={form.name}
-                  onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                  className="input-field" placeholder="John Doe" />
-              </div>
-              <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: '#475569' }}>Email *</label>
-                <input required type="email" value={form.email}
-                  onChange={e => setForm(p => ({ ...p, email: e.target.value }))}
-                  className="input-field" placeholder="john@example.com" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
+          </form>
+        </ModalShell>
+      )}
+
+      {/* Edit User Modal */}
+      {editing && (
+        <ModalShell title="Edit user" subtitle={<>{editing.email} <RoleBadge role={editing.role} /></>} onClose={() => setEditing(null)}>
+          <form onSubmit={handleEdit} className="space-y-3.5">
+            <div>
+              <label className="field-label">Full name *</label>
+              <input required value={editForm.name}
+                onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
+                className="input-field" />
+            </div>
+            <div>
+              <label className="field-label">Phone</label>
+              <input value={editForm.phone}
+                onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))}
+                className="input-field" placeholder="+234…" />
+            </div>
+            {editing.role !== 'super_admin' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: '#475569' }}>Phone</label>
-                  <input value={form.phone}
-                    onChange={e => setForm(p => ({ ...p, phone: e.target.value }))}
-                    className="input-field" placeholder="+234…" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: '#475569' }}>Password *</label>
-                  <input required type="password" minLength={6} value={form.password}
-                    onChange={e => setForm(p => ({ ...p, password: e.target.value }))}
-                    className="input-field" placeholder="Min. 6 chars" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: '#475569' }}>Role *</label>
-                  <select value={form.role}
-                    onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
+                  <label className="field-label">Role</label>
+                  <select value={editForm.role}
+                    onChange={e => setEditForm(p => ({ ...p, role: e.target.value }))}
                     className="input-field">
-                    <option value="super_admin">Super Admin</option>
                     <option value="estate_manager">Estate Manager</option>
                     <option value="resident">Resident</option>
                     <option value="security">Security</option>
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs font-medium block mb-1" style={{ color: '#475569' }}>Estate</label>
-                  <select value={form.estateId}
-                    onChange={e => setForm(p => ({ ...p, estateId: e.target.value }))}
+                  <label className="field-label">Estate</label>
+                  <select value={editForm.estateId}
+                    onChange={e => setEditForm(p => ({ ...p, estateId: e.target.value }))}
                     className="input-field">
                     <option value="">— None —</option>
                     {estates.map(e => <option key={e._id} value={e._id}>{e.name}</option>)}
                   </select>
                 </div>
               </div>
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowCreate(false)} className="btn-outline flex-1">Cancel</button>
-                <button type="submit" disabled={saving} className="btn-primary flex-1 gap-2">
-                  {saving ? <><RefreshCw size={13} className="animate-spin" /> Creating…</> : 'Create User'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Edit User Modal */}
-      {editing && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="glass-card w-full max-w-md p-6">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h2 className="text-lg font-bold" style={{ color: '#0F172A' }}>Edit User</h2>
-                <p className="text-xs mt-0.5" style={{ color: '#94A3B8' }}>
-                  {editing.email} · <RoleBadge role={editing.role} />
-                </p>
-              </div>
-              <button onClick={() => setEditing(null)} className="transition-colors"
-                style={{ color: '#94A3B8' }}
-                onMouseEnter={e => e.currentTarget.style.color = '#0F172A'}
-                onMouseLeave={e => e.currentTarget.style.color = '#94A3B8'}>
-                <X size={18} />
+            )}
+            <div className="flex gap-2 pt-2 justify-end">
+              <button type="button" onClick={() => setEditing(null)} className="btn-outline">Cancel</button>
+              <button type="submit" disabled={saving} className="btn-primary gap-2">
+                {saving ? <><RefreshCw size={13} className="animate-spin" /> Saving…</> : 'Save changes'}
               </button>
             </div>
-            <form onSubmit={handleEdit} className="space-y-3">
-              <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: '#475569' }}>Full Name *</label>
-                <input required value={editForm.name}
-                  onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))}
-                  className="input-field" />
-              </div>
-              <div>
-                <label className="text-xs font-medium block mb-1" style={{ color: '#475569' }}>Phone</label>
-                <input value={editForm.phone}
-                  onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))}
-                  className="input-field" placeholder="+234…" />
-              </div>
-              {editing.role !== 'super_admin' && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-medium block mb-1" style={{ color: '#475569' }}>Role</label>
-                    <select value={editForm.role}
-                      onChange={e => setEditForm(p => ({ ...p, role: e.target.value }))}
-                      className="input-field">
-                      <option value="estate_manager">Estate Manager</option>
-                      <option value="resident">Resident</option>
-                      <option value="security">Security</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium block mb-1" style={{ color: '#475569' }}>Estate</label>
-                    <select value={editForm.estateId}
-                      onChange={e => setEditForm(p => ({ ...p, estateId: e.target.value }))}
-                      className="input-field">
-                      <option value="">— None —</option>
-                      {estates.map(e => <option key={e._id} value={e._id}>{e.name}</option>)}
-                    </select>
-                  </div>
-                </div>
-              )}
-              <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setEditing(null)} className="btn-outline flex-1">Cancel</button>
-                <button type="submit" disabled={saving} className="btn-primary flex-1 gap-2">
-                  {saving ? <><RefreshCw size={13} className="animate-spin" /> Saving…</> : 'Save Changes'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+          </form>
+        </ModalShell>
       )}
     </div>
   );
