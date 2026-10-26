@@ -28,7 +28,6 @@ export const NAV = [
     section: 'Finance',
     links: [
       { to: '/finance',       icon: Landmark,    label: 'Finance' },
-      { to: '/subscriptions', icon: Settings,    label: 'Subscriptions' },
       { to: '/marketplace',   icon: ShoppingBag, label: 'Marketplace' },
       { to: '/call-credits',  icon: Gift,        label: 'Call credits' },
       { to: '/plans',         icon: CreditCard,  label: 'Plans & pricing' },

@@ -155,7 +155,7 @@ export default function EditEstateDrawer({ estate, open, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 z-[90] flex justify-end">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[1px] animate-fade-in" onClick={close} />
+      <div className="overlay-backdrop" aria-hidden="true" onClick={close} />
       <aside className="relative w-full max-w-[720px] h-full bg-white shadow-2xl flex flex-col animate-slide-in-right" role="dialog" aria-label={`Edit ${estate.name}`}>
         {/* Header */}
         <div className="px-6 pt-5 pb-0 border-b border-[#EAECF0]">

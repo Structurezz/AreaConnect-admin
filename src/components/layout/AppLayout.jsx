@@ -50,7 +50,7 @@ function CommandPalette({ open, onClose }) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[120] flex items-start justify-center pt-[12vh] px-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]" />
+      <div className="overlay-backdrop" aria-hidden="true" />
       <div className="relative w-full max-w-xl rounded-xl bg-white shadow-2xl border border-slate-200 overflow-hidden animate-fade-in" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center gap-2.5 px-4 h-12 border-b border-slate-100">
           <Search size={16} className="text-slate-400" />
@@ -101,7 +101,7 @@ export default function AppLayout({ children }) {
     <div className="flex h-screen overflow-hidden" style={{ background: 'var(--bg)' }}>
       {sidebarOpen && (
         <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}>
-          <div className="absolute inset-0 bg-slate-900/50" />
+          <div className="overlay-backdrop" aria-hidden="true" />
           <div className="absolute left-0 top-0 bottom-0 z-50 animate-slide-in" onClick={(e) => e.stopPropagation()}>
             <Sidebar mobile onClose={() => setSidebarOpen(false)} />
           </div>

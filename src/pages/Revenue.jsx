@@ -192,7 +192,7 @@ export default function Revenue() {
           <div className="relative mt-6 flex gap-6 sm:gap-8">
             <QuickAction to="/finance?tab=payouts" icon={ArrowUpRight} label="Payouts" />
             <QuickAction to="/finance?tab=transactions" icon={Receipt} label="Statement" />
-            <QuickAction to="/subscriptions" icon={CreditCard} label="Billing" />
+            <QuickAction to="/finance?tab=billing" icon={CreditCard} label="Billing" />
             <QuickAction to="/plans" icon={Wallet} label="Plans" />
           </div>
         </div>

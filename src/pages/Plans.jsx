@@ -327,7 +327,7 @@ export default function Plans() {
       {/* Edit / Create drawer */}
       {editing && (
         <div className="fixed inset-0 z-50 flex justify-end">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={() => setEditing(null)} />
+          <div className="overlay-backdrop" aria-hidden="true" onClick={() => setEditing(null)} />
           <div className="relative w-full max-w-lg h-full overflow-y-auto flex flex-col bg-white border-l border-[#E4E7EC] shadow-2xl">
             <div className="flex items-center justify-between px-6 py-4 sticky top-0 z-10 bg-white border-b border-[#E4E7EC]">
               <div>

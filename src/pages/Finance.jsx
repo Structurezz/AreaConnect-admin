@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { LayoutDashboard, Receipt, ArrowUpRight } from 'lucide-react';
+import { LayoutDashboard, Receipt, ArrowUpRight, CreditCard } from 'lucide-react';
 import { withdrawalAPI } from '../api';
 import Revenue from './Revenue';
 import Transactions from './Transactions';
 import Withdrawals from './Withdrawals';
+import Subscriptions from './Subscriptions';
 
-// One money hub: revenue overview, dues statement and manager payouts.
+// One money hub: revenue overview, subscription billing, dues statement and manager payouts.
 const TABS = [
   { id: 'overview',     label: 'Overview',     hint: 'Balance & revenue',  icon: LayoutDashboard, Page: Revenue },
+  { id: 'billing',      label: 'Billing',      hint: 'Estate subscriptions', icon: CreditCard,    Page: Subscriptions },
   { id: 'transactions', label: 'Transactions', hint: 'Dues statement',     icon: Receipt,         Page: Transactions },
   { id: 'payouts',      label: 'Payouts',      hint: 'Manager withdrawals', icon: ArrowUpRight,   Page: Withdrawals },
 ];

@@ -36,7 +36,7 @@ const SM = '!px-2.5 !py-1 !text-[12px]';
 function Modal({ onClose, title, sub, children, footer }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="overlay-backdrop" aria-hidden="true" onClick={onClose} />
       <div className="relative card w-full max-w-md overflow-hidden shadow-xl">
         <div className="px-5 pt-5 pb-4">
           <h3 className="text-[15px] font-semibold text-[#101828]">{title}</h3>

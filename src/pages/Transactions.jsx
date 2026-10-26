@@ -373,8 +373,9 @@ export default function Transactions() {
 
       {/* Attach modal */}
       {attachFor && (
-        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="card w-full max-w-md overflow-hidden shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="overlay-backdrop" aria-hidden="true" onClick={() => setAttachFor(null)} />
+          <div className="relative card w-full max-w-md overflow-hidden shadow-xl">
             <div className="card-header">
               <div>
                 <h3 className="text-[15px] font-semibold text-[#101828]">Attach Paystack capture</h3>

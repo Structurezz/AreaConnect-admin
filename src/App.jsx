@@ -16,7 +16,6 @@ import AdminEstates from './pages/Estates';
 import Onboarding from './pages/Onboarding';
 import EstateDetail from './pages/EstateDetail';
 import Plans from './pages/Plans';
-import Subscriptions from './pages/Subscriptions';
 import Analytics from './pages/Analytics';
 import Finance from './pages/Finance';
 import AdminUsers from './pages/Users';
@@ -62,7 +61,7 @@ function AppRoutes() {
       <Route path="/estates/new" element={<Navigate to="/onboarding" replace />} />
       <Route path="/estates/:estateId" element={<RequireAdmin><EstateDetail /></RequireAdmin>} />
       <Route path="/plans" element={<RequireAdmin><Plans /></RequireAdmin>} />
-      <Route path="/subscriptions" element={<RequireAdmin><Subscriptions /></RequireAdmin>} />
+      <Route path="/subscriptions" element={<Navigate to="/finance?tab=billing" replace />} />
       <Route path="/analytics" element={<RequireAdmin><Analytics /></RequireAdmin>} />
       <Route path="/finance" element={<RequireAdmin><Finance /></RequireAdmin>} />
       <Route path="/revenue" element={<Navigate to="/finance" replace />} />

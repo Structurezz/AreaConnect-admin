@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { planAPI, estateAPI } from '../api';
+import { Drawer, AssignPlanDrawer, GrantCompDrawer } from '../components/billing/BillingDrawers';
 import toast from 'react-hot-toast';
 import {
   CreditCard, RefreshCw, Building2, Edit3, X, Search,
@@ -7,8 +8,6 @@ import {
   CheckCircle2, Clock, AlertCircle, Wallet,
 } from 'lucide-react';
 import { format } from 'date-fns';
-import PageHeader from '../components/ui/PageHeader';
-import StatCard from '../components/ui/StatCard';
 
 const STATUS_STYLE = {
   active:    { label: 'Active',    badge: 'badge-green'  },
@@ -26,32 +25,12 @@ function StatusBadge({ status }) {
   return <span className={`badge ${s.badge}`}>{s.label}</span>;
 }
 
-// Shared modal shell — header with title/subtitle + close, scrollable body.
-function ModalShell({ title, subtitle, icon: Icon, onClose, children }) {
+// Edit uses the same full-height side panel as Assign / Grant comp
+function ModalShell({ title, subtitle, icon, onClose, children }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={onClose} />
-      <div className="relative card w-full max-w-md max-h-[90vh] overflow-y-auto shadow-2xl animate-fade-in">
-        <div className="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-[#E4E7EC] sticky top-0 bg-white z-10">
-          <div className="flex items-start gap-3 min-w-0">
-            {Icon && (
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 border border-[#E4E7EC] text-[#475467]">
-                <Icon size={16} />
-              </div>
-            )}
-            <div className="min-w-0">
-              <h3 className="text-[16px] font-semibold text-[#101828]">{title}</h3>
-              {subtitle && <p className="text-[12.5px] text-[#475467] mt-0.5">{subtitle}</p>}
-            </div>
-          </div>
-          <button type="button" onClick={onClose}
-            className="p-1.5 rounded-lg text-[#98A2B3] hover:text-[#101828] hover:bg-[#F2F4F7] transition-colors flex-shrink-0">
-            <X size={16} />
-          </button>
-        </div>
-        <div className="px-6 py-5">{children}</div>
-      </div>
-    </div>
+    <Drawer title={title} subtitle={subtitle} icon={icon} onClose={onClose}>
+      <div className="px-6 pt-5 min-h-full flex flex-col">{children}</div>
+    </Drawer>
   );
 }
 
@@ -301,70 +280,70 @@ export default function Subscriptions() {
 
   const iconBtn = 'p-1.5 rounded-md text-[#98A2B3] transition-colors';
 
-  return (
-    <div className="max-w-[1400px] mx-auto animate-fade-in">
-      <PageHeader
-        title="Subscriptions"
-        description="Manage estate plan assignments, billing and comp access."
-        actions={
-          <>
-            <button onClick={() => openCompModal()} className="btn-outline">
-              <Gift size={14} className="text-[#DC6803]" /> Grant comp access
-            </button>
-            <button onClick={() => setShowNew(true)} className="btn-primary">
-              <CreditCard size={14} /> Assign plan
-            </button>
-          </>
-        }
-      />
+  const paidMrr = stats?.mrrPaid ?? stats?.mrr ?? 0;
+  const compMrr = stats?.mrrComp ?? 0;
+  const planTotal = Math.max(1, (stats?.byPlan || []).reduce((t, p) => t + (p.count || 0), 0));
+  const payingCount = Math.max(0, (stats?.active ?? 0) - (stats?.activeComp ?? 0));
 
-      {/* Stats */}
-      {stats && (
-        <div className="grid gap-3 grid-cols-2 lg:grid-cols-5">
-          <StatCard label="Total"             value={stats.total ?? 0}   icon={Building2}    color="blue" />
-          <StatCard label="Active"            value={stats.active ?? 0}  icon={CheckCircle2} color="green" />
-          <StatCard label="On trial"          value={stats.trial ?? 0}   icon={Clock}        color="blue" />
-          <StatCard label="Expired/Suspended" value={stats.expired ?? 0} icon={AlertCircle}  color="red" />
-          <div className="col-span-2 lg:col-span-1">
-            <StatCard label="Monthly revenue" value={fmt(MRR)} icon={Wallet} color="green" />
+  return (
+    <div className="max-w-[1400px] mx-auto animate-fade-in space-y-4">
+      {/* Billing account */}
+      <div className="relative overflow-hidden rounded-2xl p-6 text-white" style={{ background: 'radial-gradient(120% 160% at 100% 0%, #065F46 0%, #0B1220 55%)' }}>
+        <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full border border-white/10 pointer-events-none" />
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-[12px] text-white/60 flex items-center gap-1.5"><CreditCard size={13} /> Estate subscriptions · billing</p>
+            <p className="mt-4 text-[12.5px] text-white/70">Paid monthly recurring revenue</p>
+            <p className="mt-1 text-[38px] leading-none font-semibold tracking-tight tabular-nums">₦{Math.round(paidMrr).toLocaleString()}</p>
+            <p className="mt-2 text-[12px] text-white/55">₦{Math.round(paidMrr * 12).toLocaleString()} a year · {payingCount} paying estate{payingCount === 1 ? '' : 's'}</p>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => openCompModal()} className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-white/10 border border-white/15 text-white text-[13px] font-semibold hover:bg-white/15">
+              <Gift size={15} className="text-amber-300" /> Grant comp
+            </button>
+            <button onClick={() => setShowNew(true)} className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-white text-emerald-800 text-[13px] font-semibold hover:bg-emerald-50">
+              <CreditCard size={15} /> Assign plan
+            </button>
           </div>
         </div>
-      )}
 
-      {/* Plan distribution */}
-      {stats?.byPlan?.length > 0 && (
-        <div className="card mt-4">
-          <div className="card-header">
-            <div>
-              <h2 className="card-title">Distribution by plan</h2>
-              <p className="card-sub">Share of {stats.total} subscriptions</p>
+        <div className="relative mt-6 grid grid-cols-2 lg:grid-cols-5 gap-3">
+          {[
+            ['Subscriptions', stats?.total ?? 0, `${stats?.active ?? 0} active`],
+            ['On trial', stats?.trial ?? 0, stats?.trialPipelineMrr ? `₦${Math.round(stats.trialPipelineMrr).toLocaleString()}/mo if they convert` : 'converting soon', 'text-sky-300'],
+            ['Comp access', stats?.activeComp ?? 0, `₦${Math.round(compMrr).toLocaleString()}/mo given away`, 'text-amber-200'],
+            ['Renewals · 7 days', stats?.renewalsDue7d ?? 0, `${stats?.failedRenewalCount ?? 0} failed renewal${stats?.failedRenewalCount === 1 ? '' : 's'}`, stats?.failedRenewalCount ? 'text-red-300' : ''],
+            ['Expired / suspended', (stats?.expired ?? 0) + (stats?.suspended ?? 0), `${stats?.cancelled30d ?? 0} cancelled in 30 days`, (stats?.expired ?? 0) ? 'text-red-300' : ''],
+          ].map(([l, v, h, c]) => (
+            <div key={l} className="rounded-xl bg-white/[0.06] border border-white/10 px-3.5 py-2.5">
+              <p className="text-[11px] text-white/55">{l}</p>
+              <p className={`mt-0.5 text-[17px] font-semibold tabular-nums ${c || 'text-white'}`}>{v}</p>
+              <p className="text-[10.5px] text-white/40 truncate">{h}</p>
             </div>
-          </div>
-          <div className="px-5 py-4">
-            <div className="flex h-2 rounded-full overflow-hidden bg-[#F2F4F7]">
-              {stats.byPlan.map(p => (
-                <div key={p._id} className="h-full" title={p.name}
-                  style={{ width: `${(p.count / Math.max(stats.total, 1)) * 100}%`, background: p.color }} />
+          ))}
+        </div>
+
+        {stats?.byPlan?.length > 0 && (
+          <div className="relative mt-5">
+            <div className="flex h-2 rounded-full overflow-hidden bg-white/10">
+              {stats.byPlan.map((p) => (
+                <div key={p.planId || p._id || p.name} className="h-full" title={`${p.name}: ${p.count}`} style={{ width: `${(p.count / planTotal) * 100}%`, background: p.color || '#10B981' }} />
               ))}
             </div>
-            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5">
-              {stats.byPlan.map(p => {
-                const pct = Math.round((p.count / Math.max(stats.total, 1)) * 100);
-                return (
-                  <div key={p._id} className="flex items-center gap-1.5 text-[12.5px]">
-                    <span className="w-2.5 h-2.5 rounded-sm" style={{ background: p.color }} />
-                    <span className="font-medium text-[#101828]">{p.name}</span>
-                    <span className="text-[#98A2B3] tabular-nums">{p.count} ({pct}%)</span>
-                  </div>
-                );
-              })}
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+              {stats.byPlan.map((p) => (
+                <span key={p.planId || p._id || p.name} className="inline-flex items-center gap-1.5 text-[11.5px] text-white/70">
+                  <span className="w-2 h-2 rounded-full" style={{ background: p.color || '#10B981' }} />
+                  {p.name} <span className="text-white/40 tabular-nums">{p.count}{p.comp ? ` · ${p.comp} comp` : ''}</span>
+                </span>
+              ))}
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Table */}
-      <div className="card overflow-hidden mt-4">
+      <div className="card overflow-hidden">
         {/* Search + Filter toolbar */}
         <div className="px-4 py-3 border-b border-[#E4E7EC] flex flex-col lg:flex-row lg:items-center gap-3">
           <div className="overflow-x-auto -mx-1 px-1">
@@ -412,6 +391,7 @@ export default function Subscriptions() {
                   <th className="text-left hidden sm:table-cell">Cycle</th>
                   <th className="text-left hidden md:table-cell">Model</th>
                   <th className="text-left">Status</th>
+                  <th className="!text-right hidden md:table-cell">Value / mo</th>
                   <th className="text-left hidden lg:table-cell">Next billing</th>
                   <th className="text-left hidden xl:table-cell">Notes</th>
                   <th className="w-20 text-right">Actions</th>
@@ -476,6 +456,11 @@ export default function Subscriptions() {
                         {sub.billingModel === 'per_resident' ? 'Per resident' : 'Flat fee'}
                       </td>
                       <td><StatusBadge status={sub.status} /></td>
+                      <td className="hidden md:table-cell text-right tabular-nums whitespace-nowrap">
+                        {!compLive && sub.status === 'active' && price > 0
+                          ? <span className="font-semibold text-[#067647]">₦{Math.round(sub.cycle === 'annual' ? price / 12 : price).toLocaleString()}</span>
+                          : <span className="text-[#D0D5DD]">—</span>}
+                      </td>
                       <td className="hidden lg:table-cell text-[12px] whitespace-nowrap">
                         {sub.nextBillingDate ? format(new Date(sub.nextBillingDate), 'MMM d, yyyy') : '—'}
                       </td>
@@ -527,170 +512,23 @@ export default function Subscriptions() {
         )}
       </div>
 
-      {/* Assign modal */}
+      {/* Assign plan — side panel */}
       {showNew && (
-        <ModalShell title="Assign plan to estate" subtitle="Create a new subscription assignment"
-          icon={CreditCard} onClose={() => setShowNew(false)}>
-          <form onSubmit={handleAssign} className="space-y-3.5">
-            <div>
-              <label className="field-label">Estate *</label>
-              <select className="input-field" value={newForm.estateId}
-                onChange={e => setNewForm({ ...newForm, estateId: e.target.value })} required>
-                <option value="">Select estate…</option>
-                {estates.map(e => <option key={e._id} value={e._id}>{e.name} — {e.estateCode}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="field-label">Plan *</label>
-              <select className="input-field" value={newForm.planId}
-                onChange={e => setNewForm({ ...newForm, planId: e.target.value })} required>
-                <option value="">Select plan…</option>
-                {plans.map(p => <option key={p._id} value={p._id}>{p.name} — {fmt(p.price.monthly)}/mo</option>)}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="field-label">Billing model</label>
-                <select className="input-field" value={newForm.billingModel}
-                  onChange={e => setNewForm({ ...newForm, billingModel: e.target.value })}>
-                  <option value="flat">Flat fee</option>
-                  <option value="per_resident">Per resident</option>
-                </select>
-              </div>
-              <div>
-                <label className="field-label">Billing cycle</label>
-                <select className="input-field" value={newForm.cycle}
-                  onChange={e => setNewForm({ ...newForm, cycle: e.target.value })}
-                  disabled={newForm.billingModel === 'per_resident'}>
-                  <option value="monthly">Monthly</option>
-                  <option value="annual">Annual</option>
-                </select>
-              </div>
-            </div>
-            {newForm.billingModel === 'per_resident' && (
-              <div>
-                <label className="field-label">Resident count</label>
-                <input type="number" min="1" className="input-field" placeholder="e.g. 80" value={newForm.residentCount}
-                  onChange={e => setNewForm({ ...newForm, residentCount: e.target.value })} />
-              </div>
-            )}
-            <div className="grid grid-cols-2 gap-3">
-              <div className={newForm.status === 'trial' ? '' : 'col-span-2'}>
-                <label className="field-label">Initial status</label>
-                <select className="input-field" value={newForm.status}
-                  onChange={e => setNewForm({ ...newForm, status: e.target.value })}>
-                  <option value="trial">Trial</option>
-                  <option value="active">Active</option>
-                </select>
-              </div>
-              {newForm.status === 'trial' && (
-                <div>
-                  <label className="field-label">Trial duration (days)</label>
-                  <input type="number" min="1" max="90" className="input-field" value={newForm.trialDays}
-                    onChange={e => setNewForm({ ...newForm, trialDays: parseInt(e.target.value) })} />
-                </div>
-              )}
-            </div>
-            <div>
-              <label className="field-label">Notes (optional)</label>
-              <input className="input-field" placeholder="Internal notes about this subscription…"
-                value={newForm.notes} onChange={e => setNewForm({ ...newForm, notes: e.target.value })} />
-            </div>
-            <div className="flex gap-2 justify-end pt-2">
-              <button type="button" onClick={() => setShowNew(false)} className="btn-outline">Cancel</button>
-              <button type="submit" disabled={assigning} className="btn-primary">
-                {assigning ? 'Assigning…' : 'Assign plan'}
-              </button>
-            </div>
-          </form>
-        </ModalShell>
+        <AssignPlanDrawer estates={estates} plans={plans} subs={subs} form={newForm} setForm={setNewForm}
+          onSubmit={handleAssign} saving={assigning} onClose={() => setShowNew(false)} />
       )}
 
-      {/* Grant Comp modal */}
+      {/* Grant comp — side panel */}
       {showComp && (
-        <ModalShell title="Grant comp access"
-          subtitle="Give any estate a free plan — promos, VIPs, beta testers. Overrides billing."
-          icon={Gift} onClose={() => setShowComp(false)}>
-          <form onSubmit={handleGrantComp} className="space-y-3.5">
-            <div>
-              <label className="field-label">Estate *</label>
-              <select className="input-field" value={compForm.estateId}
-                onChange={e => setCompForm({ ...compForm, estateId: e.target.value })} required>
-                <option value="">Select estate…</option>
-                {estates.map(e => <option key={e._id} value={e._id}>{e.name} — {e.estateCode}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label className="field-label">Grant plan *</label>
-              <select className="input-field" value={compForm.planId}
-                onChange={e => setCompForm({ ...compForm, planId: e.target.value })} required>
-                <option value="">Select plan…</option>
-                {plans.map(p => (
-                  <option key={p._id} value={p._id}>
-                    {p.name} — normally {fmt(p.price.monthly)}/mo (comp = free)
-                  </option>
-                ))}
-              </select>
-              <p className="field-hint">
-                Estate gets every feature of this plan for free until the comp expires or is revoked.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="col-span-2">
-                <label className="field-label">Reason</label>
-                <input className="input-field"
-                  placeholder="e.g. Launch promo, VIP comp, Beta tester"
-                  value={compForm.reason}
-                  onChange={e => setCompForm({ ...compForm, reason: e.target.value })} />
-              </div>
-              <div>
-                <label className="field-label">Shown as</label>
-                <select className="input-field" value={compForm.cycle}
-                  onChange={e => setCompForm({ ...compForm, cycle: e.target.value })}>
-                  <option value="monthly">Monthly</option>
-                  <option value="annual">Annual</option>
-                </select>
-              </div>
-            </div>
-            <p className="field-hint !-mt-1.5">
-              Shown-as price only affects the gift email's "normal price" line. Features are unlocked either way.
-            </p>
-
-            <div>
-              <label className="field-label">Expires</label>
-              <Segmented options={EXPIRY_OPTS_LONG} value={compForm.expiryPreset}
-                onChange={v => setCompForm({ ...compForm, expiryPreset: v })} />
-              {compForm.expiryPreset === 'custom' && (
-                <input type="date" className="input-field mt-2"
-                  min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
-                  value={compForm.customExpiry}
-                  onChange={e => setCompForm({ ...compForm, customExpiry: e.target.value })}
-                  required />
-              )}
-              {compForm.expiryPreset === 'never' && (
-                <p className="field-hint flex items-center gap-1">
-                  <InfinityIcon size={11} /> Comp stays active until you revoke it manually.
-                </p>
-              )}
-            </div>
-
-            <div className="flex gap-2 justify-end pt-2">
-              <button type="button" onClick={() => setShowComp(false)} className="btn-outline">Cancel</button>
-              <button type="submit" disabled={compGranting} className="btn-primary">
-                {compGranting ? <><RefreshCw size={14} className="animate-spin" /> Granting…</> : <><Sparkles size={14} /> Grant comp</>}
-              </button>
-            </div>
-          </form>
-        </ModalShell>
+        <GrantCompDrawer estates={estates} plans={plans} subs={subs} form={compForm} setForm={setCompForm}
+          onSubmit={handleGrantComp} saving={compGranting} onClose={() => setShowComp(false)} />
       )}
 
       {/* Edit modal */}
       {editing && (
         <ModalShell title="Edit subscription" subtitle={editing.estateId?.name}
           icon={Edit3} onClose={() => setEditing(null)}>
-          <form onSubmit={handleUpdate} className="space-y-3.5">
+          <form onSubmit={handleUpdate} className="flex-1 flex flex-col space-y-4">
             <div>
               <label className="field-label">Plan</label>
               <select className="input-field" value={editing.planId?._id || editing.planId}
@@ -807,7 +645,7 @@ export default function Subscriptions() {
               )}
             </div>
 
-            <div className="flex gap-2 justify-end pt-2">
+            <div className="sticky bottom-0 mt-auto -mx-6 px-6 py-4 bg-[#FCFCFD] border-t border-[#EAECF0] flex gap-2 justify-end">
               <button type="button" onClick={() => setEditing(null)} className="btn-outline">Cancel</button>
               <button type="submit" disabled={saving} className="btn-primary">
                 {saving ? 'Saving…' : 'Save changes'}

@@ -19,7 +19,7 @@ export default function Modal({ open, onClose, title, children, size = 'md' }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
+      <div className="overlay-backdrop" aria-hidden="true" />
       <div
         className={`relative ${sizes[size]} w-full glass-card-gold animate-fade-in overflow-hidden`}
         onClick={(e) => e.stopPropagation()}

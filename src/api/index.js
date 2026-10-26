@@ -34,6 +34,14 @@ export const onboardingAPI = {
   revokeInvite: (id)     => api.delete(`/admin/onboarding/invites/${id}`),
 };
 
+// Admin security (platform-wide) — scorecards, alert actions, safety notices
+export const securityAPI = {
+  overview:    (days) => api.get('/admin/security/overview', { params: { days } }),
+  acknowledge: (id)   => api.patch(`/admin/security/alerts/${id}/acknowledge`),
+  resolve:     (id)   => api.patch(`/admin/security/alerts/${id}/resolve`),
+  notice:      (data) => api.post('/admin/security/notice', data),
+};
+
 // Visitors
 export const visitorAPI = {
   getAll: (params) => api.get('/visitors', { params }),
