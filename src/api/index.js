@@ -18,6 +18,7 @@ export const estateAPI = {
   update: (id, data) => api.patch(`/estates/${id}`, data),
   getDetail: (id) => api.get(`/estates/${id}/detail`),
   getStats: () => api.get('/estates/stats'),
+  geocodePreview: (params) => api.get('/estates/geocode-preview', { params }),
 };
 
 // Admin onboarding (wizard, bulk import, invitations, portfolios)

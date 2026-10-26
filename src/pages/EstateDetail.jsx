@@ -5,7 +5,7 @@ import Spinner from '../components/ui/Spinner';
 import Modal from '../components/ui/Modal';
 import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
-import EstatesMap from '../components/estates/EstatesMap';
+import GoogleMapEmbed, { mapsQuery } from '../components/estates/GoogleMapEmbed';
 import EditEstateDrawer from '../components/estates/EditEstateDrawer';
 import {
   Building2, MapPin, User, Hash, Users, Home, Shield,
@@ -223,7 +223,14 @@ export default function EstateDetail() {
         {/* Location */}
         <div className="card overflow-hidden" style={{ isolation: 'isolate' }}>
           <div className="grid lg:grid-cols-[minmax(0,1fr)_300px]">
-            <EstatesMap estates={[estate]} single color="#059669" height={300} />
+            <div className="relative">
+              <GoogleMapEmbed estate={estate} height={300} zoom={estate.location?.lat ? 17 : 15} />
+              {!estate.location?.lat && (
+                <span className="absolute left-3 top-3 px-2.5 py-1 rounded-md bg-white/95 border border-[#FEDF89] text-[11.5px] text-[#B54708] shadow-sm">
+                  Showing Google's best match for the address — set an exact pin in Edit estate
+                </span>
+              )}
+            </div>
             <div className="p-5 border-t lg:border-t-0 lg:border-l border-[#F2F4F7] flex flex-col">
               <div className="card-title flex items-center gap-1.5"><MapPin size={14} className="text-[#059669]" /> Location</div>
               <p className="mt-2 text-[13px] text-[#344054] leading-relaxed">{estate.location?.formattedAddress || estate.address}</p>
@@ -234,11 +241,11 @@ export default function EstateDetail() {
               </dl>
               <div className="mt-auto pt-4 grid grid-cols-2 gap-2">
                 <a className="btn-outline justify-center text-[12px]" target="_blank" rel="noreferrer"
-                  href={estate.location?.lat ? `https://www.google.com/maps/search/?api=1&query=${estate.location.lat},${estate.location.lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(estate.address || '')}`}>
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery(estate))}`}>
                   <MapPin size={13} /> Open map
                 </a>
                 <a className="btn-outline justify-center text-[12px]" target="_blank" rel="noreferrer"
-                  href={`https://www.google.com/maps/dir/?api=1&destination=${estate.location?.lat ? `${estate.location.lat},${estate.location.lng}` : encodeURIComponent(estate.address || '')}`}>
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapsQuery(estate))}`}>
                   <ArrowRight size={13} /> Directions
                 </a>
               </div>

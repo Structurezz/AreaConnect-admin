@@ -5,6 +5,7 @@ import EditEstateDrawer from '../components/estates/EditEstateDrawer';
 import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
 import EstatesMap, { STATUS_COLOR, estateTone } from '../components/estates/EstatesMap';
+import GoogleMapEmbed, { mapsQuery } from '../components/estates/GoogleMapEmbed';
 import {
   Building2, MapPin, Search, Edit3, ArrowRight, ToggleLeft, ToggleRight, RefreshCw, Phone, Mail, Gift,
   Users as UsersIcon, Home as HomeIcon, Bell, AlertTriangle, UserX, Copy, X, LayoutGrid, Rows3, Wallet,
@@ -95,7 +96,7 @@ function EstatePanel({ e, onClose, onEdit, onToggle, toggling }) {
   const occ = occupancy(e);
   const mgr = e.managerId;
   const phone = (mgr?.phone || '').replace(/[^\d+]/g, '');
-  const mapsUrl = e.location?.lat ? `https://www.google.com/maps/search/?api=1&query=${e.location.lat},${e.location.lng}` : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.address || '')}`;
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapsQuery(e))}`;
   return (
     <div className="card h-full flex flex-col overflow-hidden animate-fade-in">
       <div className="px-4 pt-4 pb-3 border-b border-[#F2F4F7]">
@@ -121,6 +122,9 @@ function EstatePanel({ e, onClose, onEdit, onToggle, toggling }) {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="rounded-lg overflow-hidden border border-[#E4E7EC]">
+          <GoogleMapEmbed key={e._id} estate={e} height={150} zoom={e.location?.lat ? 16 : 14} />
+        </div>
         <div className="grid grid-cols-2 gap-2">
           <Metric icon={UsersIcon} label="Residents" value={e.counts?.residents ?? 0} tone="#059669" />
           <Metric icon={HomeIcon} label="Units" value={e.counts?.units ?? 0} sub={e.unitCount ? `${e.unitCount} planned` : null} tone="#2E90FA" />

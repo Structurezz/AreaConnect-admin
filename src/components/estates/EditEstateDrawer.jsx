@@ -51,33 +51,37 @@ function Row({ label, hint, children, wide }) {
 }
 
 // Click or drag to place the estate's pin
+const PIN_ICON = L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 30],
+  html: '<svg width="30" height="30" viewBox="0 0 24 24" fill="#059669" stroke="#fff" stroke-width="1.5"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6" fill="#fff"/></svg>' });
+
 function PinPicker({ pin, onChange }) {
   const el = useRef(null), map = useRef(null), marker = useRef(null);
+  const changeRef = useRef(onChange); changeRef.current = onChange;
+
+  const ensureMarker = (ll) => {
+    if (!marker.current) {
+      marker.current = L.marker(ll, { icon: PIN_ICON, draggable: true }).addTo(map.current);
+      marker.current.on('dragend', () => { const p = marker.current.getLatLng(); changeRef.current({ lat: p.lat, lng: p.lng }); });
+    } else marker.current.setLatLng(ll);
+  };
+
   useEffect(() => {
     const start = pin ? [pin.lat, pin.lng] : [6.5244, 3.3792];
-    const m = L.map(el.current, { scrollWheelZoom: false }).setView(start, pin ? 16 : 11);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 19 }).addTo(m);
-    const icon = L.divIcon({ className: '', iconSize: [30, 30], iconAnchor: [15, 30],
-      html: '<svg width="30" height="30" viewBox="0 0 24 24" fill="#059669" stroke="#fff" stroke-width="1.5"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.6" fill="#fff"/></svg>' });
-    if (pin) marker.current = L.marker(start, { icon, draggable: true }).addTo(m);
-    const place = (ll) => {
-      if (!marker.current) marker.current = L.marker(ll, { icon, draggable: true }).addTo(m);
-      else marker.current.setLatLng(ll);
-      marker.current.off('dragend').on('dragend', () => { const p = marker.current.getLatLng(); onChange({ lat: p.lat, lng: p.lng }); });
-      onChange({ lat: ll.lat, lng: ll.lng });
-    };
-    if (marker.current) marker.current.on('dragend', () => { const p = marker.current.getLatLng(); onChange({ lat: p.lat, lng: p.lng }); });
-    m.on('click', (ev) => place(ev.latlng));
-    map.current = m;
-    setTimeout(() => m.invalidateSize(), 250);
-    return () => m.remove();
+    map.current = L.map(el.current, { scrollWheelZoom: false }).setView(start, pin ? 17 : 11);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap', maxZoom: 19 }).addTo(map.current);
+    if (pin) ensureMarker(start);
+    map.current.on('click', (ev) => { ensureMarker(ev.latlng); changeRef.current({ lat: ev.latlng.lat, lng: ev.latlng.lng }); });
+    setTimeout(() => map.current?.invalidateSize(), 250);
+    return () => { map.current.remove(); map.current = null; marker.current = null; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (pin && marker.current) { marker.current.setLatLng([pin.lat, pin.lng]); map.current?.panTo([pin.lat, pin.lng]); }
+    if (!pin || !map.current) return;
+    ensureMarker([pin.lat, pin.lng]);
+    if (!map.current.getBounds().pad(-0.2).contains([pin.lat, pin.lng])) map.current.setView([pin.lat, pin.lng], 17);
   }, [pin?.lat, pin?.lng]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return <div ref={el} className="h-[240px] rounded-xl border border-[#E4E7EC] overflow-hidden" style={{ isolation: 'isolate' }} />;
+  return <div ref={el} className="h-[260px] rounded-xl border border-[#E4E7EC] overflow-hidden" style={{ isolation: 'isolate' }} />;
 }
 
 /**
@@ -89,6 +93,8 @@ export default function EditEstateDrawer({ estate, open, onClose, onSaved }) {
   const [initial, setInitial] = useState(null);
   const [active, setActive] = useState('details');
   const [saving, setSaving] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [match, setMatch] = useState('');
   const bodyRef = useRef(null);
 
   useEffect(() => {
@@ -113,6 +119,19 @@ export default function EditEstateDrawer({ estate, open, onClose, onSaved }) {
     const top = body.getBoundingClientRect().top;
     const cur = [...SECTIONS].reverse().find((s) => (body.querySelector(`#sec-${s.id}`)?.getBoundingClientRect().top ?? 1e9) - top < 80);
     if (cur && cur.id !== active) setActive(cur.id);
+  };
+
+  const locate = async () => {
+    if (!form.address.trim()) return toast.error('Enter the street address first');
+    setLocating(true);
+    try {
+      const { data } = await estateAPI.geocodePreview({ address: form.address, city: form.city, state: form.state });
+      set('pin', { lat: data.data.lat, lng: data.data.lng });
+      setMatch(data.data.formattedAddress);
+    } catch (err) {
+      setMatch('');
+      toast.error(err.response?.data?.message || 'Couldn’t find that address — drop the pin on the map instead');
+    } finally { setLocating(false); }
   };
 
   const save = async () => {
@@ -189,8 +208,15 @@ export default function EditEstateDrawer({ estate, open, onClose, onSaved }) {
             <h3 className="text-[14px] font-semibold text-[#101828]">Location</h3>
             <p className="text-[12.5px] text-[#667085]">Used for the platform map, guard directions and visitor passes.</p>
             <div className="mt-2">
-              <Row label="Street address" hint="Changing it re-places the pin automatically">
-                <input className="input-field" value={form.address} onChange={(e) => set('address', e.target.value)} />
+              <Row label="Street address" hint="Include landmarks, e.g. “off Bode Thomas”">
+                <div className="flex gap-2">
+                  <input className="input-field flex-1" value={form.address} onChange={(e) => { set('address', e.target.value); setMatch(''); }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); locate(); } }} />
+                  <button type="button" onClick={locate} disabled={locating} className="btn-outline whitespace-nowrap">
+                    <Crosshair size={14} className={locating ? 'animate-spin' : ''} /> {locating ? 'Finding…' : 'Find on map'}
+                  </button>
+                </div>
+                {match && <p className="mt-1.5 text-[12px] text-[#067647] flex items-center gap-1"><Check size={12} /> Google matched: {match}</p>}
               </Row>
               <Row label="City & state">
                 <div className="grid grid-cols-2 gap-2">
@@ -201,7 +227,7 @@ export default function EditEstateDrawer({ estate, open, onClose, onSaved }) {
                   </select>
                 </div>
               </Row>
-              <Row label="Map pin" hint="Click the map or drag the pin to the estate gate" wide>
+              <Row label="Map pin" hint="Use “Find on map”, then click the map or drag the pin to the exact gate" wide>
                 <PinPicker pin={form.pin} onChange={(p) => set('pin', p)} />
                 <div className="mt-2 flex flex-wrap items-center gap-3 text-[12px]">
                   <span className="inline-flex items-center gap-1.5 font-mono text-[#475467]"><Crosshair size={12} />{form.pin ? `${form.pin.lat.toFixed(5)}, ${form.pin.lng.toFixed(5)}` : 'No pin yet'}</span>
