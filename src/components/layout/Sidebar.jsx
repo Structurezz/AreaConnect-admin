@@ -2,7 +2,7 @@ import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
   LayoutDashboard, Building2, LogOut, CreditCard, Users, BarChart2, TrendingUp, Settings, AlertTriangle,
-  Presentation, Megaphone, Mail, Music, Radio, Eye, Wallet, Receipt, PhoneCall, Gift, ShoppingBag, Rocket, Landmark,
+  Presentation, Megaphone, Music, Radio, Eye, Wallet, Receipt, PhoneCall, Gift, ShoppingBag, Rocket, Landmark,
 } from 'lucide-react';
 
 export const NAV = [
@@ -37,7 +37,6 @@ export const NAV = [
     section: 'Growth',
     links: [
       { to: '/campaigns',       icon: Megaphone,    label: 'Campaigns' },
-      { to: '/email-campaigns', icon: Mail,         label: 'Email campaigns' },
       { to: '/pitch-deck',      icon: Presentation, label: 'Pitch deck & leads' },
     ],
   },

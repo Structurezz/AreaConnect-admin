@@ -249,6 +249,12 @@ export const campaignAPI = {
   remove:    (id)     => api.delete(`/campaigns/${id}`),
   sendEmail: (id)     => api.post(`/campaigns/${id}/send-email`),
   generateEmail: (payload) => api.post('/campaigns/generate-email', payload),
+  overview:  (days)   => api.get('/campaigns/overview', { params: { days } }),
+  estimate:  (audience) => api.post('/campaigns/estimate', { audience }),
+  stats:     (id)     => api.get(`/campaigns/${id}/stats`),
+  duplicate: (id)     => api.post(`/campaigns/${id}/duplicate`),
+  testEmail: (id, to) => api.post(`/campaigns/${id}/test-email`, { to }),
+  sendPush:  (id)     => api.post(`/campaigns/${id}/send-push`),
 };
 
 // Calls — AreaConnect admins call estate managers / guards (free). Admins

@@ -23,7 +23,6 @@ import Operations from './pages/Operations';
 import PitchDeck from './pages/PitchDeck';
 import Campaigns from './pages/Campaigns';
 import CampaignBuilder from './pages/CampaignBuilder';
-import EmailCampaigns from './pages/EmailCampaigns';
 import DefaultTracks from './pages/DefaultTracks';
 import PodcastHub from './pages/PodcastHub';
 import VisitorInsights from './pages/VisitorInsights';
@@ -71,7 +70,7 @@ function AppRoutes() {
       <Route path="/campaigns" element={<RequireAdmin><Campaigns /></RequireAdmin>} />
       <Route path="/campaigns/new" element={<RequireAdmin><CampaignBuilder /></RequireAdmin>} />
       <Route path="/campaigns/:id" element={<RequireAdmin><CampaignBuilder /></RequireAdmin>} />
-      <Route path="/email-campaigns" element={<RequireAdmin><EmailCampaigns /></RequireAdmin>} />
+      <Route path="/email-campaigns" element={<Navigate to="/campaigns?channel=email" replace />} />
       <Route path="/lounge-defaults" element={<RequireAdmin><DefaultTracks /></RequireAdmin>} />
       <Route path="/podcast" element={<RequireAdmin><PodcastHub /></RequireAdmin>} />
       <Route path="/visitor-insights" element={<RequireAdmin><VisitorInsights /></RequireAdmin>} />
