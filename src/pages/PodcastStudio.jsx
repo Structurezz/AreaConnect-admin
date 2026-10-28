@@ -211,7 +211,7 @@ function InviteModal({ show, onInvited, onClose }) {
 // Live Studio — the broadcasting view
 // ─────────────────────────────────────────────────────────────────────────────
 
-function LiveStudio({ show, onEnded, onBack }) {
+export function LiveStudio({ show, onEnded, onBack }) {
   const { user } = useAuth();
   const { subscribe, emit } = useSocket() || {};
   const [elapsed, setElapsed] = useState(0);
@@ -336,7 +336,13 @@ function LiveStudio({ show, onEnded, onBack }) {
   const uploadEpisode = async (blob) => {
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
     const preset    = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-    if (!cloudName || !preset || !blob) return '';
+    if (!blob) return '';
+    // No Cloudinary configured for the admin build — store on our own server instead
+    if (!cloudName || !preset) {
+      const file = new File([blob], `areaconnect-fm-${Date.now()}.webm`, { type: blob.type || 'audio/webm' });
+      const { data } = await podcastAPI.upload(file);
+      return data.data.url;
+    }
     const form = new FormData();
     form.append('file', blob);
     form.append('upload_preset', preset);

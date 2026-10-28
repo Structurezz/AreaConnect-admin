@@ -197,13 +197,27 @@ export const podcastAPI = {
   getShow:      (id) => api.get(`/podcast/shows/${id}`),
   createShow:   (data) => api.post('/podcast/shows', data),
   updateShow:   (id, data) => api.patch(`/podcast/shows/${id}`, data),
+  deleteShow:   (id) => api.delete(`/podcast/shows/${id}`),
+  duplicateShow:(id) => api.post(`/podcast/shows/${id}/duplicate`),
+  remind:       (id, data) => api.post(`/podcast/shows/${id}/remind`, data || {}),
   goLive:       (id) => api.post(`/podcast/shows/${id}/go-live`),
   endLive:      (id, data) => api.post(`/podcast/shows/${id}/end`, data),
   invite:       (id, data) => api.post(`/podcast/shows/${id}/invite`, data),
   revokeInvite: (id, inviteId) => api.post(`/podcast/shows/${id}/invites/${inviteId}/revoke`),
+  resendInvite: (id, inviteId) => api.post(`/podcast/shows/${id}/invites/${inviteId}/resend`),
   getLive:      () => api.get('/podcast/live'),
   getUpcoming:  () => api.get('/podcast/upcoming'),
   listEpisodes: () => api.get('/podcast/episodes'),
+  // Admin hub
+  stats:        () => api.get('/podcast/admin/stats'),
+  people:       (params) => api.get('/podcast/admin/people', { params }),
+  estates:      () => api.get('/podcast/admin/estates'),
+  guests:       () => api.get('/podcast/admin/guests'),
+  adminEpisodes:(params) => api.get('/podcast/admin/episodes', { params }),
+  createEpisode:(data) => api.post('/podcast/admin/episodes', data),
+  updateEpisode:(id, data) => api.patch(`/podcast/admin/episodes/${id}`, data),
+  deleteEpisode:(id) => api.delete(`/podcast/admin/episodes/${id}`),
+  upload:       (file, onProgress) => { const f = new FormData(); f.append('file', file); return api.post('/podcast/admin/upload', f, { onUploadProgress: (e) => onProgress?.(e.total ? Math.round((e.loaded / e.total) * 100) : 0) }); },
 };
 
 // Admin — manager withdrawal requests

@@ -25,7 +25,7 @@ import Campaigns from './pages/Campaigns';
 import CampaignBuilder from './pages/CampaignBuilder';
 import EmailCampaigns from './pages/EmailCampaigns';
 import DefaultTracks from './pages/DefaultTracks';
-import PodcastStudio from './pages/PodcastStudio';
+import PodcastHub from './pages/PodcastHub';
 import VisitorInsights from './pages/VisitorInsights';
 import HostStudioResumePill from './components/HostStudioResumePill';
 import MarketplaceRevenue from './pages/MarketplaceRevenue';
@@ -73,7 +73,7 @@ function AppRoutes() {
       <Route path="/campaigns/:id" element={<RequireAdmin><CampaignBuilder /></RequireAdmin>} />
       <Route path="/email-campaigns" element={<RequireAdmin><EmailCampaigns /></RequireAdmin>} />
       <Route path="/lounge-defaults" element={<RequireAdmin><DefaultTracks /></RequireAdmin>} />
-      <Route path="/podcast" element={<RequireAdmin><PodcastStudio /></RequireAdmin>} />
+      <Route path="/podcast" element={<RequireAdmin><PodcastHub /></RequireAdmin>} />
       <Route path="/visitor-insights" element={<RequireAdmin><VisitorInsights /></RequireAdmin>} />
       <Route path="/withdrawals" element={<Navigate to="/finance?tab=payouts" replace />} />
       <Route path="/marketplace" element={<RequireAdmin><MarketplaceRevenue /></RequireAdmin>} />
