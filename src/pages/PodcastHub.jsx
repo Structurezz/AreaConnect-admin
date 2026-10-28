@@ -114,13 +114,14 @@ export default function PodcastHub() {
               </>
             ) : (
               <>
-                <h2 className="mt-3 text-[24px] font-semibold tracking-tight" style={{ color: '#fff' }}>{next ? 'Next on air' : 'The station is quiet'}</h2>
-                <p className="text-[13px] text-white/60">{next ? `${next.title} · ${when(next.scheduledAt)}` : 'Schedule a show for residents across every estate.'}</p>
+                <h2 className="mt-3 text-[24px] font-semibold tracking-tight" style={{ color: '#fff' }}>{next ? (next.overdue ? 'Ready to go live' : 'Next on air') : 'The station is quiet'}</h2>
+                <p className="text-[13px] text-white/60">{next ? `${next.title} · ${next.overdue ? `was due ${formatDistanceToNowStrict(new Date(next.scheduledAt))} ago — go live when ready` : when(next.scheduledAt)}` : 'Schedule a show for residents across every estate.'}</p>
               </>
             )}
           </div>
           <div className="flex flex-wrap gap-2">
             {live && <button onClick={() => setStudio(live)} className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-[#D92D20] text-[13px] font-semibold hover:bg-[#B42318]"><Radio size={15} /> Open live studio</button>}
+            {!live && next?.overdue && <button onClick={() => setOpenShowId(next._id)} className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-[#D92D20] text-[13px] font-semibold hover:bg-[#B42318]"><Radio size={15} /> Open {next.title.length > 22 ? 'show' : `“${next.title}”`}</button>}
             <button onClick={() => setEditEpisode({})} className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-white/10 border border-white/15 text-[13px] font-semibold hover:bg-white/15"><Upload size={15} /> Upload episode</button>
             <button onClick={() => setEditShow({})} className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-white text-[#1E1240] text-[13px] font-semibold hover:bg-slate-100"><Plus size={15} /> New show</button>
           </div>
@@ -161,14 +162,17 @@ export default function PodcastHub() {
                 {stats.upcoming.map((s) => (
                   <button key={s._id} onClick={() => setOpenShowId(s._id)} className="w-full flex items-center gap-3 px-5 py-3 text-left hover:bg-[#FCFCFD]">
                     <span className="w-14 text-center rounded-xl border border-[#EAECF0] py-1.5 leading-none flex-shrink-0">
-                      <span className="block text-[10px] uppercase font-semibold text-[#7A5AF8]">{s.scheduledAt ? format(new Date(s.scheduledAt), 'MMM') : '—'}</span>
+                      <span className={`block text-[10px] uppercase font-semibold ${s.overdue ? 'text-[#D92D20]' : 'text-[#7A5AF8]'}`}>{s.scheduledAt ? format(new Date(s.scheduledAt), 'MMM') : 'TBC'}</span>
                       <span className="block text-[18px] font-semibold text-[#101828]">{s.scheduledAt ? format(new Date(s.scheduledAt), 'd') : ''}</span>
                       <span className="block text-[10px] text-[#98A2B3]">{s.scheduledAt ? format(new Date(s.scheduledAt), 'HH:mm') : ''}</span>
                     </span>
                     <Cover src={s.coverImage} title={s.title} size={44} />
                     <div className="min-w-0 flex-1">
                       <p className="text-[13.5px] font-semibold text-[#101828] truncate">{s.title}</p>
-                      <div className="flex items-center gap-2 mt-0.5"><CategoryPill v={s.category} /><span className="text-[11.5px] text-[#98A2B3]">{(s.guests || []).filter((g) => g.status !== 'revoked').length} guests · {s.audience?.scope === 'estates' ? `${s.audience.estateIds?.length || 0} estates` : 'All estates'}</span></div>
+                      <div className="flex items-center gap-2 mt-0.5 flex-wrap"><CategoryPill v={s.category} />
+                        {s.overdue && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#FEF3F2] text-[#B42318]">Should have started {formatDistanceToNowStrict(new Date(s.scheduledAt))} ago</span>}
+                        {!s.scheduledAt && <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-[#FFFAEB] text-[#B54708]">Date not set</span>}
+                        <span className="text-[11.5px] text-[#98A2B3]">{(s.guests || []).filter((g) => g.status !== 'revoked').length} guests · {s.audience?.scope === 'estates' ? `${s.audience.estateIds?.length || 0} estates` : 'All estates'}</span></div>
                     </div>
                     <ArrowRight size={15} className="text-[#D0D5DD]" />
                   </button>
