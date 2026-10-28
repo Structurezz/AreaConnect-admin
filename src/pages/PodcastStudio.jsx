@@ -312,17 +312,27 @@ export function LiveStudio({ show, onEnded, onBack }) {
     return () => clearInterval(id);
   }, []);
 
-  // Mic + recorder
+  // Mic + recorder — host mic and every guest are mixed into one recording
+  const chunksRef = useRef([]);
+  const mixRef = useRef(null); // { ctx, dest, sources: Map<stream, node> }
   useEffect(() => {
     (async () => {
       try {
         const stream = await live.getLocalStream();
         try {
+          let recStream = stream;
+          try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const dest = ctx.createMediaStreamDestination();
+            const src = ctx.createMediaStreamSource(stream);
+            src.connect(dest);
+            mixRef.current = { ctx, dest, sources: new Map([[stream, src]]) };
+            recStream = dest.stream;
+          } catch (e) { console.warn('mixing unavailable — recording host mic only', e); }
           const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm';
-          const r = new MediaRecorder(stream, { mimeType: mime, audioBitsPerSecond: 96000 });
-          const chunks = [];
-          r.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
-          r.onstop = () => { voiceBlobRef.current = new Blob(chunks, { type: 'audio/webm' }); };
+          const r = new MediaRecorder(recStream, { mimeType: mime, audioBitsPerSecond: 96000 });
+          chunksRef.current = [];
+          r.ondataavailable = (e) => { if (e.data && e.data.size) chunksRef.current.push(e.data); };
           r.start(1000);
           recorderRef.current = r;
         } catch (e) { console.warn('record unsupported', e); }
@@ -330,8 +340,20 @@ export function LiveStudio({ show, onEnded, onBack }) {
         toast.error('Mic access required to host');
       }
     })();
+    return () => { try { mixRef.current?.ctx.close(); } catch { /* ignore */ } };
     // eslint-disable-next-line
   }, []);
+
+  // Add each guest's voice to the recording as they join
+  useEffect(() => {
+    const mix = mixRef.current;
+    if (!mix) return;
+    const streams = live.remoteStreams instanceof Map ? [...live.remoteStreams.values()] : Object.values(live.remoteStreams || {});
+    streams.forEach((st) => {
+      if (!st || mix.sources.has(st) || !st.getAudioTracks?.().length) return;
+      try { const node = mix.ctx.createMediaStreamSource(st); node.connect(mix.dest); mix.sources.set(st, node); } catch { /* ignore */ }
+    });
+  }, [live.remoteStreams]);
 
   const uploadEpisode = async (blob) => {
     const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
@@ -358,13 +380,21 @@ export function LiveStudio({ show, onEnded, onBack }) {
     setEnding(true);
     try {
       if (recorderRef.current && recorderRef.current.state !== 'inactive') {
-        await new Promise(r => { recorderRef.current.onstop = () => { voiceBlobRef.current = new Blob(recorderRef.current._chunks || [], { type: 'audio/webm' }); r(); }; recorderRef.current.stop(); });
+        await new Promise(r => { recorderRef.current.onstop = () => r(); recorderRef.current.stop(); });
       }
-      const blob = voiceBlobRef.current;
+      const blob = chunksRef.current.length ? new Blob(chunksRef.current, { type: 'audio/webm' }) : null;
+      voiceBlobRef.current = blob;
       let audioUrl = '';
-      if (blob) {
+      if (blob && blob.size > 0) {
         try { audioUrl = await uploadEpisode(blob); }
-        catch { toast('Audio upload failed — show saved without archive', { icon: '⚠️' }); }
+        catch (err) {
+          // Never lose a recording: save it to this computer so it can be uploaded later
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob); a.download = `${(show.title || 'areaconnect-fm').replace(/[^\w-]+/g, '-')}-${Date.now()}.webm`; a.click();
+          toast(`Couldn't upload the recording (${err.response?.data?.message || err.message || 'network error'}). It was downloaded to this computer — upload it from Episodes.`, { icon: '⚠️', duration: 12000 });
+        }
+      } else {
+        toast('No audio was recorded for this show', { icon: '⚠️' });
       }
       await podcastAPI.endLive(show._id, {
         audioUrl,
