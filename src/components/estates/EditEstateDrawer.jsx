@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { X, Building2, MapPin, Phone, SlidersHorizontal, StickyNote, Power, Copy, Crosshair, RotateCcw, Check } from 'lucide-react';
 import { estateAPI } from '../../api';
 import { NG_STATES, ESTATE_TYPES } from '../onboarding/shared';
+import { SiteTypePicker, siteTypeOf } from './siteTypes';
 
 const SECTIONS = [
   { id: 'details',  label: 'Details',  icon: Building2 },
@@ -21,7 +22,7 @@ const SETTINGS = [
 ];
 
 const fromEstate = (e) => ({
-  name: e.name || '', estateType: e.estateType || '', unitCount: e.unitCount || '',
+  name: e.name || '', siteType: siteTypeOf(e), estateType: e.estateType || '', unitCount: e.unitCount || '',
   address: e.address || '', city: e.city || '', state: e.state || '',
   contactPhone: e.contactPhone || '', contactEmail: e.contactEmail || '', adminNotes: e.adminNotes || '',
   settings: { requireVisitorApproval: false, marketplaceApproval: false, allowGuestChat: true, ...(e.settings || {}) },
@@ -187,6 +188,12 @@ export default function EditEstateDrawer({ estate, open, onClose, onSaved }) {
             <div className="mt-2">
               <Row label="Estate name" hint="Shown across every app">
                 <input className="input-field" value={form.name} onChange={(e) => set('name', e.target.value)} />
+              </Row>
+              <Row label="Site type" hint="Sets the words and default features every app uses">
+                <SiteTypePicker value={form.siteType} onChange={(v) => set('siteType', v)} />
+                {form.siteType !== initial.siteType && (
+                  <p className="mt-1.5 text-[12px] text-[#B54708]">Members, guards and the manager will see the new wording and default modules once saved.</p>
+                )}
               </Row>
               <Row label="Estate type">
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">

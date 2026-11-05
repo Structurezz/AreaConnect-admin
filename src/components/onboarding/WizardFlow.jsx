@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { onboardingAPI, planAPI } from '../../api';
 import { Field, Segmented, PlanPicker, CopyButton, NG_STATES, ESTATE_TYPES, TRIAL_OPTIONS, naira } from './shared';
+import { SiteTypePicker, siteTypeInfo } from '../estates/siteTypes';
 
 const STEPS = [
   { key: 'profile',  label: 'Estate profile',   icon: Building2 },
@@ -18,7 +19,7 @@ const STEPS = [
 
 const EMPTY = {
   estate: {
-    name: '', estateType: 'gated', unitCount: '', address: '', city: '', state: 'Lagos',
+    name: '', siteType: 'estate', estateType: 'gated', unitCount: '', address: '', city: '', state: 'Lagos',
     contactPhone: '', contactEmail: '', adminNotes: '',
     settings: { requireVisitorApproval: false, marketplaceApproval: false, allowGuestChat: true },
   },
@@ -231,6 +232,11 @@ export default function WizardFlow({ onDone }) {
               <Field label="Estate name" required className="sm:col-span-2">
                 <input className="input-field" value={e.name} onChange={(ev) => set('estate', 'name', ev.target.value)} placeholder="e.g. Pilot Crescent Estate" autoFocus />
               </Field>
+              <div className="sm:col-span-2">
+                <p className="field-label">Site type</p>
+                <SiteTypePicker value={e.siteType} onChange={(v) => set('estate', 'siteType', v)} />
+                <span className="field-hint">Estate, school, hotel, industrial site or hospital — sets the words and default features the apps use.</span>
+              </div>
               <Field label="Estate type">
                 <select className="input-field" value={e.estateType} onChange={(ev) => set('estate', 'estateType', ev.target.value)}>
                   {ESTATE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
@@ -333,6 +339,7 @@ export default function WizardFlow({ onDone }) {
                 <p className="text-[12px] font-semibold text-[#344054] mb-1 flex items-center gap-1.5"><Building2 size={13} /> Estate</p>
                 <dl>
                   <ReviewRow label="Name" value={e.name} />
+                  <ReviewRow label="Site type" value={siteTypeInfo(e.siteType).label} />
                   <ReviewRow label="Type" value={ESTATE_TYPES.find((t) => t.value === e.estateType)?.label} />
                   <ReviewRow label="Units" value={e.unitCount} />
                   <ReviewRow label="Address" value={e.address} />

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { estateAPI } from '../api';
 import { Link, useNavigate } from 'react-router-dom';
 import EditEstateDrawer from '../components/estates/EditEstateDrawer';
+import { SITE_TYPES, SiteTypeBadge, siteTypeOf } from '../components/estates/siteTypes';
 import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
 import EstatesMap, { STATUS_COLOR, estateTone } from '../components/estates/EstatesMap';
@@ -112,6 +113,7 @@ function EstatePanel({ e, onClose, onEdit, onToggle, toggling }) {
                 {e.estateCode} <Copy size={10} />
               </button>
               <ToneBadge e={e} />
+              <SiteTypeBadge type={siteTypeOf(e)} />
             </div>
           </div>
           <button onClick={onClose} className="p-1 rounded-md text-[#98A2B3] hover:text-[#101828] hover:bg-[#F2F4F7]" aria-label="Close"><X size={16} /></button>
@@ -184,6 +186,7 @@ function EstatePanel({ e, onClose, onEdit, onToggle, toggling }) {
           <p className="text-[11.5px] font-semibold uppercase tracking-wider text-[#98A2B3] mb-2">Profile</p>
           <dl className="rounded-lg border border-[#E4E7EC] divide-y divide-[#F2F4F7] text-[12.5px]">
             {[
+              ['Site type', <SiteTypeBadge type={siteTypeOf(e)} />],
               ['Type', TYPE_LABEL[e.estateType] || '—'],
               ['Location', place(e) || '—'],
               ['Office', [e.contactPhone, e.contactEmail].filter(Boolean).join(' · ') || '—'],
@@ -266,7 +269,10 @@ function EstateCard({ e, onSelect, selected }) {
           <p className="text-[14px] font-semibold text-[#101828] truncate">{e.name}</p>
           <p className="text-[12px] text-[#667085] truncate flex items-center gap-1"><MapPin size={11} />{place(e) || e.address}</p>
         </div>
-        <span className="font-mono text-[11px] text-[#98A2B3]">{e.estateCode}</span>
+        <div className="flex flex-col items-end gap-1">
+          <span className="font-mono text-[11px] text-[#98A2B3]">{e.estateCode}</span>
+          <SiteTypeBadge type={siteTypeOf(e)} />
+        </div>
       </div>
       <div className="mt-3 grid grid-cols-4 gap-1 text-center">
         {[['Residents', e.counts?.residents], ['Units', e.counts?.units], ['Visits 7d', e.counts?.visitorsWeek], ['Alerts', e.counts?.openAlerts]].map(([l, v]) => (
@@ -300,6 +306,7 @@ export default function AdminEstates() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [subFilter, setSubFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
+  const [siteFilter, setSiteFilter] = useState('all');
   const [sortBy, setSortBy] = useState('new');
   const [tone, setTone] = useState(null);
   const [view, setView] = useState(() => { try { return localStorage.getItem('ac_estates_view') || 'table'; } catch { return 'table'; } });
@@ -347,6 +354,7 @@ export default function AdminEstates() {
     if (subFilter === 'expired' && !['expired', 'suspended', 'cancelled'].includes(sub?.status || '')) return false;
     if (subFilter === 'nosub' && sub) return false;
     if (planFilter !== 'all' && planName(sub) !== planFilter) return false;
+    if (siteFilter !== 'all' && siteTypeOf(e) !== siteFilter) return false;
     if (!search) return true;
     const q = search.toLowerCase();
     return [e.name, e.estateCode, e.address, e.city, e.state, e.managerId?.name, e.managerId?.email].some((v) => (v || '').toLowerCase().includes(q));
@@ -357,7 +365,7 @@ export default function AdminEstates() {
     if (sortBy === 'value') return monthlyValue(b) - monthlyValue(a);
     if (sortBy === 'name') return (a.name || '').localeCompare(b.name || '');
     return new Date(b.createdAt) - new Date(a.createdAt);
-  }), [estates, statusFilter, tone, subFilter, planFilter, search, sortBy]);
+  }), [estates, statusFilter, tone, subFilter, planFilter, siteFilter, search, sortBy]);
 
   const counts = {
     all: estates.length,
@@ -371,7 +379,8 @@ export default function AdminEstates() {
     visitors: t.visitors + (e.counts?.visitorsWeek || 0), alerts: t.alerts + (e.counts?.openAlerts || 0),
     mrr: t.mrr + monthlyValue(e), trials: t.trials + (e.subscription?.status === 'trial' ? 1 : 0),
   }), { residents: 0, units: 0, visitors: 0, alerts: 0, mrr: 0, trials: 0 });
-  const hasFilters = search || statusFilter !== 'all' || subFilter !== 'all' || planFilter !== 'all' || tone;
+  const hasFilters = search || statusFilter !== 'all' || subFilter !== 'all' || planFilter !== 'all' || siteFilter !== 'all' || tone;
+  const siteCounts = estates.reduce((m, e) => { const t = siteTypeOf(e); m[t] = (m[t] || 0) + 1; return m; }, {});
   const focused = estates.find((e) => e._id === focusId) || null;
   const select = (e) => setFocusId((id) => (id === e._id ? null : e._id));
 
@@ -444,6 +453,10 @@ export default function AdminEstates() {
             <div className="tabs overflow-x-auto">
               {SUB_FILTERS.map((f) => <button key={f.key} className={`tab ${subFilter === f.key ? 'active' : ''}`} onClick={() => setSubFilter(f.key)}>{f.label}</button>)}
             </div>
+            <select className="input-field !w-auto !h-9 !py-0" value={siteFilter} onChange={(e) => setSiteFilter(e.target.value)} aria-label="Filter by site type">
+              <option value="all">All site types</option>
+              {SITE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label} ({siteCounts[t.value] || 0})</option>)}
+            </select>
             <select className="input-field !w-auto !h-9 !py-0" value={planFilter} onChange={(e) => setPlanFilter(e.target.value)}>
               <option value="all">All plans</option>
               {planOptions.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -457,7 +470,7 @@ export default function AdminEstates() {
               <option value="value">Highest value</option>
             </select>
             {hasFilters && (
-              <button className="btn-ghost text-[12px]" onClick={() => { setSearch(''); setStatusFilter('all'); setSubFilter('all'); setPlanFilter('all'); setTone(null); }}>Clear filters</button>
+              <button className="btn-ghost text-[12px]" onClick={() => { setSearch(''); setStatusFilter('all'); setSubFilter('all'); setPlanFilter('all'); setSiteFilter('all'); setTone(null); }}>Clear filters</button>
             )}
           </div>
         </div>
@@ -495,7 +508,7 @@ export default function AdminEstates() {
                           <span className="w-8 h-8 rounded-lg flex items-center justify-center text-[12.5px] font-semibold text-white flex-shrink-0" style={{ background: STATUS_COLOR[estateTone(e)] }}>{e.name?.[0]?.toUpperCase()}</span>
                           <div className="min-w-0">
                             <div className="cell-strong truncate max-w-[200px]">{e.name}</div>
-                            <div className="font-mono text-[11px] text-[#98A2B3]">{e.estateCode}</div>
+                            <div className="flex items-center gap-1.5"><span className="font-mono text-[11px] text-[#98A2B3]">{e.estateCode}</span><SiteTypeBadge type={siteTypeOf(e)} className="!text-[10px] !leading-4" /></div>
                           </div>
                         </div>
                       </td>

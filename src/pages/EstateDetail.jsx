@@ -7,6 +7,7 @@ import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
 import GoogleMapEmbed, { mapsQuery } from '../components/estates/GoogleMapEmbed';
 import EditEstateDrawer from '../components/estates/EditEstateDrawer';
+import { SiteTypeBadge, siteTypeOf, siteTypeInfo } from '../components/estates/siteTypes';
 import {
   Building2, MapPin, User, Hash, Users, Home, Shield,
   CheckCircle, XCircle, ArrowLeft, Edit3, Copy, Calendar,
@@ -165,6 +166,7 @@ export default function EstateDetail() {
               {estate.isActive ? <CheckCircle size={11} /> : <XCircle size={11} />}
               {estate.isActive ? 'Active' : 'Inactive'}
             </span>
+            <SiteTypeBadge type={siteTypeOf(estate)} />
             {subscription && (
               <span className={`badge ${subStyle.badge} inline-flex items-center gap-1`}>
                 <CreditCard size={11} />
@@ -265,6 +267,9 @@ export default function EstateDetail() {
             <dl className="p-5 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
               <Field label="Estate code" icon={Hash}>
                 <span className="font-mono tracking-wider font-semibold">{estate.estateCode}</span>
+              </Field>
+              <Field label="Site type" icon={siteTypeInfo(siteTypeOf(estate)).icon}>
+                <SiteTypeBadge type={siteTypeOf(estate)} />
               </Field>
               <Field label="Estate type" icon={Building2}>
                 {estate.estateType ? <span className="capitalize">{estate.estateType}</span> : <Dash />}
