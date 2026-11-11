@@ -461,7 +461,7 @@ export default function SecurityCentre({ liveFeed, reloadKey }) {
                   <span className="text-[10.5px] font-bold uppercase tracking-wider text-[#B42318]">Urgent{notice.pin ? ' · pinned' : ''}</span>
                   <p className="mt-1 text-[14px] font-semibold text-[#101828]">{notice.title}</p>
                   <p className="mt-1 text-[12.5px] text-[#475467] whitespace-pre-line">{notice.body}</p>
-                  <p className="mt-2 text-[11px] text-[#98A2B3]">From AreaConnect</p>
+                  <p className="mt-2 text-[11px] text-[#98A2B3]">From AreaConnector</p>
                 </div>
               </Section>
             )}

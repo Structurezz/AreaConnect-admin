@@ -76,7 +76,7 @@ export function LoungePreview({ content: k = {} }) {
       <div className="rounded-xl bg-white border border-[#EAECF0] overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-2">
           <span className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: t.primary }}><Megaphone size={12} color="#fff" /></span>
-          <div className="flex-1"><p className="text-[11.5px] font-semibold text-[#101828]">AreaConnect</p><p className="text-[9.5px] text-[#98A2B3]">Sponsored</p></div>
+          <div className="flex-1"><p className="text-[11.5px] font-semibold text-[#101828]">AreaConnector</p><p className="text-[9.5px] text-[#98A2B3]">Sponsored</p></div>
           <X size={12} className="text-[#98A2B3]" />
         </div>
         {k.imageUrl ? <img src={k.imageUrl} alt="" className="w-full max-h-40 object-cover" /> : (
@@ -111,14 +111,14 @@ export function PushPreview({ push = {}, content: k = {} }) {
       <div className="rounded-2xl bg-white/90 backdrop-blur p-3 flex gap-2.5">
         <span className="w-8 h-8 rounded-lg bg-[#059669] flex items-center justify-center flex-shrink-0"><ShieldCheck size={15} color="#fff" /></span>
         <div className="min-w-0 flex-1">
-          <div className="flex justify-between text-[10px] text-[#667085]"><span className="font-semibold uppercase tracking-wide">AreaConnect</span><span>now</span></div>
+          <div className="flex justify-between text-[10px] text-[#667085]"><span className="font-semibold uppercase tracking-wide">AreaConnector</span><span>now</span></div>
           <p className="text-[12.5px] font-semibold text-[#101828] leading-snug">{title}</p>
           {body && <p className="text-[11.5px] text-[#344054] leading-snug line-clamp-2">{body}</p>}
         </div>
       </div>
       <div className="rounded-xl bg-white p-2.5 flex gap-2 items-start">
         <span className="w-7 h-7 rounded-lg bg-[#ECFDF3] text-[#059669] flex items-center justify-center"><BellRing size={13} /></span>
-        <div className="min-w-0"><p className="text-[11px] font-semibold text-[#101828]">{title}</p><p className="text-[10px] text-[#667085] truncate">{body || 'In-app bell'}</p><span className="text-[9px] px-1.5 rounded-full bg-[#ECFDF3] text-[#059669] font-semibold">AreaConnect</span></div>
+        <div className="min-w-0"><p className="text-[11px] font-semibold text-[#101828]">{title}</p><p className="text-[10px] text-[#667085] truncate">{body || 'In-app bell'}</p><span className="text-[9px] px-1.5 rounded-full bg-[#ECFDF3] text-[#059669] font-semibold">AreaConnector</span></div>
       </div>
     </div>
   );
@@ -130,7 +130,7 @@ export function EmailPreview({ email = {}, content: k = {} }) {
     <div className="rounded-[14px] border border-[#E4E7EC] overflow-hidden bg-[#F2F4F7]">
       <div className="bg-white px-4 py-2.5 border-b border-[#EAECF0]">
         <p className="text-[12px] font-semibold text-[#101828] truncate">{email.subject || 'Subject line'}</p>
-        <p className="text-[11px] text-[#667085] truncate">AreaConnect · {email.preheader || 'Preview text shown in the inbox'}</p>
+        <p className="text-[11px] text-[#667085] truncate">AreaConnector · {email.preheader || 'Preview text shown in the inbox'}</p>
       </div>
       <div className="p-3">
         <div className="bg-white rounded-xl overflow-hidden">

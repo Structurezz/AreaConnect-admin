@@ -168,7 +168,7 @@ export default function Revenue() {
           <div className="relative flex items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 text-[12px] text-white/60">
-                <Landmark size={13} /> AreaConnect · Paystack NGN
+                <Landmark size={13} /> AreaConnector · Paystack NGN
                 {balance?.testMode && <span className="px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-200 text-[10.5px] font-semibold">TEST MODE</span>}
               </div>
               <p className="mt-4 text-[12.5px] text-white/70">Available balance</p>

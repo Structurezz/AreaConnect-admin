@@ -19,7 +19,7 @@ function titleFor(pathname) {
   const extra = EXTRA_TITLES.find(([re]) => re.test(pathname));
   if (extra) return [extra[1], extra[2]];
   const prefix = [...PAGES].sort((a, b) => b.to.length - a.to.length).find((p) => pathname.startsWith(p.to));
-  return prefix ? [prefix.section, prefix.label] : ['AreaConnect', 'Admin'];
+  return prefix ? [prefix.section, prefix.label] : ['AreaConnector', 'Admin'];
 }
 
 // ⌘K: jump to any page or estate

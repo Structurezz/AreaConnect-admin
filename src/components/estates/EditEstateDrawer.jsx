@@ -283,7 +283,7 @@ export default function EditEstateDrawer({ estate, open, onClose, onSaved }) {
 
           <section id="sec-notes" className="pt-8">
             <h3 className="text-[14px] font-semibold text-[#101828]">Internal notes</h3>
-            <p className="text-[12.5px] text-[#667085]">Only AreaConnect admins can see these.</p>
+            <p className="text-[12.5px] text-[#667085]">Only AreaConnector admins can see these.</p>
             <textarea className="input-field mt-3 min-h-[120px]" value={form.adminNotes} onChange={(e) => set('adminNotes', e.target.value)}
               placeholder="Agreed terms, key contacts, follow-ups…" />
           </section>

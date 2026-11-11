@@ -442,7 +442,7 @@ export function LiveStudio({ show, onEnded, onBack }) {
                   ON AIR
                 </span>
                 <span className="text-[12px] text-[#475467] tabular-nums font-medium">{fmtDur(elapsed)}</span>
-                <span className="text-[11px] text-[#98A2B3]">· AreaConnect FM</span>
+                <span className="text-[11px] text-[#98A2B3]">· AreaConnector FM</span>
               </div>
               <div className="text-[18px] font-semibold text-[#101828] tracking-tight mt-1 truncate">{show.title}</div>
               <div className="text-[13px] text-[#475467] truncate">{show.description || 'Live broadcast across all estates'}</div>
@@ -956,7 +956,7 @@ export default function PodcastStudio() {
     <div className="max-w-[1400px] mx-auto animate-fade-in">
       <PageHeader
         title="Podcast studio"
-        description="AreaConnect FM — schedule shows, invite estate reps and go live across every estate."
+        description="AreaConnector FM — schedule shows, invite estate reps and go live across every estate."
         actions={(
           <button onClick={() => setShowForm(true)} className="btn-primary">
             <Plus size={14}/> New show

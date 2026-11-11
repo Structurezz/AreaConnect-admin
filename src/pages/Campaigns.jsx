@@ -211,7 +211,7 @@ export default function Campaigns() {
 
             <div className="card p-5">
               <h3 className="text-[14px] font-semibold text-[#101828]">Goals</h3>
-              <p className="text-[12px] text-[#667085] mb-3">What your campaigns are driving across AreaConnect</p>
+              <p className="text-[12px] text-[#667085] mb-3">What your campaigns are driving across AreaConnector</p>
               {(() => {
                 const g = ov?.goals || {};
                 const max = Math.max(1, ...Object.values(g).map((x) => x.impressions));
@@ -394,7 +394,7 @@ export default function Campaigns() {
           <div className="card p-4 flex flex-wrap items-center gap-3">
             <span className="w-10 h-10 rounded-xl bg-[#ECFDF3] border border-[#ABEFC6] text-[#059669] flex items-center justify-center"><Sparkles size={17} /></span>
             <div className="flex-1 min-w-[220px]">
-              <p className="text-[14px] font-semibold text-[#101828]">Playbooks built around AreaConnect</p>
+              <p className="text-[14px] font-semibold text-[#101828]">Playbooks built around AreaConnector</p>
               <p className="text-[12.5px] text-[#667085]">Each one targets the right people, opens the right screen in the app and comes with copy you can edit.</p>
             </div>
             <button onClick={() => navigate('/campaigns/new')} className="btn-outline"><Plus size={14} /> Start from blank</button>

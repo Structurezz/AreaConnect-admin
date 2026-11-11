@@ -278,7 +278,7 @@ export default function CallCredits() {
               </div>
               <div>
                 <label className="field-label">Note to recipients (optional)</label>
-                <input value={note} onChange={(e) => setNote(e.target.value.slice(0, 200))} placeholder="e.g. Happy holidays from AreaConnect"
+                <input value={note} onChange={(e) => setNote(e.target.value.slice(0, 200))} placeholder="e.g. Happy holidays from AreaConnector"
                   className="input-field w-full" />
               </div>
 

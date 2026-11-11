@@ -31,7 +31,7 @@ export default function Analytics() {
 
   if (loading) return (
     <div className="max-w-[1400px] mx-auto pb-12">
-      <PageHeader title="Platform analytics" description="Real-time overview of the AreaConnect platform." />
+      <PageHeader title="Platform analytics" description="Real-time overview of the AreaConnector platform." />
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-4">
         {Array.from({ length: 8 }).map((_, i) => <div key={i} className="skeleton h-[104px] !rounded-xl" />)}
       </div>
@@ -94,7 +94,7 @@ export default function Analytics() {
     <div className="max-w-[1400px] mx-auto animate-fade-in pb-12">
       <PageHeader
         title="Platform analytics"
-        description="Real-time overview of the AreaConnect platform."
+        description="Real-time overview of the AreaConnector platform."
         actions={<Link to="/revenue" className="btn-outline gap-2"><BarChart2 size={14} /> Revenue report</Link>}
       />
 

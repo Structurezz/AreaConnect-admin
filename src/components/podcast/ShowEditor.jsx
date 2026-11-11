@@ -55,7 +55,7 @@ export default function ShowEditor({ show, onClose, onSaved }) {
   };
 
   return (
-    <Drawer title={show?._id ? 'Edit show' : 'New show'} subtitle="Plan an AreaConnect FM broadcast — what it is, when it airs, who hears it and how it runs." icon={Mic} onClose={onClose} width={640}
+    <Drawer title={show?._id ? 'Edit show' : 'New show'} subtitle="Plan an AreaConnector FM broadcast — what it is, when it airs, who hears it and how it runs." icon={Mic} onClose={onClose} width={640}
       footer={<>
         <span className="text-[12px] text-[#667085] mr-auto">{f.scope === 'all' ? 'All estates' : `${f.estateIds.length} estate${f.estateIds.length === 1 ? '' : 's'}`} · {total ? `${total} min planned` : `${f.durationMins} min`}</span>
         <button type="button" onClick={onClose} className="btn-outline">Cancel</button>
@@ -76,7 +76,7 @@ export default function ShowEditor({ show, onClose, onSaved }) {
             <div className="grid grid-cols-2 gap-2.5">
               <label><span className="field-label">Series <span className="text-[#98A2B3] font-normal">optional</span></span><input className="input-field" placeholder="e.g. The Estate Hour" value={f.seriesName} onChange={(e) => set('seriesName', e.target.value)} /></label>
               <label><span className="field-label">Episode no.</span><input type="number" min="0" className="input-field" value={f.episodeNumber} onChange={(e) => set('episodeNumber', e.target.value)} /></label>
-              <label><span className="field-label">Host name on air</span><input className="input-field" placeholder="AreaConnect FM" value={f.hostName} onChange={(e) => set('hostName', e.target.value)} /></label>
+              <label><span className="field-label">Host name on air</span><input className="input-field" placeholder="AreaConnector FM" value={f.hostName} onChange={(e) => set('hostName', e.target.value)} /></label>
               <label><span className="field-label">Language</span>
                 <select className="input-field" value={f.language} onChange={(e) => set('language', e.target.value)}>{['English', 'Pidgin', 'Yoruba', 'Igbo', 'Hausa'].map((l) => <option key={l}>{l}</option>)}</select>
               </label>

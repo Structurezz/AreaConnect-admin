@@ -419,7 +419,7 @@ export default function Withdrawals() {
       {/* Transfer OTP modal */}
       {otpFor && (
         <Modal onClose={() => setOtpFor(null)} title="Authorise transfer"
-          sub="Enter the OTP Paystack sent to the AreaConnect business phone/email for this transfer."
+          sub="Enter the OTP Paystack sent to the AreaConnector business phone/email for this transfer."
           footer={<>
             <button type="button" onClick={() => setOtpFor(null)} className="btn-outline">Cancel</button>
             <button onClick={confirmOtp} disabled={!otp.trim() || actingId === otpFor} className="btn-primary">

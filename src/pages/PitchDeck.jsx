@@ -18,7 +18,7 @@ const SLIDES = [
   {
     id: 1,
     type: 'cover',
-    title: 'AreaConnect',
+    title: 'AreaConnector',
     subtitle: 'Smart Estate Management Platform',
     body: 'The all-in-one platform transforming how Nigerian estates manage residents, security, payments, and community — from a single dashboard.',
     badge: 'Pitch Deck 2026',
@@ -121,7 +121,7 @@ const SLIDES = [
       { value: '4.8★',    label: 'Avg. Manager Satisfaction', icon: Star,     color: '#F59E0B' },
     ],
     testimonials: [
-      { quote: 'AreaConnect reduced our security incidents by 60% in the first month.', author: 'Estate Manager, Lekki Phase 1' },
+      { quote: 'AreaConnector reduced our security incidents by 60% in the first month.', author: 'Estate Manager, Lekki Phase 1' },
       { quote: 'Collecting levies used to take weeks. Now it\'s automated and residents get receipts instantly.', author: 'Manager, Omole Phase 2, Lagos' },
       { quote: 'The visitor QR code system is a game changer. Our guards love it.', author: 'Facility Manager, Asokoro, Abuja' },
     ],
@@ -146,7 +146,7 @@ const SLIDES = [
   {
     id: 10,
     type: 'team',
-    title: 'Why AreaConnect Wins',
+    title: 'Why AreaConnector Wins',
     subtitle: 'Unfair advantages we\'ve built',
     advantages: [
       { icon: '🇳🇬', title: 'Nigeria-first Design',  desc: 'Built for Nigerian infrastructure realities — mobile-first, works on 3G, Paystack-native' },
@@ -161,14 +161,14 @@ const SLIDES = [
     id: 11,
     type: 'cta',
     title: 'Let\'s Transform Your Estate',
-    subtitle: 'Join hundreds of Nigerian estates running on AreaConnect',
+    subtitle: 'Join hundreds of Nigerian estates running on AreaConnector',
     ctas: [
-      { label: 'Get Started', href: 'https://area-connector.areaconnect.pro/register', primary: true },
-      { label: 'Schedule a Demo',         href: 'mailto:hello@areaconnect.pro',                    primary: false },
+      { label: 'Get Started', href: 'https://areamanager.area-connector.com/register', primary: true },
+      { label: 'Schedule a Demo',         href: 'mailto:hello@area-connector.com',                    primary: false },
     ],
     contact: {
-      email: 'hello@areaconnect.pro',
-      web:   'areaconnect.pro',
+      email: 'hello@area-connector.com',
+      web:   'area-connector.com',
     },
   },
 ];
@@ -181,10 +181,10 @@ const WELCOME_SLIDES = [
   {
     id: 'w1',
     type: 'w-cover',
-    title: 'Welcome to AreaConnect',
+    title: 'Welcome to AreaConnector',
     subtitle: 'You just made your estate smarter',
     body: 'In the next few minutes you\'ll have your estate live, residents invited, and your first visitor pass issued. We\'ll be with you every step.',
-    say: '"Welcome aboard! You\'ve joined 500+ Nigerian estates running on AreaConnect. My job today is simple — get you to your first win in under 10 minutes. Ready?"',
+    say: '"Welcome aboard! You\'ve joined 500+ Nigerian estates running on AreaConnector. My job today is simple — get you to your first win in under 10 minutes. Ready?"',
     accent: '#10B981',
   },
   {
@@ -260,7 +260,7 @@ const WELCOME_SLIDES = [
       'Free training session for your committee',
     ],
     say: '"You\'re not buying software — you\'re getting a partner. I\'ll be here, your residents will love this, and if at any point this doesn\'t work for your estate, we\'ll refund you within the first 14 days. No arguments. Let\'s make this win."',
-    cta: { label: 'Book onboarding call', href: 'mailto:hello@areaconnect.pro' },
+    cta: { label: 'Book onboarding call', href: 'mailto:hello@area-connector.com' },
   },
 ];
 
@@ -776,7 +776,7 @@ export default function PitchDeck() {
     <div className="max-w-[1400px] mx-auto">
       <PageHeader
         title="Pitch deck"
-        description="AreaConnect investor deck, new-lead welcome script and prospect outreach."
+        description="AreaConnector investor deck, new-lead welcome script and prospect outreach."
         actions={activeTab === 'prospects' ? (
           <>
             <button onClick={() => setLeadPanelOpen(true)} className="btn-outline">

@@ -261,7 +261,7 @@ export const campaignAPI = {
   sendPush:  (id)     => api.post(`/campaigns/${id}/send-push`),
 };
 
-// Calls — AreaConnect admins call estate managers / guards (free). Admins
+// Calls — AreaConnector admins call estate managers / guards (free). Admins
 // aren't in an estate, so they use the /calls/admin routes.
 export const callAPI = {
   directory: () => api.get('/calls/admin/directory'),
@@ -274,7 +274,7 @@ export const callAPI = {
   decline:   (id) => api.post(`/calls/admin/${id}/end`),
 };
 
-// Bonus call credits ("airtime") granted by AreaConnect admins
+// Bonus call credits ("airtime") granted by AreaConnector admins
 export const creditAdminAPI = {
   searchUsers: (q) => api.get('/admin/credits/users', { params: { q } }),
   estates:     () => api.get('/admin/credits/estates'),

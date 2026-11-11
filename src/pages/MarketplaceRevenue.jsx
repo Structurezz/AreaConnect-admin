@@ -6,7 +6,7 @@ import { marketplaceAdminAPI } from '../api';
 import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
 
-// AreaConnect's marketplace revenue: the commission on every resident sale,
+// AreaConnector's marketplace revenue: the commission on every resident sale,
 // money held in escrow, and what is owed to sellers.
 
 const fmt = (n) => `₦${Number(n || 0).toLocaleString('en-NG', { maximumFractionDigits: 2 })}`;

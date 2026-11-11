@@ -76,7 +76,7 @@ export default function EpisodeEditor({ episode, onClose, onSaved }) {
               ))}
             </div>
             <div className="grid grid-cols-2 gap-2.5">
-              <label><span className="field-label">Host</span><input className="input-field" value={f.hostName} onChange={(e) => set('hostName', e.target.value)} placeholder="AreaConnect FM" /></label>
+              <label><span className="field-label">Host</span><input className="input-field" value={f.hostName} onChange={(e) => set('hostName', e.target.value)} placeholder="AreaConnector FM" /></label>
               <label><span className="field-label">Guests</span><input className="input-field" value={f.guestNames} onChange={(e) => set('guestNames', e.target.value)} placeholder="Comma separated" /></label>
               <label><span className="field-label">Series</span><input className="input-field" value={f.seriesName} onChange={(e) => set('seriesName', e.target.value)} /></label>
               <label><span className="field-label">Episode no.</span><input type="number" min="0" className="input-field" value={f.episodeNumber} onChange={(e) => set('episodeNumber', e.target.value)} /></label>

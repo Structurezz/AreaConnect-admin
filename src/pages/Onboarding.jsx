@@ -35,7 +35,7 @@ export default function Onboarding() {
   return (
     <div className="max-w-[1400px] mx-auto">
       <PageHeader title="Onboard sites"
-        description="Bring sites onto AreaConnect four ways — set one up in detail, import many at once, invite managers to self-serve, or extend a manager's portfolio."
+        description="Bring sites onto AreaConnector four ways — set one up in detail, import many at once, invite managers to self-serve, or extend a manager's portfolio."
         actions={<Link to="/estates" className="btn-outline" style={{ textDecoration: 'none' }}><Building2 size={14} /> All sites</Link>} />
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-6">

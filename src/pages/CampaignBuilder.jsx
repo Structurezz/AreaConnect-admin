@@ -378,7 +378,7 @@ export default function CampaignBuilder() {
 
           {/* 5. Email */}
           {form.placements.includes('email') && (
-            <Card n="5" icon={Mail} title="Email" hint="Wrapped in the AreaConnect email template. Use {{name}} for the first name."
+            <Card n="5" icon={Mail} title="Email" hint="Wrapped in the AreaConnector email template. Use {{name}} for the first name."
               right={<button type="button" onClick={() => setAiOpen(true)} className="btn-outline !h-8 text-[12.5px]"><Sparkles size={13} /> Generate</button>}>
               <label className="block"><Label count={form.email.subject.length} max={60}>Subject</Label><input value={form.email.subject} onChange={(e) => set('email.subject', e.target.value)} className="input-field" /></label>
               <label className="block mt-3"><Label count={form.email.preheader.length} max={90}>Preview text</Label><input value={form.email.preheader} onChange={(e) => set('email.preheader', e.target.value)} className="input-field" placeholder="Shown next to the subject in the inbox" /></label>
@@ -500,7 +500,7 @@ function AiDrawer({ form, setForm, onClose }) {
     try {
       const { data } = await campaignAPI.generateEmail({
         goal: `${g.label}: ${brief}`,
-        audience: app === 'estate_manager' ? 'estate managers running estates on AreaConnect' : 'residents of estates on AreaConnect',
+        audience: app === 'estate_manager' ? 'estate managers running estates on AreaConnector' : 'residents of estates on AreaConnector',
         tone, app,
         theme: form.content.theme,
         ctaText: form.content.ctaText,
@@ -528,7 +528,7 @@ function AiDrawer({ form, setForm, onClose }) {
   };
 
   return (
-    <Drawer title="Write with AI" subtitle="Grounded in what AreaConnect actually offers — no invented features or discounts." icon={Wand2} onClose={() => !busy && onClose()} width={520}
+    <Drawer title="Write with AI" subtitle="Grounded in what AreaConnector actually offers — no invented features or discounts." icon={Wand2} onClose={() => !busy && onClose()} width={520}
       footer={<>
         <span className="mr-auto" />
         <button onClick={onClose} disabled={busy} className="btn-outline">Cancel</button>

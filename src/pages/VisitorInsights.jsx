@@ -206,7 +206,7 @@ export default function VisitorInsights() {
     <div className="max-w-[1400px] mx-auto animate-fade-in pb-12">
       <PageHeader
         title="Visitor insights"
-        description="Who's visiting areaconnect.pro, in real time."
+        description="Who's visiting area-connector.com, in real time."
         actions={(
           <div className="flex items-center gap-2">
             <button

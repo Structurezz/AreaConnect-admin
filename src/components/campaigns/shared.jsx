@@ -5,7 +5,7 @@ import {
   Maximize2, PanelTop, Rss, Mail, BellRing,
 } from 'lucide-react';
 
-/* ── What a campaign is for — each maps to a real AreaConnect feature ── */
+/* ── What a campaign is for — each maps to a real AreaConnector feature ── */
 export const GOALS = [
   { v: 'onboarding',   label: 'Onboarding',       Icon: Rocket,         color: '#059669', desc: 'Welcome new members and get profiles completed' },
   { v: 'payments',     label: 'Dues & payments',  Icon: Wallet,         color: '#0E9384', desc: 'Move residents to paying dues and levies online' },
@@ -13,7 +13,7 @@ export const GOALS = [
   { v: 'security',     label: 'Security & SOS',   Icon: ShieldCheck,    color: '#D92D20', desc: 'Promote SOS alerts, safety check-ins and gate security' },
   { v: 'community',    label: 'Lounge & community', Icon: Users,        color: '#6172F3', desc: 'Grow posts, polls, events and neighbour chat' },
   { v: 'marketplace',  label: 'Marketplace',      Icon: ShoppingBag,    color: '#DD2590', desc: 'Drive listings and escrow-protected purchases' },
-  { v: 'podcast',      label: 'AreaConnect FM',   Icon: Radio,          color: '#7A5AF8', desc: 'Promote live shows and podcast episodes' },
+  { v: 'podcast',      label: 'AreaConnector FM',   Icon: Radio,          color: '#7A5AF8', desc: 'Promote live shows and podcast episodes' },
   { v: 'upgrade',      label: 'Plan upgrade',     Icon: Crown,          color: '#F79009', desc: 'Convert estate managers from trial to paid plans' },
   { v: 'referral',     label: 'Invite & referral', Icon: UserPlus,      color: '#12B76A', desc: 'Get residents to invite neighbours, managers to onboard estates' },
   { v: 'retention',    label: 'Re-engagement',    Icon: HeartHandshake, color: '#EF6820', desc: 'Win back members who have gone quiet' },
@@ -82,7 +82,7 @@ export const DESTINATIONS = {
     { v: '/safety', label: 'Safety centre' },
     { v: '/lounge', label: 'The Lounge' },
     { v: '/marketplace', label: 'Marketplace' },
-    { v: '/podcasts', label: 'AreaConnect FM' },
+    { v: '/podcasts', label: 'AreaConnector FM' },
     { v: '/events', label: 'Event board' },
     { v: '/polls', label: 'Polls & voting' },
     { v: '/neighbours', label: 'Neighbours' },
@@ -100,15 +100,15 @@ export const DESTINATIONS = {
     { v: '/guards', label: 'Security guards' },
     { v: '/team', label: 'Team' },
     { v: '/lounge', label: 'Lounge' },
-    { v: '/podcasts', label: 'AreaConnect FM' },
+    { v: '/podcasts', label: 'AreaConnector FM' },
     { v: '/marketplace', label: 'Marketplace' },
     { v: '/settings', label: 'Estate settings' },
   ],
 };
 
-/* ── Colour themes (AreaConnect-first) ── */
+/* ── Colour themes (AreaConnector-first) ── */
 export const THEMES = [
-  { name: 'AreaConnect', primaryColor: '#059669', accentColor: '#34D399', backgroundColor: '#0B1220', textColor: '#FFFFFF' },
+  { name: 'AreaConnector', primaryColor: '#059669', accentColor: '#34D399', backgroundColor: '#0B1220', textColor: '#FFFFFF' },
   { name: 'Trust blue',  primaryColor: '#2E90FA', accentColor: '#84CAFF', backgroundColor: '#0B1A33', textColor: '#FFFFFF' },
   { name: 'Security',    primaryColor: '#D92D20', accentColor: '#FDA29B', backgroundColor: '#1F0B0A', textColor: '#FFFFFF' },
   { name: 'FM purple',   primaryColor: '#7A5AF8', accentColor: '#BDB4FE', backgroundColor: '#1E1240', textColor: '#FFFFFF' },
@@ -116,14 +116,14 @@ export const THEMES = [
   { name: 'Light',       primaryColor: '#059669', accentColor: '#12B76A', backgroundColor: '#ECFDF3', textColor: '#053321' },
 ];
 
-/* ── Playbooks: ready-made campaigns for what AreaConnect actually does ── */
+/* ── Playbooks: ready-made campaigns for what AreaConnector actually does ── */
 const P = (o) => ({ status: 'draft', priority: 2, frequency: 'until_dismissed', ...o });
 export const PLAYBOOKS = [
   P({ key: 'welcome', goal: 'onboarding', name: 'Welcome new residents', why: 'First-week residents who finish their profile are far more likely to stay active.',
     placements: ['modal', 'email'], audience: { segment: 'new_users', newUserWithinDays: 7, app: 'resident' }, frequency: 'once',
     content: { badge: 'Welcome', headline: 'Your estate, now in your pocket', subheadline: 'Gate passes, dues and neighbours — all in one app.', body: 'Book visitor codes in seconds, pay dues without paperwork and get alerted the moment something happens at your gate.\n\nStart by completing your profile so your guards and neighbours know it’s you.', ctaText: 'Complete my profile', ctaUrl: '/settings' },
-    email: { subject: 'Welcome to AreaConnect — here’s your first step', preheader: 'Visitor passes, dues and your neighbours in one app.', sendOnUserSignup: true } }),
-  P({ key: 'dues', goal: 'payments', name: 'Pay dues online', why: 'Online dues collection is the #1 reason estates stay on AreaConnect.',
+    email: { subject: 'Welcome to AreaConnector — here’s your first step', preheader: 'Visitor passes, dues and your neighbours in one app.', sendOnUserSignup: true } }),
+  P({ key: 'dues', goal: 'payments', name: 'Pay dues online', why: 'Online dues collection is the #1 reason estates stay on AreaConnector.',
     placements: ['dashboard_banner', 'push'], audience: { segment: 'all', app: 'resident' }, frequency: 'until_clicked',
     content: { badge: 'Dues', headline: 'Pay your estate dues in 30 seconds', subheadline: 'Card, transfer or wallet — receipt lands instantly.', body: 'No more bank queues or chasing receipts. Every payment is recorded in your history.', ctaText: 'Pay now', ctaUrl: '/payments' },
     push: { title: 'Your estate dues, sorted in 30 seconds', body: 'Pay by card, transfer or wallet — receipt included.' } }),
@@ -139,22 +139,22 @@ export const PLAYBOOKS = [
     content: { badge: 'The Lounge', headline: 'See what’s happening on your street', subheadline: 'Posts, polls and events from your neighbours.', body: '', ctaText: 'Open the Lounge', ctaUrl: '/lounge', theme: THEMES[1] } }),
   P({ key: 'market', goal: 'marketplace', name: 'Escrow-protected marketplace', why: 'Escrow builds trust — buyers pay, sellers get paid when delivery is confirmed.',
     placements: ['lounge_feed', 'dashboard_banner'], audience: { segment: 'all', app: 'resident' },
-    content: { badge: 'Marketplace', headline: 'Buy and sell safely with neighbours', subheadline: 'Your money is held in escrow until you confirm delivery.', body: 'List items in minutes. Buyers pay through AreaConnect and sellers are paid once the buyer confirms — no awkward money chases.', ctaText: 'Browse the marketplace', ctaUrl: '/marketplace' } }),
-  P({ key: 'fm', goal: 'podcast', name: 'Tune in to AreaConnect FM', why: 'Live shows with estate leaders drive platform-wide engagement.',
+    content: { badge: 'Marketplace', headline: 'Buy and sell safely with neighbours', subheadline: 'Your money is held in escrow until you confirm delivery.', body: 'List items in minutes. Buyers pay through AreaConnector and sellers are paid once the buyer confirms — no awkward money chases.', ctaText: 'Browse the marketplace', ctaUrl: '/marketplace' } }),
+  P({ key: 'fm', goal: 'podcast', name: 'Tune in to AreaConnector FM', why: 'Live shows with estate leaders drive platform-wide engagement.',
     placements: ['dashboard_banner', 'push'], audience: { segment: 'all', app: 'both' },
-    content: { badge: 'AreaConnect FM', headline: 'Estate leaders, live on air', subheadline: 'Listen live or catch up on episodes.', body: '', ctaText: 'Listen now', ctaUrl: '/podcasts', theme: THEMES[3] },
-    push: { title: 'AreaConnect FM — new episode out', body: 'Estate leaders on security, dues and community. Tap to listen.' } }),
+    content: { badge: 'AreaConnector FM', headline: 'Estate leaders, live on air', subheadline: 'Listen live or catch up on episodes.', body: '', ctaText: 'Listen now', ctaUrl: '/podcasts', theme: THEMES[3] },
+    push: { title: 'AreaConnector FM — new episode out', body: 'Estate leaders on security, dues and community. Tap to listen.' } }),
   P({ key: 'upgrade', goal: 'upgrade', name: 'Trial → paid upgrade', why: 'Remind managers on trial what they keep by upgrading before it ends.',
     placements: ['modal', 'email', 'dashboard_banner'], audience: { segment: 'all', app: 'estate_manager', subscriptionStatuses: ['trial'] }, priority: 1,
-    content: { badge: 'Your trial', headline: 'Keep your estate running smoothly', subheadline: 'Upgrade to keep dues collection, gate security and the Lounge.', body: 'Your residents are already using AreaConnect. Upgrade to make sure nothing switches off when your trial ends.', ctaText: 'See plans', ctaUrl: '/upgrade', theme: THEMES[4] },
-    email: { subject: 'Your AreaConnect trial is ending soon', preheader: 'Keep dues collection, gate security and the Lounge switched on.' } }),
+    content: { badge: 'Your trial', headline: 'Keep your estate running smoothly', subheadline: 'Upgrade to keep dues collection, gate security and the Lounge.', body: 'Your residents are already using AreaConnector. Upgrade to make sure nothing switches off when your trial ends.', ctaText: 'See plans', ctaUrl: '/upgrade', theme: THEMES[4] },
+    email: { subject: 'Your AreaConnector trial is ending soon', preheader: 'Keep dues collection, gate security and the Lounge switched on.' } }),
   P({ key: 'expired', goal: 'upgrade', name: 'Win back expired estates', why: 'Estates whose plan expired still have residents waiting.',
     placements: ['modal', 'email'], audience: { segment: 'all', app: 'estate_manager', subscriptionStatuses: ['expired', 'cancelled'] }, priority: 1,
     content: { badge: 'We miss you', headline: 'Your residents are still here', subheadline: 'Reactivate to switch dues, gate passes and alerts back on.', body: '', ctaText: 'Reactivate', ctaUrl: '/upgrade', theme: THEMES[4] },
-    email: { subject: 'Your estate is paused on AreaConnect', preheader: 'Reactivate in two minutes — everything is where you left it.' } }),
+    email: { subject: 'Your estate is paused on AreaConnector', preheader: 'Reactivate in two minutes — everything is where you left it.' } }),
   P({ key: 'invite', goal: 'referral', name: 'Invite your neighbours', why: 'Estates with more residents onboarded see higher dues collection.',
     placements: ['dashboard_banner'], audience: { segment: 'existing_users', existingUserBeyondDays: 14, app: 'resident' },
-    content: { badge: 'Invite', headline: 'Is your neighbour on AreaConnect yet?', subheadline: 'Share your estate code — it takes them a minute to join.', body: '', ctaText: 'Find neighbours', ctaUrl: '/neighbours' } }),
+    content: { badge: 'Invite', headline: 'Is your neighbour on AreaConnector yet?', subheadline: 'Share your estate code — it takes them a minute to join.', body: '', ctaText: 'Find neighbours', ctaUrl: '/neighbours' } }),
   P({ key: 'winback', goal: 'retention', name: 'Re-engage quiet residents', why: 'Nudge residents who haven’t opened the app recently.',
     placements: ['email', 'push'], audience: { segment: 'existing_users', existingUserBeyondDays: 30, app: 'resident' },
     content: { headline: 'Here’s what you missed in your estate', subheadline: 'New posts, events and announcements are waiting.', ctaText: 'Catch up', ctaUrl: '/dashboard' },

@@ -105,7 +105,7 @@ export default function PodcastHub() {
         <div className="absolute right-24 bottom-[-60px] w-48 h-48 rounded-full border border-white/10 pointer-events-none" />
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-[12px] text-white/55 flex items-center gap-1.5"><Radio size={13} /> AreaConnect FM · platform-wide station</p>
+            <p className="text-[12px] text-white/55 flex items-center gap-1.5"><Radio size={13} /> AreaConnector FM · platform-wide station</p>
             {live ? (
               <>
                 <p className="mt-3 inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] px-2.5 py-1 rounded-full bg-[#D92D20]"><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />On air now</p>
@@ -314,7 +314,7 @@ export default function PodcastHub() {
       {/* ── Guests ── */}
       {tab === 'guests' && (
         <div className="card overflow-hidden">
-          <div className="card-header"><div><div className="card-title flex items-center gap-2"><Users size={15} className="text-[#2E90FA]" /> Guests & estate leaders</div><div className="card-sub">Everyone invited onto AreaConnect FM, across every show</div></div></div>
+          <div className="card-header"><div><div className="card-title flex items-center gap-2"><Users size={15} className="text-[#2E90FA]" /> Guests & estate leaders</div><div className="card-sub">Everyone invited onto AreaConnector FM, across every show</div></div></div>
           {guests === null ? <div className="p-4 space-y-2">{[0, 1, 2].map((i) => <div key={i} className="skeleton h-12" />)}</div> : !guests.length ? (
             <p className="py-14 text-center text-[13px] text-[#98A2B3]">No guests yet — open a show and invite estate leaders or experts.</p>
           ) : (

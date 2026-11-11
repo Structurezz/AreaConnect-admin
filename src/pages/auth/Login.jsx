@@ -27,7 +27,7 @@ function AuthShell({ children, headline, points }) {
         <div className="relative flex items-center gap-3">
           <BrandTile />
           <div className="leading-tight">
-            <div className="text-[15px] font-semibold text-white">AreaConnect</div>
+            <div className="text-[15px] font-semibold text-white">AreaConnector</div>
             <div className="text-[12px] text-[#98A2B3]">Platform admin</div>
           </div>
         </div>
@@ -91,7 +91,7 @@ export default function Login() {
         <div className="lg:hidden flex items-center gap-2.5 mb-8">
           <BrandTile />
           <div className="leading-tight">
-            <div className="text-[14px] font-semibold text-[#101828]">AreaConnect</div>
+            <div className="text-[14px] font-semibold text-[#101828]">AreaConnector</div>
             <div className="text-[11.5px] text-[#98A2B3]">Platform admin</div>
           </div>
         </div>

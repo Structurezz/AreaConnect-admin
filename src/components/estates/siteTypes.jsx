@@ -1,6 +1,6 @@
 import { Building2, GraduationCap, School, Hotel, Factory, Hospital } from 'lucide-react';
 
-// AreaConnect site types (server/utils/siteTypes.js). Stored on the estate as
+// AreaConnector site types (server/utils/siteTypes.js). Stored on the estate as
 // `site.type`; anything missing or unknown is an estate.
 export const SITE_TYPES = [
   { value: 'estate',     label: 'Estate',     hint: 'Residents & units',        icon: Building2,     color: '#067647', bg: '#ECFDF3', border: '#ABEFC6' },

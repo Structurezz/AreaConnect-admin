@@ -180,7 +180,7 @@ export default function WizardFlow({ onDone }) {
               {mgr.tempPassword && (
                 <div className="mt-2 flex items-center justify-between rounded-lg bg-[#F9FAFB] border border-[#F2F4F7] px-2.5 py-1.5">
                   <span className="flex items-center gap-1.5 font-mono text-[13px] text-[#047857]"><KeyRound size={13} />{mgr.tempPassword}</span>
-                  <CopyButton text={`Email: ${mgr.email}\nTemporary password: ${mgr.tempPassword}\nLogin: https://area-connector.areaconnect.pro/login`} label="Copy login" />
+                  <CopyButton text={`Email: ${mgr.email}\nTemporary password: ${mgr.tempPassword}\nLogin: https://areamanager.area-connector.com/login`} label="Copy login" />
                 </div>
               )}
             </div>
@@ -278,7 +278,7 @@ export default function WizardFlow({ onDone }) {
               <Field label="Site office email">
                 <input className="input-field" type="email" value={e.contactEmail} onChange={(ev) => set('estate', 'contactEmail', ev.target.value)} placeholder="office@estate.ng" />
               </Field>
-              <Field label="Internal notes" className="sm:col-span-2" hint="Only visible to AreaConnect admins">
+              <Field label="Internal notes" className="sm:col-span-2" hint="Only visible to AreaConnector admins">
                 <textarea className="input-field min-h-[80px]" value={e.adminNotes} onChange={(ev) => set('estate', 'adminNotes', ev.target.value)} placeholder="How we met them, agreed terms, follow-ups…" />
               </Field>
             </div>

@@ -6,7 +6,7 @@ import { callAPI } from '../api';
 import { useCall } from '../context/CallContext';
 import PageHeader from '../components/ui/PageHeader';
 
-// AreaConnect admin calling: reach any estate manager or guard on the
+// AreaConnector admin calling: reach any estate manager or guard on the
 // platform (free). Directory comes from /calls/admin/directory.
 
 const dayLabel = (d) => (isToday(d) ? 'Today' : isYesterday(d) ? 'Yesterday' : format(d, 'EEE, MMM d'));
@@ -75,7 +75,7 @@ export default function Calls() {
     <div className="max-w-[1400px] mx-auto animate-fade-in pb-12">
       <PageHeader
         title="Calls"
-        description="Call any site manager or guard on AreaConnect. Admin calls are always free."
+        description="Call any site manager or guard on AreaConnector. Admin calls are always free."
         actions={(
           <button onClick={load} className="btn-outline gap-2" aria-label="Refresh">
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
