@@ -110,6 +110,7 @@ export const userAPI = {
   update: (id, data) => api.patch(`/users/${id}`, data),
   resetPassword: (id) => api.post(`/users/${id}/reset-password`),
   bulk: (data)        => api.post('/users/bulk', data),
+  detail: (id)        => api.get(`/users/${id}/detail`),
 };
 
 // Admin platform analytics

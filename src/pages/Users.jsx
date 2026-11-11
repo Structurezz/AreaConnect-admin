@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { format, formatDistanceToNow } from 'date-fns';
 import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
+import UserDrawer from '../components/users/UserDrawer';
 
 const ROLES = ['all', 'super_admin', 'estate_manager', 'resident', 'security'];
 const ROLE_META = {
@@ -59,6 +60,7 @@ export default function Users() {
   const [toggling, setToggling]   = useState(null);
   const [resetting, setResetting] = useState(null);
   const [selected, setSelected]   = useState(new Set());
+  const [openUserId, setOpenUserId] = useState(null);
   const [bulking, setBulking]     = useState(false);
 
   const load = useCallback(() => {
@@ -330,8 +332,9 @@ export default function Users() {
                     : null;
                   const isSelected = selected.has(u._id);
                   return (
-                    <tr key={u._id} className={isSelected ? '!bg-[#F6FEF9]' : ''}>
-                      <td className="!pr-0">
+                    <tr key={u._id} onClick={() => setOpenUserId(u._id)}
+                      className={`cursor-pointer hover:!bg-[#F9FAFB] ${openUserId === u._id || isSelected ? '!bg-[#F6FEF9]' : ''}`}>
+                      <td className="!pr-0" onClick={(e) => e.stopPropagation()}>
                         <button onClick={() => toggleSelect(u._id)} className="flex items-center" aria-label="Select user">
                           {isSelected
                             ? <CheckSquare size={15} className="text-[#059669]" />
@@ -355,7 +358,7 @@ export default function Users() {
                                 </span>
                               )}
                             </div>
-                            <a href={`mailto:${u.email}`}
+                            <a href={`mailto:${u.email}`} onClick={(e) => e.stopPropagation()}
                               className="text-[12px] text-[#98A2B3] hover:text-[#475467] hover:underline flex items-center gap-1 mt-0.5">
                               <Mail size={11} /><span className="truncate max-w-[220px]">{u.email}</span>
                             </a>
@@ -376,7 +379,7 @@ export default function Users() {
                       </td>
                       <td>
                         {u.phone
-                          ? <a href={`tel:${u.phone}`} className="text-[12.5px] flex items-center gap-1 text-[#475467] hover:underline tabular-nums whitespace-nowrap">
+                          ? <a href={`tel:${u.phone}`} onClick={(e) => e.stopPropagation()} className="text-[12.5px] flex items-center gap-1 text-[#475467] hover:underline tabular-nums whitespace-nowrap">
                               <Phone size={11} className="text-[#98A2B3]" />{u.phone}
                             </a>
                           : <span className="text-[#D0D5DD]">—</span>}
@@ -396,7 +399,7 @@ export default function Users() {
                           Joined {u.createdAt ? format(new Date(u.createdAt), 'MMM d, yy') : '—'}
                         </div>
                       </td>
-                      <td>
+                      <td onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-0.5">
                           <button onClick={() => openEdit(u)} title="Edit user"
                             className={`${iconBtn} hover:text-[#101828] hover:bg-[#F2F4F7]`}>
@@ -433,6 +436,13 @@ export default function Users() {
           </div>
         )}
       </div>
+
+      {openUserId && (
+        <UserDrawer userId={openUserId} onClose={() => setOpenUserId(null)}
+          busy={toggling === openUserId || resetting === openUserId}
+          onEdit={(u) => { setOpenUserId(null); openEdit(users.find((x) => x._id === u._id) || u); }}
+          onResetPassword={resetPassword} onToggleActive={toggleActive} />
+      )}
 
       {/* Create User Modal */}
       {showCreate && (
