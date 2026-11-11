@@ -181,6 +181,8 @@ export const adminPaymentAPI = {
   paystackLedger:  (params) => api.get('/admin/payments/paystack/ledger', { params }),
   reconcile:       (reference) => api.post(`/admin/payments/reconcile/${reference}`),
   attach:          (data)   => api.post('/admin/payments/paystack/attach', data),
+  get:             (id)     => api.get(`/admin/payments/${id}`),
+  paystackGet:     (ref)    => api.get(`/admin/payments/paystack/${encodeURIComponent(ref)}`),
 };
 
 // Password-reset requests — admins can review across all estates by listing

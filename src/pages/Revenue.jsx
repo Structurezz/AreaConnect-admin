@@ -6,7 +6,11 @@ import {
   RefreshCw, ArrowDownLeft, ArrowUpRight, Wallet, Receipt, Landmark, CreditCard, Eye, EyeOff,
   CalendarClock, AlertTriangle, TrendingUp, Gift, ShieldCheck, Building2, ChevronRight, Search,
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { planAPI, withdrawalAPI, adminPaymentAPI } from '../api';
+import TransactionDrawer from '../components/billing/TransactionDrawer';
+import PayoutDrawer from '../components/billing/PayoutDrawer';
+import SubscriptionDrawer from '../components/billing/SubscriptionDrawer';
 
 const fmt = (n, dp = 0) => `₦${Number(n || 0).toLocaleString('en-NG', { minimumFractionDigits: dp, maximumFractionDigits: dp })}`;
 const split = (n) => {
@@ -63,6 +67,9 @@ export default function Revenue() {
   const [hidden, setHidden] = useState(() => { try { return localStorage.getItem('ac_rev_hidden') === '1'; } catch { return false; } });
   const [flow, setFlow] = useState('all');
   const [q, setQ] = useState('');
+  const [open, setOpen] = useState(null); // { capture } | { payout } | { sub }
+  const navigate = useNavigate();
+  const subOf = (s) => subs.find((x) => x._id === s._id) || s;
 
   const load = () => {
     setLoading(true);
@@ -98,7 +105,7 @@ export default function Revenue() {
         title: p?.estateId?.name ? `Dues · ${p.estateId.name}` : isSub ? 'Subscription payment' : (t.customer?.name || t.customer?.email || 'Paystack payment'),
         sub: [p?.residentId?.name || t.customer?.email, t.channel, t.reference].filter(Boolean).join(' · '),
         status: t.status === 'success' ? 'Received' : t.status,
-        kind: p ? 'dues' : isSub ? 'subscription' : 'other',
+        kind: p ? 'dues' : isSub ? 'subscription' : 'other', src: t,
       };
     });
     const outs = payouts.map((w) => ({
@@ -106,7 +113,7 @@ export default function Revenue() {
       title: `Payout · ${w.estateId?.name || w.userId?.name || 'Manager'}`,
       sub: [w.bankName, w.accountName, w.reference].filter(Boolean).join(' · '),
       status: w.status === 'success' ? 'Sent' : w.status === 'pending' ? 'Processing' : 'Failed',
-      kind: 'payout',
+      kind: 'payout', src: w,
     }));
     return [...ins, ...outs].filter((x) => !Number.isNaN(x.at.getTime())).sort((a, b) => b.at - a.at);
   }, [ledger, payouts]);
@@ -280,7 +287,10 @@ export default function Revenue() {
                     <span className="text-[#98A2B3] tabular-nums">{mask(`${net >= 0 ? '+' : '−'}${fmt(Math.abs(net), 2)}`)}</span>
                   </div>
                   {rows.map((x) => (
-                    <div key={x.id} className="flex items-center gap-3 px-5 py-3 hover:bg-[#FCFCFD] border-b border-[#F9FAFB] last:border-0">
+                    <div key={x.id} role="button" tabIndex={0}
+                      onClick={() => setOpen(x.dir === 'in' ? { capture: x.src } : { payout: x.src })}
+                      onKeyDown={(e) => { if (e.key === 'Enter') setOpen(x.dir === 'in' ? { capture: x.src } : { payout: x.src }); }}
+                      className="group flex items-center gap-3 px-5 py-3 cursor-pointer hover:bg-[#F9FAFB] border-b border-[#F9FAFB] last:border-0 transition-colors">
                       <span className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${x.dir === 'in' ? 'bg-[#ECFDF3] text-[#067647]' : 'bg-[#F2F4F7] text-[#475467]'}`}>
                         {x.dir === 'in' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
                       </span>
@@ -294,6 +304,7 @@ export default function Revenue() {
                         </p>
                         <p className={`text-[11px] ${x.status === 'Failed' ? 'text-[#B42318]' : x.status === 'Processing' ? 'text-[#B54708]' : 'text-[#98A2B3]'}`}>{x.status}</p>
                       </div>
+                      <ChevronRight size={15} className="text-[#D0D5DD] group-hover:text-[#667085] flex-shrink-0" />
                     </div>
                   ))}
                 </div>
@@ -313,7 +324,7 @@ export default function Revenue() {
                 {renewals.slice(0, 6).map((s) => {
                   const due = s.nextBillingDate ? new Date(s.nextBillingDate) : null;
                   return (
-                    <div key={s._id} className="flex items-center gap-3 px-4 py-2.5">
+                    <button key={s._id} type="button" onClick={() => setOpen({ sub: subOf(s) })} className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-[#F9FAFB]">
                       <span className="w-10 text-center flex-shrink-0 rounded-lg border border-[#E4E7EC] py-1 leading-none">
                         <span className="block text-[9.5px] uppercase text-[#98A2B3]">{due ? format(due, 'MMM') : '—'}</span>
                         <span className="block text-[14px] font-semibold text-[#101828]">{due ? format(due, 'd') : ''}</span>
@@ -323,7 +334,7 @@ export default function Revenue() {
                         <p className="text-[11px] text-[#98A2B3] truncate">{s.planId?.name} · {s.paystackAuth?.authorizationCode ? 'Auto-debit card' : 'No card — invoice'}</p>
                       </div>
                       <span className="text-[12.5px] font-semibold text-[#101828] tabular-nums">{mask(fmt(s.cycle === 'annual' ? s.planId?.price?.annual : s.planId?.price?.monthly))}</span>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -336,14 +347,14 @@ export default function Revenue() {
             ) : (
               <div className="divide-y divide-[#F2F4F7]">
                 {failed.slice(0, 6).map((s) => (
-                  <Link key={s._id} to={s.estateId?._id ? `/estates/${s.estateId._id}` : '/subscriptions'} className="flex items-start gap-3 px-4 py-2.5 hover:bg-[#FFFBFA]" style={{ textDecoration: 'none' }}>
+                  <button key={s._id} type="button" onClick={() => setOpen({ sub: subOf(s) })} className="w-full text-left flex items-start gap-3 px-4 py-2.5 hover:bg-[#FFFBFA]">
                     <span className="w-8 h-8 rounded-full bg-[#FEF3F2] text-[#D92D20] flex items-center justify-center flex-shrink-0"><CreditCard size={14} /></span>
                     <div className="min-w-0 flex-1">
                       <p className="text-[12.5px] font-medium text-[#101828] truncate">{s.estateId?.name || 'Site'}</p>
                       <p className="text-[11px] text-[#B42318] truncate">{s.lastRenewalError || 'Card declined'}</p>
                       <p className="text-[10.5px] text-[#98A2B3]">{s.renewalAttempts || 0} attempt{s.renewalAttempts === 1 ? '' : 's'}{s.lastRenewalAttemptAt ? ` · ${formatDistanceToNowStrict(new Date(s.lastRenewalAttemptAt))} ago` : ''}</p>
                     </div>
-                  </Link>
+                  </button>
                 ))}
               </div>
             )}
@@ -353,20 +364,27 @@ export default function Revenue() {
             {!topAccounts.length ? <p className="px-4 py-6 text-center text-[12.5px] text-[#98A2B3]">No paying sites yet</p> : (
               <div className="divide-y divide-[#F2F4F7]">
                 {topAccounts.map((s, i) => (
-                  <Link key={s._id} to={s.estateId?._id ? `/estates/${s.estateId._id}` : '/subscriptions'} className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F9FAFB]" style={{ textDecoration: 'none' }}>
+                  <button key={s._id} type="button" onClick={() => setOpen({ sub: subOf(s) })} className="w-full text-left flex items-center gap-3 px-4 py-2.5 hover:bg-[#F9FAFB]">
                     <span className="w-6 text-[12px] font-semibold text-[#98A2B3] tabular-nums">{i + 1}</span>
                     <div className="min-w-0 flex-1">
                       <p className="text-[12.5px] font-medium text-[#101828] truncate">{s.estateId?.name || 'Site'}</p>
                       <p className="text-[11px] text-[#98A2B3]">{s.planId?.name} · {s.cycle}</p>
                     </div>
                     <span className="text-[12.5px] font-semibold text-[#067647] tabular-nums">{mask(fmt(s.mv))}<span className="text-[10.5px] text-[#98A2B3] font-normal">/mo</span></span>
-                  </Link>
+                  </button>
                 ))}
               </div>
             )}
           </SideCard>
         </div>
       </div>
+
+      {open?.capture && <TransactionDrawer capture={open.capture} onClose={() => setOpen(null)}
+        onAttach={() => { setOpen(null); navigate('/finance?tab=transactions'); }} />}
+      {open?.payout && <PayoutDrawer w={open.payout} all={payouts} onClose={() => setOpen(null)}
+        actions={open.payout.status === 'pending' && <button className="btn-primary !px-2.5 !py-1 !text-[12px]" onClick={() => { setOpen(null); navigate('/finance?tab=payouts'); }}>Review in Payouts</button>} />}
+      {open?.sub && <SubscriptionDrawer sub={open.sub} compLive={isCompLive(open.sub)} onClose={() => setOpen(null)}
+        onEdit={() => { setOpen(null); navigate('/finance?tab=billing'); }} />}
     </div>
   );
 }

@@ -3,9 +3,11 @@ import { withdrawalAPI } from '../api';
 import toast from 'react-hot-toast';
 import {
   Wallet, RefreshCw, Check, X, Zap, Copy, Clock, Building2,
-  CheckCircle2, XCircle, Search, Landmark, AlertTriangle, KeyRound, ArrowUpRight,
+  CheckCircle2, XCircle, Search, Landmark, AlertTriangle, KeyRound, ArrowUpRight, ChevronRight,
 } from 'lucide-react';
 import { formatDistanceToNow, format, isToday, isYesterday } from 'date-fns';
+import Portal from '../components/ui/Portal';
+import PayoutDrawer from '../components/billing/PayoutDrawer';
 
 const STATUS = {
   pending: { label: 'Pending',  badge: 'yellow', icon: Clock },
@@ -35,7 +37,8 @@ const SM = '!px-2.5 !py-1 !text-[12px]';
 
 function Modal({ onClose, title, sub, children, footer }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <Portal>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
       <div className="overlay-backdrop" aria-hidden="true" onClick={onClose} />
       <div className="relative card w-full max-w-md overflow-hidden shadow-xl">
         <div className="px-5 pt-5 pb-4">
@@ -46,11 +49,13 @@ function Modal({ onClose, title, sub, children, footer }) {
         <div className="flex justify-end gap-2 px-5 py-3 border-t border-[#E4E7EC] bg-[#F9FAFB]">{footer}</div>
       </div>
     </div>
+    </Portal>
   );
 }
 
 export default function Withdrawals() {
   const [withdrawals, setWithdrawals] = useState([]);
+  const [openId, setOpenId] = useState(null);
   const [totals, setTotals] = useState({ pending: {}, success: {}, failed: {} });
   const [loading, setLoading] = useState(true);
   const [balance, setBalance] = useState(null);
@@ -188,6 +193,8 @@ export default function Withdrawals() {
       w.accountNumber?.includes(q)
     );
   });
+
+  const openW = openId ? withdrawals.find((w) => w._id === openId) : null;
 
   const TABS = [
     { v: 'pending', label: 'Pending',  totals: totals.pending },
@@ -338,7 +345,9 @@ export default function Withdrawals() {
                   const estate = w.estateId || {};
                   const st = STATUS[w.status] || STATUS.pending;
                   return (
-                    <div key={w._id} className="px-5 py-3 border-b border-[#F9FAFB] last:border-0 hover:bg-[#FCFCFD]">
+                    <div key={w._id} role="button" tabIndex={0} onClick={() => setOpenId(w._id)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) setOpenId(w._id); }}
+                      className={`group px-5 py-3 border-b border-[#F9FAFB] last:border-0 cursor-pointer hover:bg-[#F9FAFB] transition-colors ${openId === w._id ? 'bg-[#F6FEF9]' : ''}`}>
                       <div className="flex items-center gap-3">
                         <span className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${ROW_TONE[w.status] || ROW_TONE.pending}`}>
                           {w.status === 'pending' ? <Clock size={16} /> : w.status === 'failed' ? <XCircle size={16} /> : <ArrowUpRight size={16} />}
@@ -359,7 +368,7 @@ export default function Withdrawals() {
                             <p className="text-[12px] text-[#101828] truncate"><span className="font-mono">{w.accountNumber}</span> · {w.bankName}</p>
                             <p className="text-[11px] text-[#98A2B3] truncate">{w.accountName || '—'}</p>
                           </div>
-                          <button onClick={() => copyBank(w)} title="Copy bank details" className="text-[#98A2B3] hover:text-[#101828]"><Copy size={12} /></button>
+                          <button onClick={(e) => { e.stopPropagation(); copyBank(w); }} title="Copy bank details" className="text-[#98A2B3] hover:text-[#101828]"><Copy size={12} /></button>
                         </div>
                         <div className="text-right flex-shrink-0 w-28">
                           <p className={`text-[13.5px] font-semibold tabular-nums text-[#101828] ${w.status === 'failed' ? 'line-through opacity-50' : ''}`}>−{fmt(w.amount)}</p>
@@ -367,9 +376,10 @@ export default function Withdrawals() {
                             {w.status === 'pending' && w.paystackStatus === 'otp' ? 'Awaiting OTP' : w.status === 'success' ? 'Sent' : st.label}
                           </p>
                         </div>
+                        <ChevronRight size={15} className="text-[#D0D5DD] group-hover:text-[#667085] flex-shrink-0" />
                       </div>
                       {(w.status === 'pending' || w.failureReason || w.source === 'marketplace') && (
-                        <div className="mt-2 pl-12 flex flex-wrap items-center gap-1.5">
+                        <div className="mt-2 pl-12 flex flex-wrap items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                           {w.source === 'marketplace' && <span className="badge badge-gray">Marketplace seller</span>}
                           {w.status !== 'pending' && w.failureReason && <span className="text-[11.5px] text-[#667085]">{w.status === 'failed' ? 'Reason: ' : 'Note: '}{w.failureReason}</span>}
                           <span className="md:hidden"><button onClick={() => copyBank(w)} className={`btn-outline ${SM}`}><Copy size={12} /> {w.bankName} ••{(w.accountNumber || '').slice(-4)}</button></span>
@@ -384,6 +394,10 @@ export default function Withdrawals() {
           </div>
         )}
       </div>
+
+      {openW && (
+        <PayoutDrawer w={openW} all={withdrawals} actions={renderActions(openW)} onCopyBank={copyBank} onClose={() => setOpenId(null)} />
+      )}
 
       {/* Mark-as-paid modal */}
       {paidNoteFor && (

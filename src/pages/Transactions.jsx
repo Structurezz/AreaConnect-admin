@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   Search, RefreshCw, AlertCircle, X,
-  Building2, Clock, AlertTriangle, Link2, Receipt, Landmark, ArrowDownLeft, CheckCircle2, MinusCircle,
+  Building2, Clock, AlertTriangle, Link2, Receipt, Landmark, ArrowDownLeft, CheckCircle2, MinusCircle, ChevronRight,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format, isToday, isYesterday } from 'date-fns';
 import { adminPaymentAPI, estateAPI } from '../api';
+import TransactionDrawer from '../components/billing/TransactionDrawer';
 
 const fmtNGN = (n) => `₦${Number(n || 0).toLocaleString()}`;
 
@@ -58,6 +59,7 @@ export default function Transactions() {
 
   const [filters, setFilters] = useState({ status: '', estateId: '', search: '' });
   const [ledgerFilter, setLedgerFilter] = useState('all');
+  const [detail, setDetail] = useState(null); // { paymentId } | { capture }
 
   const loadStats = async () => {
     try {
@@ -276,7 +278,9 @@ export default function Transactions() {
                       const Icon = ROW_ICON[p.status] || Clock;
                       const d = dateOf(p);
                       return (
-                        <div key={p._id} className="flex items-center gap-3 px-5 py-3 border-b border-[#F9FAFB] last:border-0 hover:bg-[#FCFCFD]">
+                        <div key={p._id} role="button" tabIndex={0} onClick={() => setDetail({ paymentId: p._id })}
+                          onKeyDown={(e) => { if (e.key === 'Enter') setDetail({ paymentId: p._id }); }}
+                          className={`group flex items-center gap-3 px-5 py-3 border-b border-[#F9FAFB] last:border-0 cursor-pointer hover:bg-[#F9FAFB] transition-colors ${detail?.paymentId === p._id ? 'bg-[#F6FEF9]' : ''}`}>
                           <span className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${ROW_TONE[p.status] || ROW_TONE.pending}`}><Icon size={16} /></span>
                           <div className="min-w-0 flex-1">
                             <p className="text-[13px] font-medium text-[#101828] truncate">{p.residentId?.name || 'Member'} <span className="font-normal text-[#667085]">· {p.scheduleId?.title || 'Dues'}</span></p>
@@ -288,7 +292,7 @@ export default function Transactions() {
                             </p>
                           </div>
                           {p.status !== 'paid' && p.paystackReference && (
-                            <button onClick={() => handleReconcile(p)} disabled={reconciling === p._id} className="btn-outline !px-2.5 !py-1 !text-[12px] hidden sm:inline-flex">
+                            <button onClick={(e) => { e.stopPropagation(); handleReconcile(p); }} disabled={reconciling === p._id} className="btn-outline !px-2.5 !py-1 !text-[12px] hidden sm:inline-flex">
                               <RefreshCw size={12} className={reconciling === p._id ? 'animate-spin' : ''} /> Reconcile
                             </button>
                           )}
@@ -300,6 +304,7 @@ export default function Transactions() {
                               {p.status === 'pending' && p.paystackReference ? 'Awaiting Paystack' : st.label}
                             </p>
                           </div>
+                          <ChevronRight size={15} className="text-[#D0D5DD] group-hover:text-[#667085] flex-shrink-0" />
                         </div>
                       );
                     })}
@@ -336,7 +341,9 @@ export default function Transactions() {
                     {rows.map((tx) => {
                       const d = dateOf(tx);
                       return (
-                        <div key={tx.reference} className="flex items-center gap-3 px-5 py-3 border-b border-[#F9FAFB] last:border-0 hover:bg-[#FCFCFD]">
+                        <div key={tx.reference} role="button" tabIndex={0} onClick={() => setDetail({ capture: tx })}
+                          onKeyDown={(e) => { if (e.key === 'Enter') setDetail({ capture: tx }); }}
+                          className={`group flex items-center gap-3 px-5 py-3 border-b border-[#F9FAFB] last:border-0 cursor-pointer hover:bg-[#F9FAFB] transition-colors ${detail?.capture?.reference === tx.reference ? 'bg-[#F6FEF9]' : ''}`}>
                           <span className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${tx.matched ? 'bg-[#ECFDF3] text-[#067647]' : 'bg-[#FEF3F2] text-[#D92D20]'}`}>
                             {tx.matched ? <ArrowDownLeft size={16} /> : <Link2 size={15} />}
                           </span>
@@ -349,7 +356,7 @@ export default function Transactions() {
                               {!Number.isNaN(d.getTime()) && `${format(d, 'HH:mm')} · `}<span className="font-mono">{tx.reference}</span>{tx.channel && ` · ${tx.channel.replace('_', ' ')}`}
                             </p>
                           </div>
-                          <div className="hidden sm:block">
+                          <div className="hidden sm:block" onClick={(e) => e.stopPropagation()}>
                             {tx.matched
                               ? (tx.payment?.status === 'paid'
                                 ? <span className="badge badge-green">Linked</span>
@@ -360,6 +367,7 @@ export default function Transactions() {
                             <p className="text-[13.5px] font-semibold tabular-nums text-[#067647]">+{fmtNGN(tx.amount)}</p>
                             <p className={`text-[11px] ${tx.matched ? 'text-[#98A2B3]' : 'text-[#B42318]'}`}>{tx.matched ? (tx.payment?.status === 'paid' ? 'Recorded' : `Linked · ${tx.payment?.status}`) : 'Not linked'}</p>
                           </div>
+                          <ChevronRight size={15} className="text-[#D0D5DD] group-hover:text-[#667085] flex-shrink-0" />
                         </div>
                       );
                     })}
@@ -370,6 +378,15 @@ export default function Transactions() {
           </>
         )}
       </div>
+
+      {detail && (
+        <TransactionDrawer
+          paymentId={detail.paymentId} capture={detail.capture}
+          reconciling={!!reconciling}
+          onReconcile={handleReconcile}
+          onAttach={(tx) => { setDetail(null); openAttachModal(tx); }}
+          onClose={() => setDetail(null)} />
+      )}
 
       {/* Attach modal */}
       {attachFor && (

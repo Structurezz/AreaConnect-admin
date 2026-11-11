@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { planAPI, estateAPI } from '../api';
 import { Drawer, AssignPlanDrawer, GrantCompDrawer } from '../components/billing/BillingDrawers';
+import SubscriptionDrawer from '../components/billing/SubscriptionDrawer';
 import toast from 'react-hot-toast';
 import {
   CreditCard, RefreshCw, Building2, Edit3, X, Search,
@@ -60,6 +61,7 @@ function Segmented({ options, value, onChange }) {
 
 export default function Subscriptions() {
   const [subs, setSubs]         = useState([]);
+  const [openSubId, setOpenSubId] = useState(null);
   const [plans, setPlans]       = useState([]);
   const [estates, setEstates]   = useState([]);
   const [stats, setStats]       = useState(null);
@@ -260,6 +262,7 @@ export default function Subscriptions() {
     return new Date(sub.comp.expiresAt) > new Date();
   };
 
+  const openSub = openSubId ? subs.find((x) => x._id === openSubId) : null;
   const filtered = subs.filter(sub => {
     if (statusFilter !== 'all' && sub.status !== statusFilter) return false;
     if (!search) return true;
@@ -405,7 +408,8 @@ export default function Subscriptions() {
                   const compPlan = compLive ? sub.comp.planId : null;
                   const estateKey = sub.estateId?._id || sub.estateId;
                   return (
-                    <tr key={sub._id} className={compLive ? 'bg-[#FFFCF5]' : undefined}>
+                    <tr key={sub._id} onClick={() => setOpenSubId(sub._id)}
+                      className={`cursor-pointer hover:!bg-[#F9FAFB] ${openSubId === sub._id ? '!bg-[#F6FEF9]' : compLive ? 'bg-[#FFFCF5]' : ''}`}>
                       <td>
                         <div className="flex items-center gap-2">
                           <span className="cell-strong">{sub.estateId?.name || '—'}</span>
@@ -469,7 +473,7 @@ export default function Subscriptions() {
                           ? <span className="text-[12px] truncate block" title={sub.notes}>{sub.notes}</span>
                           : <span className="text-[#D0D5DD]">—</span>}
                       </td>
-                      <td>
+                      <td onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center justify-end gap-0.5">
                           <button onClick={() => openEdit(sub)}
                             title="Edit subscription"
@@ -511,6 +515,15 @@ export default function Subscriptions() {
           </div>
         )}
       </div>
+
+      {openSub && (
+        <SubscriptionDrawer sub={openSub} compLive={isCompLive(openSub)}
+          revoking={compRevoking === (openSub.estateId?._id || openSub.estateId)}
+          onEdit={() => { setOpenSubId(null); openEdit(openSub); }}
+          onGrantComp={() => { setOpenSubId(null); openCompModal({ estateId: openSub.estateId?._id || openSub.estateId }); }}
+          onRevokeComp={() => handleRevokeComp(openSub)}
+          onClose={() => setOpenSubId(null)} />
+      )}
 
       {/* Assign plan — side panel */}
       {showNew && (
