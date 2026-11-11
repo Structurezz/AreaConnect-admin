@@ -146,7 +146,7 @@ export default function Transactions() {
 
   const submitAttach = async () => {
     if (!attachForm.estateId || !attachForm.residentId || !attachForm.scheduleId) {
-      toast.error('Estate, resident and schedule are required');
+      toast.error('Site, member and schedule are required');
       return;
     }
     setAttaching(true);
@@ -198,7 +198,7 @@ export default function Transactions() {
         <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full border border-white/10" />
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-[12px] text-white/60 flex items-center gap-1.5"><Landmark size={13} /> Estate dues · all estates</p>
+            <p className="text-[12px] text-white/60 flex items-center gap-1.5"><Landmark size={13} /> Site dues · all sites</p>
             <p className="mt-4 text-[12.5px] text-white/70">Collected all time</p>
             <p className="mt-1 text-[38px] leading-none font-semibold tracking-tight tabular-nums">{stats ? fmtNGN(stats.collected) : '—'}</p>
             <p className="mt-2 text-[12px] text-white/55">{stats?.collectedCount || 0} payments received</p>
@@ -228,7 +228,7 @@ export default function Transactions() {
         <div className="px-5 pt-4 border-b border-[#F2F4F7]">
           <div className="flex gap-6">
             {[
-              { id: 'payments', label: 'Statement', hint: 'Resident dues' },
+              { id: 'payments', label: 'Statement', hint: 'Member dues' },
               { id: 'ledger', label: 'Paystack inflow', hint: unlinked ? `${unlinked} unlinked` : 'Gateway captures' },
             ].map(({ id, label, hint }) => (
               <button key={id} onClick={() => setTab(id)} className={`pb-3 border-b-2 text-left -mb-px ${tab === id ? 'border-[#059669]' : 'border-transparent'}`}>
@@ -249,12 +249,12 @@ export default function Transactions() {
               </div>
               <div className="lg:ml-auto flex flex-col sm:flex-row gap-2">
                 <select className="input-field sm:!w-[190px] !h-9 !py-0" value={filters.estateId} onChange={(e) => setFilters((f) => ({ ...f, estateId: e.target.value }))}>
-                  <option value="">All estates</option>
+                  <option value="">All sites</option>
                   {estates.map((e) => <option key={e._id} value={e._id}>{e.name}</option>)}
                 </select>
                 <div className="flex items-center gap-2 h-9 px-3 rounded-lg border border-[#D0D5DD] sm:w-72">
                   <Search size={14} className="text-[#98A2B3]" />
-                  <input className="flex-1 min-w-0 bg-transparent outline-none text-[13px]" placeholder="Resident, estate or reference"
+                  <input className="flex-1 min-w-0 bg-transparent outline-none text-[13px]" placeholder="Member, site or reference"
                     value={filters.search} onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
                     onKeyDown={(e) => { if (e.key === 'Enter') loadPayments(); }} />
                 </div>
@@ -262,7 +262,7 @@ export default function Transactions() {
             </div>
 
             {loading ? <TableSkeleton cols={4} /> : filteredPayments.length === 0 ? (
-              <Empty icon={Receipt} title="No payments found" hint="Try a different status, estate or search term." />
+              <Empty icon={Receipt} title="No payments found" hint="Try a different status, site or search term." />
             ) : (
               <div className="max-h-[70vh] overflow-y-auto">
                 {Object.entries(groupByDay(filteredPayments)).map(([day, rows]) => (
@@ -279,7 +279,7 @@ export default function Transactions() {
                         <div key={p._id} className="flex items-center gap-3 px-5 py-3 border-b border-[#F9FAFB] last:border-0 hover:bg-[#FCFCFD]">
                           <span className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${ROW_TONE[p.status] || ROW_TONE.pending}`}><Icon size={16} /></span>
                           <div className="min-w-0 flex-1">
-                            <p className="text-[13px] font-medium text-[#101828] truncate">{p.residentId?.name || 'Resident'} <span className="font-normal text-[#667085]">· {p.scheduleId?.title || 'Dues'}</span></p>
+                            <p className="text-[13px] font-medium text-[#101828] truncate">{p.residentId?.name || 'Member'} <span className="font-normal text-[#667085]">· {p.scheduleId?.title || 'Dues'}</span></p>
                             <p className="text-[11.5px] text-[#98A2B3] truncate flex items-center gap-1">
                               <Building2 size={10} /> {p.estateId?.name || '—'}
                               {!Number.isNaN(d.getTime()) && <> · {format(d, 'HH:mm')}</>}
@@ -320,7 +320,7 @@ export default function Transactions() {
               </div>
               <p className="lg:ml-auto text-[12px] text-[#667085] flex items-start gap-1.5 max-w-xl">
                 <AlertCircle size={13} className="text-[#B54708] mt-0.5 flex-shrink-0" />
-                Straight from Paystack. <b className="font-semibold text-[#344054]">Not linked</b> captures aren’t tied to a resident yet — use Attach to record them.
+                Straight from Paystack. <b className="font-semibold text-[#344054]">Not linked</b> captures aren’t tied to a member yet — use Attach to record them.
               </p>
             </div>
             {loading ? <TableSkeleton cols={4} /> : ledgerShown.length === 0 ? (
@@ -379,7 +379,7 @@ export default function Transactions() {
             <div className="card-header">
               <div>
                 <h3 className="text-[15px] font-semibold text-[#101828]">Attach Paystack capture</h3>
-                <p className="text-[12px] mt-0.5 text-[#98A2B3]">Link <span className="tabular-nums">{fmtNGN(attachFor.amount)}</span> to an estate and resident</p>
+                <p className="text-[12px] mt-0.5 text-[#98A2B3]">Link <span className="tabular-nums">{fmtNGN(attachFor.amount)}</span> to a site and member</p>
               </div>
               <button onClick={() => setAttachFor(null)} className="btn-ghost !p-1.5"><X size={16}/></button>
             </div>
@@ -400,19 +400,19 @@ export default function Transactions() {
               </dl>
               <div className="space-y-3">
                 <div>
-                  <label className="field-label">Estate</label>
+                  <label className="field-label">Site</label>
                   <select className="input-field w-full" value={attachForm.estateId}
                     onChange={e => setAttachForm(f => ({ ...f, estateId: e.target.value, residentId: '', scheduleId: '' }))}>
-                    <option value="">Select estate…</option>
+                    <option value="">Select site…</option>
                     {estates.map(e => <option key={e._id} value={e._id}>{e.name}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label className="field-label">Resident</label>
+                  <label className="field-label">Member</label>
                   <select className="input-field w-full" value={attachForm.residentId}
                     onChange={e => setAttachForm(f => ({ ...f, residentId: e.target.value }))}
                     disabled={!attachForm.estateId}>
-                    <option value="">{attachForm.estateId ? 'Select resident…' : 'Pick an estate first'}</option>
+                    <option value="">{attachForm.estateId ? 'Select member…' : 'Pick a site first'}</option>
                     {estateResidents.map(r => <option key={r._id} value={r._id}>{r.name} · {r.email}</option>)}
                   </select>
                 </div>
@@ -436,7 +436,7 @@ export default function Transactions() {
                         onChange={e => setAttachForm(f => ({ ...f, scheduleId: e.target.value }))}
                         disabled={!attachForm.estateId}/>
                       <p className="field-hint">
-                        No schedules returned for this estate — paste the schedule id from the manager app.
+                        No schedules returned for this site — paste the schedule id from the manager app.
                       </p>
                     </>
                   )}

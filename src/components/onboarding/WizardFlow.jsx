@@ -7,12 +7,12 @@ import {
 } from 'lucide-react';
 import { onboardingAPI, planAPI } from '../../api';
 import { Field, Segmented, PlanPicker, CopyButton, NG_STATES, ESTATE_TYPES, TRIAL_OPTIONS, naira } from './shared';
-import { SiteTypePicker, siteTypeInfo } from '../estates/siteTypes';
+import { SiteTypePicker, siteTypeInfo, TERMS } from '../estates/siteTypes';
 
 const STEPS = [
-  { key: 'profile',  label: 'Estate profile',   icon: Building2 },
+  { key: 'profile',  label: 'Site profile',   icon: Building2 },
   { key: 'location', label: 'Location & contact', icon: MapPin },
-  { key: 'manager',  label: 'Estate manager',   icon: UserRound },
+  { key: 'manager',  label: 'Site manager',   icon: UserRound },
   { key: 'billing',  label: 'Plan & billing',   icon: CreditCard },
   { key: 'review',   label: 'Review',           icon: ClipboardCheck },
 ];
@@ -118,7 +118,7 @@ export default function WizardFlow({ onDone }) {
 
   const errors = useMemo(() => {
     const out = {};
-    if (!e.name.trim()) out.profile = 'Enter the estate name';
+    if (!e.name.trim()) out.profile = 'Enter the site name';
     if (!e.address.trim()) out.location = 'Enter the street address';
     if (m.mode === 'new' && (!m.name.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m.email))) out.manager = 'Enter the manager’s name and a valid email';
     if (m.mode === 'existing' && !m.userId) out.manager = 'Pick a manager';
@@ -145,7 +145,7 @@ export default function WizardFlow({ onDone }) {
       toast.success(`${data.data.estate.name} is live`);
       onDone?.();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Could not create the estate');
+      toast.error(err.response?.data?.message || 'Could not create the site');
     } finally { setSaving(false); }
   };
 
@@ -166,7 +166,7 @@ export default function WizardFlow({ onDone }) {
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
           <div className="rounded-xl border border-[#E4E7EC] p-4">
-            <p className="text-[11.5px] font-medium text-[#667085]">Estate code — share with residents and guards</p>
+            <p className="text-[11.5px] font-medium text-[#667085]">Site code — share with members and guards</p>
             <div className="mt-1.5 flex items-center justify-between">
               <span className="font-mono text-[22px] font-semibold tracking-[0.12em] text-[#101828]">{result.estate.estateCode}</span>
               <CopyButton text={result.estate.estateCode} />
@@ -188,7 +188,7 @@ export default function WizardFlow({ onDone }) {
         </div>
 
         <div className="mt-6 flex flex-wrap gap-2">
-          <Link to={`/estates/${result.estate._id}`} className="btn-primary" style={{ textDecoration: 'none' }}><ExternalLink size={14} /> Open estate</Link>
+          <Link to={`/estates/${result.estate._id}`} className="btn-primary" style={{ textDecoration: 'none' }}><ExternalLink size={14} /> Open site</Link>
           <button className="btn-outline" onClick={() => { setResult(null); setForm(EMPTY); setPickedManager(null); setStep(0); }}><RotateCcw size={14} /> Onboard another</button>
         </div>
       </div>
@@ -229,29 +229,29 @@ export default function WizardFlow({ onDone }) {
         <div className="p-5 sm:p-6 min-h-[340px]">
           {step === 0 && (
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Estate name" required className="sm:col-span-2">
+              <Field label="Site name" required className="sm:col-span-2">
                 <input className="input-field" value={e.name} onChange={(ev) => set('estate', 'name', ev.target.value)} placeholder="e.g. Pilot Crescent Estate" autoFocus />
               </Field>
               <div className="sm:col-span-2">
                 <p className="field-label">Site type</p>
                 <SiteTypePicker value={e.siteType} onChange={(v) => set('estate', 'siteType', v)} />
-                <span className="field-hint">Estate, school, hotel, industrial site or hospital — sets the words and default features the apps use.</span>
+                <span className="field-hint">Estate, university, school, hotel, industrial site or hospital — sets the words and default features the apps use.</span>
               </div>
-              <Field label="Estate type">
+              {e.siteType === 'estate' && <Field label="Estate type">
                 <select className="input-field" value={e.estateType} onChange={(ev) => set('estate', 'estateType', ev.target.value)}>
                   {ESTATE_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
-              </Field>
-              <Field label="Number of units" hint="Approximate — helps size the plan">
+              </Field>}
+              <Field label={`Number of ${(TERMS[e.siteType] || TERMS.estate).units.toLowerCase()}`} hint="Approximate — helps size the plan">
                 <input className="input-field" type="number" min="0" value={e.unitCount} onChange={(ev) => set('estate', 'unitCount', ev.target.value)} placeholder="e.g. 48" />
               </Field>
               <div className="sm:col-span-2 mt-1">
-                <p className="field-label">Estate settings</p>
+                <p className="field-label">Site settings</p>
                 <div className="rounded-xl border border-[#E4E7EC] px-4 divide-y divide-[#F2F4F7]">
                   <Toggle checked={e.settings.requireVisitorApproval} onChange={(v) => set('estate', 'settings', { ...e.settings, requireVisitorApproval: v })}
-                    label="Visitors need resident approval" hint="Guards wait for the host to approve before letting a visitor in" />
+                    label="Visitors need member approval" hint="Guards wait for the host to approve before letting a visitor in" />
                   <Toggle checked={e.settings.marketplaceApproval} onChange={(v) => set('estate', 'settings', { ...e.settings, marketplaceApproval: v })}
-                    label="Review marketplace listings" hint="The manager approves listings before residents see them" />
+                    label="Review marketplace listings" hint="The manager approves listings before members see them" />
                   <Toggle checked={e.settings.allowGuestChat} onChange={(v) => set('estate', 'settings', { ...e.settings, allowGuestChat: v })}
                     label="Allow guest chat" hint="Visitors can message their host from the visitor pass" />
                 </div>
@@ -261,7 +261,7 @@ export default function WizardFlow({ onDone }) {
 
           {step === 1 && (
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Street address" required className="sm:col-span-2" hint="We geocode this to place the estate on the map">
+              <Field label="Street address" required className="sm:col-span-2" hint="We geocode this to place the site on the map">
                 <input className="input-field" value={e.address} onChange={(ev) => set('estate', 'address', ev.target.value)} placeholder="12 Admiralty Way, Lekki Phase 1" autoFocus />
               </Field>
               <Field label="City / area">
@@ -272,10 +272,10 @@ export default function WizardFlow({ onDone }) {
                   {NG_STATES.map((s) => <option key={s}>{s}</option>)}
                 </select>
               </Field>
-              <Field label="Estate office phone">
+              <Field label="Site office phone">
                 <input className="input-field" value={e.contactPhone} onChange={(ev) => set('estate', 'contactPhone', ev.target.value)} placeholder="+234 …" />
               </Field>
-              <Field label="Estate office email">
+              <Field label="Site office email">
                 <input className="input-field" type="email" value={e.contactEmail} onChange={(ev) => set('estate', 'contactEmail', ev.target.value)} placeholder="office@estate.ng" />
               </Field>
               <Field label="Internal notes" className="sm:col-span-2" hint="Only visible to AreaConnect admins">
@@ -293,7 +293,7 @@ export default function WizardFlow({ onDone }) {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Full name" required><input className="input-field" value={m.name} onChange={(ev) => set('manager', 'name', ev.target.value)} placeholder="Adaeze Okafor" /></Field>
                   <Field label="Phone"><input className="input-field" value={m.phone} onChange={(ev) => set('manager', 'phone', ev.target.value)} placeholder="+234 …" /></Field>
-                  <Field label="Email" required className="sm:col-span-2" hint="If this email already manages estates, this estate is added to their portfolio.">
+                  <Field label="Email" required className="sm:col-span-2" hint="If this email already manages sites, this site is added to their portfolio.">
                     <input className="input-field" type="email" value={m.email} onChange={(ev) => set('manager', 'email', ev.target.value)} placeholder="manager@email.com" />
                   </Field>
                 </div>
@@ -303,13 +303,13 @@ export default function WizardFlow({ onDone }) {
               )}
               {m.mode === 'later' && (
                 <div className="rounded-xl border border-dashed border-[#D0D5DD] p-5 text-[13px] text-[#475467]">
-                  The estate will be created without a manager. Assign one later from <strong>Onboard estates → Add to portfolio</strong>.
+                  The site will be created without a manager. Assign one later from <strong>Onboard sites → Add to portfolio</strong>.
                 </div>
               )}
               {m.mode !== 'later' && (
                 <div className="rounded-xl border border-[#E4E7EC] px-4">
                   <Toggle checked={m.sendEmail} onChange={(v) => set('manager', 'sendEmail', v)} label="Email the manager"
-                    hint={m.mode === 'new' ? 'Sends a welcome email with their login and a temporary password' : 'Lets them know the estate is in their switcher'} />
+                    hint={m.mode === 'new' ? 'Sends a welcome email with their login and a temporary password' : 'Lets them know the site is in their switcher'} />
                 </div>
               )}
             </div>
@@ -336,12 +336,12 @@ export default function WizardFlow({ onDone }) {
           {step === 4 && (
             <div className="grid gap-4 md:grid-cols-2">
               <div className="rounded-xl border border-[#E4E7EC] p-4">
-                <p className="text-[12px] font-semibold text-[#344054] mb-1 flex items-center gap-1.5"><Building2 size={13} /> Estate</p>
+                <p className="text-[12px] font-semibold text-[#344054] mb-1 flex items-center gap-1.5"><Building2 size={13} /> Site</p>
                 <dl>
                   <ReviewRow label="Name" value={e.name} />
                   <ReviewRow label="Site type" value={siteTypeInfo(e.siteType).label} />
-                  <ReviewRow label="Type" value={ESTATE_TYPES.find((t) => t.value === e.estateType)?.label} />
-                  <ReviewRow label="Units" value={e.unitCount} />
+                  {e.siteType === 'estate' && <ReviewRow label="Estate type" value={ESTATE_TYPES.find((t) => t.value === e.estateType)?.label} />}
+                  <ReviewRow label={(TERMS[e.siteType] || TERMS.estate).units} value={e.unitCount} />
                   <ReviewRow label="Address" value={e.address} />
                   <ReviewRow label="City, state" value={[e.city, e.state].filter(Boolean).join(', ')} />
                   <ReviewRow label="Office contact" value={[e.contactPhone, e.contactEmail].filter(Boolean).join(' · ')} />
@@ -353,7 +353,7 @@ export default function WizardFlow({ onDone }) {
                   <dl>
                     {m.mode === 'later' && <ReviewRow label="Manager" value="Assign later" />}
                     {m.mode === 'new' && <><ReviewRow label="Name" value={m.name} /><ReviewRow label="Email" value={m.email} /><ReviewRow label="Account" value="New — temporary password" /></>}
-                    {m.mode === 'existing' && <><ReviewRow label="Name" value={pickedManager?.name} /><ReviewRow label="Email" value={pickedManager?.email} /><ReviewRow label="Portfolio" value={`${pickedManager?.managedEstates?.length || 0} → ${(pickedManager?.managedEstates?.length || 0) + 1} estates`} /></>}
+                    {m.mode === 'existing' && <><ReviewRow label="Name" value={pickedManager?.name} /><ReviewRow label="Email" value={pickedManager?.email} /><ReviewRow label="Portfolio" value={`${pickedManager?.managedEstates?.length || 0} → ${(pickedManager?.managedEstates?.length || 0) + 1} sites`} /></>}
                     {m.mode !== 'later' && <ReviewRow label="Welcome email" value={m.sendEmail ? <span className="flex items-center gap-1 justify-end"><Mail size={12} /> Yes</span> : 'No'} />}
                   </dl>
                 </div>
@@ -373,7 +373,7 @@ export default function WizardFlow({ onDone }) {
           <button className="btn-ghost" disabled={step === 0} onClick={() => setStep((s) => s - 1)}><ChevronLeft size={15} /> Back</button>
           {step < STEPS.length - 1
             ? <button className="btn-primary" onClick={next}>Continue <ChevronRight size={15} /></button>
-            : <button className="btn-primary" disabled={saving} onClick={submit}>{saving ? 'Creating…' : 'Create estate'} <Check size={15} /></button>}
+            : <button className="btn-primary" disabled={saving} onClick={submit}>{saving ? 'Creating…' : 'Create site'} <Check size={15} /></button>}
         </div>
       </div>
     </div>

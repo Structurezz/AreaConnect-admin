@@ -4,7 +4,7 @@ import { Siren, ShieldAlert, DoorOpen, LogOut, Wallet, KeyRound, Rocket, Bell, R
 
 // One line per platform event — what happened, where, and how serious
 export function describe(ev, estateName) {
-  const where = estateName || 'An estate';
+  const where = estateName || 'A site';
   switch (ev.kind) {
     case 'alert': {
       const crit = ev.severity === 'high' || ev.severity === 'critical' || ev.isEmergencyBroadcast;
@@ -21,7 +21,7 @@ export function describe(ev, estateName) {
     case 'password_reset':
       return { icon: KeyRound, tone: 'blue', title: `Password reset requested · ${where}`, body: `${ev.name || 'User'}${ev.role ? ` (${ev.role})` : ''}` };
     case 'estate_signup':
-      return { icon: Rocket, tone: 'green', title: `New estate signed up`, body: `${ev.name || 'Estate'} · ${ev.manager || ''}` };
+      return { icon: Rocket, tone: 'green', title: `New site signed up`, body: `${ev.name || 'Site'} · ${ev.manager || ''}` };
     default:
       return { icon: Bell, tone: 'gray', title: `${ev.title || 'Activity'} · ${where}`, body: ev.body || '' };
   }

@@ -25,7 +25,7 @@ const mins = (m) => (m == null ? '—' : m < 60 ? `${m} min` : m < 1440 ? `${Mat
 const TEMPLATES = [
   { title: 'Gate safety reminder', body: 'Please send a visitor pass from the AreaMates app for every guest. Guards will only admit visitors with a valid pass or after calling you. Never share your gate code with strangers.' },
   { title: 'Verify delivery riders', body: 'Delivery riders must wait at the gate. Confirm the order in your app before the guard lets them in, and meet them at the gate where possible.' },
-  { title: 'Know your emergency button', body: 'In an emergency, open AreaMates and press the alert button. Security and the estate manager are notified instantly with your unit number. Use it for security, fire or medical emergencies.' },
+  { title: 'Know your emergency button', body: 'In an emergency, open AreaMates and press the alert button. Security and the site manager are notified instantly with your unit number. Use it for security, fire or medical emergencies.' },
   { title: 'Festive season security', body: 'The festive season brings more visitors and deliveries. Please register every guest in advance, keep your doors locked, and report anything suspicious using the alert button.' },
   { title: 'Share your trip with security', body: 'Coming home late? Use “Share live location” in AreaMates so the gate team can watch out for you until you’re in.' },
 ];
@@ -91,7 +91,7 @@ export default function SecurityCentre({ liveFeed, reloadKey }) {
     setSending(true);
     try {
       const { data: r } = await securityAPI.notice({ title: notice.title, body: notice.body, estateIds: notice.scope === 'all' ? [] : notice.estateIds, pin: notice.pin });
-      toast.success(`Safety notice sent to ${r.data.sent} estate${r.data.sent === 1 ? '' : 's'}`);
+      toast.success(`Safety notice sent to ${r.data.sent} site${r.data.sent === 1 ? '' : 's'}`);
       setNotice(null);
     } catch (err) { toast.error(err?.response?.data?.message || 'Could not send'); }
     finally { setSending(false); }
@@ -208,12 +208,12 @@ export default function SecurityCentre({ liveFeed, reloadKey }) {
           {/* ── Estate scorecards ── */}
           <div className="card overflow-hidden">
             <div className="card-header">
-              <div><div className="card-title flex items-center gap-2"><Building2 size={15} className="text-[#475467]" /> Estate security scorecards</div><div className="card-sub">Weakest first · click an estate to see what to fix</div></div>
+              <div><div className="card-title flex items-center gap-2"><Building2 size={15} className="text-[#475467]" /> Site security scorecards</div><div className="card-sub">Weakest first · click a site to see what to fix</div></div>
             </div>
             <div className="px-4 py-2.5 border-b border-[#F2F4F7] flex flex-wrap items-center gap-2">
               <div className="flex items-center gap-2 h-9 px-3 rounded-lg border border-[#D0D5DD] flex-1 max-w-xs">
                 <Search size={14} className="text-[#98A2B3]" />
-                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search estates" className="flex-1 min-w-0 bg-transparent outline-none text-[13px]" />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search sites" className="flex-1 min-w-0 bg-transparent outline-none text-[13px]" />
               </div>
               <select className="input-field !w-auto !h-9 !py-0" value={sort} onChange={(e) => setSort(e.target.value)}>
                 <option value="score">Weakest score</option><option value="alerts">Most alerts</option><option value="guards">Fewest guards</option><option value="response">Slowest response</option><option value="name">Name</option>
@@ -223,7 +223,7 @@ export default function SecurityCentre({ liveFeed, reloadKey }) {
               <table className="w-full text-[12.5px] min-w-[860px]">
                 <thead>
                   <tr className="text-left text-[11.5px] text-[#667085] bg-[#F9FAFB] border-b border-[#F2F4F7]">
-                    <th className="font-medium px-4 py-2.5">Estate</th><th className="font-medium px-3 py-2.5 w-[150px]">Score</th>
+                    <th className="font-medium px-4 py-2.5">Site</th><th className="font-medium px-3 py-2.5 w-[150px]">Score</th>
                     <th className="font-medium px-3 py-2.5">Guards</th><th className="font-medium px-3 py-2.5">Visitors 7d</th>
                     <th className="font-medium px-3 py-2.5">Alerts</th><th className="font-medium px-3 py-2.5">Response</th>
                     <th className="font-medium px-3 py-2.5">Controls</th><th className="font-medium px-3 py-2.5">Top fix</th><th />
@@ -268,7 +268,7 @@ export default function SecurityCentre({ liveFeed, reloadKey }) {
                           <td colSpan={9} className="px-4 pb-4 pt-1">
                             <div className="grid md:grid-cols-[minmax(0,1fr)_260px] gap-4">
                               <div className="space-y-2">
-                                {!e.gaps.length && <p className="text-[12.5px] text-[#079455] flex items-center gap-1.5"><CheckCircle2 size={14} /> This estate ticks every box.</p>}
+                                {!e.gaps.length && <p className="text-[12.5px] text-[#079455] flex items-center gap-1.5"><CheckCircle2 size={14} /> This site ticks every box.</p>}
                                 {e.gaps.map((gp) => {
                                   const I = GAP_ICON[gp.key] || AlertTriangle;
                                   return (
@@ -371,14 +371,14 @@ export default function SecurityCentre({ liveFeed, reloadKey }) {
                     </div>
                     <div className="mt-2 pl-[38px] flex flex-wrap gap-1.5">
                       <button onClick={() => openNotice({ estateIds: p.estates.map((x) => x._id), ...(p.key === 'approval_off' || p.key === 'no_visitor_logs' ? TEMPLATES[0] : p.key === 'open_alerts' || p.key === 'slow_response' ? TEMPLATES[2] : {}) })}
-                        className="inline-flex items-center gap-1 text-[11.5px] font-semibold px-2 h-7 rounded-md bg-[#ECFDF3] text-[#067647] hover:bg-[#D1FADF]"><Megaphone size={11} /> Notify these estates</button>
+                        className="inline-flex items-center gap-1 text-[11.5px] font-semibold px-2 h-7 rounded-md bg-[#ECFDF3] text-[#067647] hover:bg-[#D1FADF]"><Megaphone size={11} /> Notify these sites</button>
                       {(p.key === 'no_guards' || p.key === 'no_manager') && <Link to="/onboarding?method=portfolio" className="inline-flex items-center gap-1 text-[11.5px] font-medium px-2 h-7 rounded-md border border-[#E4E7EC] text-[#475467]" style={{ textDecoration: 'none' }}>Assign people</Link>}
                       {p.key === 'no_security_plan' && <Link to="/finance?tab=billing" className="inline-flex items-center gap-1 text-[11.5px] font-medium px-2 h-7 rounded-md border border-[#E4E7EC] text-[#475467]" style={{ textDecoration: 'none' }}>Upgrade plans</Link>}
                     </div>
                   </div>
                 );
               })}
-              {!data.playbook.length && <p className="px-4 py-6 text-center text-[12.5px] text-[#079455]">Every estate ticks every box.</p>}
+              {!data.playbook.length && <p className="px-4 py-6 text-center text-[12.5px] text-[#079455]">Every site ticks every box.</p>}
             </div>
           </div>
 
@@ -387,13 +387,13 @@ export default function SecurityCentre({ liveFeed, reloadKey }) {
             <Meter label="Guards on the app" value={t.estatesWithGuards} total={t.estates} icon={Users} />
             <Meter label="Visitor approval on" value={t.approvalOn} total={t.estates} icon={Lock} />
             <Meter label="Security portal plan" value={t.securityPlans} total={t.estates} icon={ShieldCheck} />
-            <Meter label="Estates on the map" value={(data.estates || []).filter((e) => e.hasPin).length} total={t.estates} icon={MapPin} />
-            <Meter label="Estates with a manager" value={(data.estates || []).filter((e) => e.hasManager).length} total={t.estates} icon={UserX} />
+            <Meter label="Sites on the map" value={(data.estates || []).filter((e) => e.hasPin).length} total={t.estates} icon={MapPin} />
+            <Meter label="Sites with a manager" value={(data.estates || []).filter((e) => e.hasManager).length} total={t.estates} icon={UserX} />
           </div>
 
           <div className="card p-4">
             <p className="card-title flex items-center gap-2"><Sparkles size={15} className="text-[#F79009]" /> Safety notice templates</p>
-            <p className="card-sub mb-3">Pinned to every resident’s notice board</p>
+            <p className="card-sub mb-3">Pinned to every member’s notice board</p>
             <div className="space-y-1.5">
               {TEMPLATES.map((tp) => (
                 <button key={tp.title} onClick={() => openNotice(tp)} className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-[#EAECF0] text-left hover:border-[#D0D5DD] hover:bg-[#F9FAFB]">
@@ -407,9 +407,9 @@ export default function SecurityCentre({ liveFeed, reloadKey }) {
 
       {/* ── Safety notice side panel ── */}
       {notice && (
-        <Drawer title="Send a safety notice" subtitle="Posts an urgent notice to residents’ notice boards and notifies them instantly." icon={Megaphone} onClose={() => setNotice(null)}
+        <Drawer title="Send a safety notice" subtitle="Posts an urgent notice to members’ notice boards and notifies them instantly." icon={Megaphone} onClose={() => setNotice(null)}
           footer={<>
-            <span className="text-[12px] text-[#667085] mr-auto">{notice.scope === 'all' ? `All ${t.estates} estates` : `${notice.estateIds.length} estate${notice.estateIds.length === 1 ? '' : 's'}`}</span>
+            <span className="text-[12px] text-[#667085] mr-auto">{notice.scope === 'all' ? `All ${t.estates} sites` : `${notice.estateIds.length} site${notice.estateIds.length === 1 ? '' : 's'}`}</span>
             <button type="button" onClick={() => setNotice(null)} className="btn-outline">Cancel</button>
             <button type="submit" form="notice-form" disabled={sending || !notice.title.trim() || !notice.body.trim() || (notice.scope !== 'all' && !notice.estateIds.length)} className="btn-primary">
               {sending ? <><RefreshCw size={14} className="animate-spin" /> Sending…</> : <><Send size={14} /> Send notice</>}
@@ -426,12 +426,12 @@ export default function SecurityCentre({ liveFeed, reloadKey }) {
             </Section>
             <Section step="2" icon={Megaphone} title="Message">
               <input className="input-field" placeholder="Title" value={notice.title} onChange={(e) => setNotice((n) => ({ ...n, title: e.target.value }))} maxLength={140} />
-              <textarea className="input-field mt-2.5 min-h-[140px]" placeholder="What should residents know or do?" value={notice.body} onChange={(e) => setNotice((n) => ({ ...n, body: e.target.value }))} maxLength={4000} />
+              <textarea className="input-field mt-2.5 min-h-[140px]" placeholder="What should members know or do?" value={notice.body} onChange={(e) => setNotice((n) => ({ ...n, body: e.target.value }))} maxLength={4000} />
               <label className="mt-2.5 flex items-center gap-2 text-[12.5px] text-[#344054]"><input type="checkbox" className="accent-[#059669]" checked={notice.pin} onChange={(e) => setNotice((n) => ({ ...n, pin: e.target.checked }))} /> Pin to the top of the notice board</label>
             </Section>
             <Section step="3" icon={Building2} title="Which estates?">
               <div className="grid grid-cols-2 gap-2 mb-3">
-                {[['all', 'All estates', `${t.estates} estates`], ['some', 'Choose estates', `${notice.estateIds.length} selected`]].map(([v, l, h]) => (
+                {[['all', 'All sites', `${t.estates} sites`], ['some', 'Choose sites', `${notice.estateIds.length} selected`]].map(([v, l, h]) => (
                   <button key={v} type="button" onClick={() => setNotice((n) => ({ ...n, scope: v }))}
                     className={`text-left rounded-xl border px-3 py-2.5 ${notice.scope === v ? 'border-[#059669] bg-[#F6FEF9] ring-2 ring-[#059669]/10' : 'border-[#E4E7EC]'}`}>
                     <span className="block text-[13px] font-medium text-[#101828]">{l}</span><span className="block text-[11px] text-[#98A2B3]">{h}</span>

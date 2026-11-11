@@ -34,7 +34,7 @@ export default function Portfolio({ onDone }) {
 
   const submit = async () => {
     if (!mgr) return toast.error('Pick a manager first');
-    if (!validNew.length && !moveIds.length) return toast.error('Add a new estate or pick an existing one');
+    if (!validNew.length && !moveIds.length) return toast.error('Add a new site or pick an existing one');
     setBusy(true);
     try {
       const { data } = await onboardingAPI.portfolio({
@@ -45,7 +45,7 @@ export default function Portfolio({ onDone }) {
         sendEmail,
       });
       const n = data.data.created.length + data.data.assigned.length;
-      toast.success(`${n} estate${n === 1 ? '' : 's'} added to ${mgr.name}'s portfolio`);
+      toast.success(`${n} site${n === 1 ? '' : 's'} added to ${mgr.name}'s portfolio`);
       setNewRows([blank()]); setMoveIds([]);
       const fresh = await onboardingAPI.managers();
       setManagers(fresh.data.data || []);
@@ -94,26 +94,26 @@ export default function Portfolio({ onDone }) {
         <div className="card flex flex-col items-center justify-center text-center p-10 min-h-[320px]">
           <span className="w-12 h-12 rounded-full bg-[#F2F4F7] text-[#667085] flex items-center justify-center"><Briefcase size={20} /></span>
           <p className="mt-3 text-[14px] font-semibold text-[#101828]">Grow a manager's portfolio</p>
-          <p className="mt-1 text-[13px] text-[#667085] max-w-sm">Pick a manager to add new estates they run, or move existing estates under them. They switch between estates from their dashboard.</p>
+          <p className="mt-1 text-[13px] text-[#667085] max-w-sm">Pick a manager to add new sites they run, or move existing sites under them. They switch between sites from their dashboard.</p>
         </div>
       ) : (
         <div className="space-y-5">
-          <SectionCard title={mgr.name} description={`${mgr.email} · currently manages ${mgr.managedEstates?.length || 0} estate${mgr.managedEstates?.length === 1 ? '' : 's'}`}>
+          <SectionCard title={mgr.name} description={`${mgr.email} · currently manages ${mgr.managedEstates?.length || 0} site${mgr.managedEstates?.length === 1 ? '' : 's'}`}>
             <div className="flex flex-wrap gap-2">
               {(mgr.managedEstates || []).map((e) => (
                 <span key={e._id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-[#E4E7EC] text-[12.5px] text-[#344054]">
                   <Building2 size={13} className="text-[#98A2B3]" />{e.name}<span className="font-mono text-[11px] text-[#98A2B3]">{e.estateCode}</span>
                 </span>
               ))}
-              {!mgr.managedEstates?.length && <span className="text-[12.5px] text-[#98A2B3]">No estates yet</span>}
+              {!mgr.managedEstates?.length && <span className="text-[12.5px] text-[#98A2B3]">No sites yet</span>}
             </div>
           </SectionCard>
 
-          <SectionCard title="New estates" description="Create estates directly in this manager's portfolio.">
+          <SectionCard title="New sites" description="Create sites directly in this manager's portfolio.">
             <div className="space-y-2.5">
               {newRows.map((r, i) => (
                 <div key={i} className="grid gap-2 md:grid-cols-[1.2fr_1.6fr_1fr_1fr_80px_32px] p-3 md:p-0 rounded-xl border md:border-0 border-[#E4E7EC]">
-                  <input className="input-field" placeholder="Estate name *" value={r.name} onChange={(e) => setRow(i, 'name', e.target.value)} />
+                  <input className="input-field" placeholder="Site name *" value={r.name} onChange={(e) => setRow(i, 'name', e.target.value)} />
                   <input className="input-field" placeholder="Street address *" value={r.address} onChange={(e) => setRow(i, 'address', e.target.value)} />
                   <input className="input-field" placeholder="City" value={r.city} onChange={(e) => setRow(i, 'city', e.target.value)} />
                   <select className="input-field" value={r.state} onChange={(e) => setRow(i, 'state', e.target.value)}>{NG_STATES.map((s) => <option key={s}>{s}</option>)}</select>
@@ -122,7 +122,7 @@ export default function Portfolio({ onDone }) {
                     onClick={() => setNewRows((rs) => rs.filter((_, j) => j !== i))} aria-label="Remove"><Trash2 size={15} /></button>
                 </div>
               ))}
-              <button type="button" className="btn-ghost" onClick={() => setNewRows((rs) => [...rs, blank()])}><Plus size={14} /> Add another estate</button>
+              <button type="button" className="btn-ghost" onClick={() => setNewRows((rs) => [...rs, blank()])}><Plus size={14} /> Add another site</button>
             </div>
             {validNew.length > 0 && (
               <div className="mt-4 pt-4 border-t border-[#F2F4F7] grid gap-4 md:grid-cols-3">
@@ -138,10 +138,10 @@ export default function Portfolio({ onDone }) {
             )}
           </SectionCard>
 
-          <SectionCard title="Existing estates" description="Move estates already on the platform into this portfolio (e.g. unassigned estates or a handover).">
+          <SectionCard title="Existing sites" description="Move sites already on the platform into this portfolio (e.g. unassigned sites or a handover).">
             <div className="flex items-center gap-2 px-3 h-9 rounded-lg border border-[#D0D5DD] bg-white mb-3">
               <Search size={14} className="text-[#98A2B3]" />
-              <input value={moveQ} onChange={(e) => setMoveQ(e.target.value)} placeholder="Search estates by name or code" className="flex-1 bg-transparent outline-none text-[13px]" />
+              <input value={moveQ} onChange={(e) => setMoveQ(e.target.value)} placeholder="Search sites by name or code" className="flex-1 bg-transparent outline-none text-[13px]" />
             </div>
             <div className="max-h-64 overflow-y-auto rounded-xl border border-[#E4E7EC] divide-y divide-[#F2F4F7]">
               {movable.slice(0, 60).map((e) => {
@@ -158,10 +158,10 @@ export default function Portfolio({ onDone }) {
                   </button>
                 );
               })}
-              {!movable.length && <p className="p-4 text-[12.5px] text-[#98A2B3]">No estates match.</p>}
+              {!movable.length && <p className="p-4 text-[12.5px] text-[#98A2B3]">No sites match.</p>}
             </div>
             {moveIds.some((id) => estates.find((e) => e._id === id)?.managerId) && (
-              <p className="mt-2 text-[12px] text-[#B54708]">Some selected estates already have a manager — {mgr.name} becomes their primary manager.</p>
+              <p className="mt-2 text-[12px] text-[#B54708]">Some selected sites already have a manager — {mgr.name} becomes their primary manager.</p>
             )}
           </SectionCard>
 
@@ -171,7 +171,7 @@ export default function Portfolio({ onDone }) {
               Email {mgr.name.split(' ')[0]} about the new estates
             </label>
             <button className="btn-primary" disabled={busy || (!validNew.length && !moveIds.length)} onClick={submit}>
-              {busy ? 'Saving…' : `Add ${validNew.length + moveIds.length || ''} estate${validNew.length + moveIds.length === 1 ? '' : 's'} to portfolio`}
+              {busy ? 'Saving…' : `Add ${validNew.length + moveIds.length || ''} site${validNew.length + moveIds.length === 1 ? '' : 's'} to portfolio`}
             </button>
           </div>
         </div>

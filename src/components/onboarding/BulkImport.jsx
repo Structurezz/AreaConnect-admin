@@ -79,7 +79,7 @@ export default function BulkImport({ onDone }) {
     try {
       const { data } = await onboardingAPI.bulk({ rows, defaults: { ...defaults, planId: defaults.planId || undefined }, sendEmails });
       setResult(data.data);
-      toast.success(`${data.data.created} estate${data.data.created === 1 ? '' : 's'} onboarded`);
+      toast.success(`${data.data.created} site${data.data.created === 1 ? '' : 's'} onboarded`);
       onDone?.();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Import failed');
@@ -90,17 +90,17 @@ export default function BulkImport({ onDone }) {
     return (
       <div className="space-y-5">
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="stat-card"><p className="text-[12.5px] text-[#475467]">Estates created</p><p className="mt-1 text-[26px] font-semibold text-[#067647]">{result.created}</p></div>
+          <div className="stat-card"><p className="text-[12.5px] text-[#475467]">Sites created</p><p className="mt-1 text-[26px] font-semibold text-[#067647]">{result.created}</p></div>
           <div className="stat-card"><p className="text-[12.5px] text-[#475467]">Failed rows</p><p className="mt-1 text-[26px] font-semibold text-[#B42318]">{result.failed}</p></div>
           <div className="stat-card"><p className="text-[12.5px] text-[#475467]">Welcome emails sent</p><p className="mt-1 text-[26px] font-semibold text-[#101828]">{result.emailsSent}</p></div>
         </div>
 
         {result.credentials?.length > 0 && (
           <SectionCard title="New manager logins" description="Temporary passwords are shown once. Download them now if you need to share them another way."
-            aside={<button className="btn-outline" onClick={() => downloadCSV(`manager-logins-${result.batchId}.csv`, [['Name', 'Email', 'Temporary password', 'Estates'], ...result.credentials.map((c) => [c.name, c.email, c.tempPassword, c.estates.join('; ')])])}><Download size={14} /> Download</button>}>
+            aside={<button className="btn-outline" onClick={() => downloadCSV(`manager-logins-${result.batchId}.csv`, [['Name', 'Email', 'Temporary password', 'Sites'], ...result.credentials.map((c) => [c.name, c.email, c.tempPassword, c.estates.join('; ')])])}><Download size={14} /> Download</button>}>
             <div className="overflow-x-auto -m-5">
               <table className="table">
-                <thead><tr><th>Manager</th><th>Temporary password</th><th>Estates</th></tr></thead>
+                <thead><tr><th>Manager</th><th>Temporary password</th><th>Sites</th></tr></thead>
                 <tbody>{result.credentials.map((c) => (
                   <tr key={c.email}><td><span className="cell-strong">{c.name}</span><br /><span className="text-[12px]">{c.email}</span></td>
                     <td><span className="font-mono text-[#047857] flex items-center gap-1.5"><KeyRound size={13} />{c.tempPassword}</span></td>
@@ -114,7 +114,7 @@ export default function BulkImport({ onDone }) {
         <SectionCard title={`Batch ${result.batchId}`} description="Row-by-row result">
           <div className="overflow-x-auto -m-5">
             <table className="table">
-              <thead><tr><th>Row</th><th>Estate</th><th>Code</th><th>Manager</th><th>Result</th></tr></thead>
+              <thead><tr><th>Row</th><th>Site</th><th>Code</th><th>Manager</th><th>Result</th></tr></thead>
               <tbody>{result.results.map((r) => (
                 <tr key={r.row}>
                   <td>{r.row}</td><td className="cell-strong">{r.name || '—'}</td>
@@ -133,7 +133,7 @@ export default function BulkImport({ onDone }) {
 
   return (
     <div className="space-y-5">
-      <SectionCard title="1 · Add your estates" description="Upload a CSV or paste rows from Excel / Google Sheets. One row per estate — the same manager email on several rows gives that manager all of those estates."
+      <SectionCard title="1 · Add your sites" description="Upload a CSV or paste rows from Excel / Google Sheets. One row per site — the same manager email on several rows gives that manager all of those sites."
         aside={<button className="btn-outline whitespace-nowrap" onClick={() => downloadCSV('areaconnect-estates-template.csv', TEMPLATE)}><Download size={14} /> Template</button>}>
         <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
           <button type="button" onClick={() => fileRef.current?.click()}
@@ -204,14 +204,14 @@ export default function BulkImport({ onDone }) {
           </div>
           <label className="mt-4 flex items-center gap-2 text-[13px] text-[#344054]">
             <input type="checkbox" checked={sendEmails} onChange={(ev) => setSendEmails(ev.target.checked)} className="accent-[#059669]" />
-            Email each manager once with all their estates and login details
+            Email each manager once with all their sites and login details
           </label>
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-[#F2F4F7]">
             <p className="text-[12.5px] text-[#667085] flex items-center gap-1.5">
               <FileSpreadsheet size={14} /> {rows.length - errCount} estate{rows.length - errCount === 1 ? '' : 's'} · {managers} manager{managers === 1 ? '' : 's'} will be onboarded
             </p>
             <button className="btn-primary" disabled={busy || rows.length === errCount} onClick={runImport}>
-              {busy ? 'Importing…' : `Import ${rows.length - errCount} estate${rows.length - errCount === 1 ? '' : 's'}`}
+              {busy ? 'Importing…' : `Import ${rows.length - errCount} site${rows.length - errCount === 1 ? '' : 's'}`}
             </button>
           </div>
         </SectionCard>

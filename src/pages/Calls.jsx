@@ -11,7 +11,7 @@ import PageHeader from '../components/ui/PageHeader';
 
 const dayLabel = (d) => (isToday(d) ? 'Today' : isYesterday(d) ? 'Yesterday' : format(d, 'EEE, MMM d'));
 const mmss = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-const ROLE_LABEL = { security: 'Security', estate_manager: 'Estate Manager', super_admin: 'Estate Manager', resident: 'Resident' };
+const ROLE_LABEL = { security: 'Security', estate_manager: 'Site Manager', super_admin: 'Site Manager', resident: 'Member' };
 
 function Avatar({ person, size = 32 }) {
   return (
@@ -75,7 +75,7 @@ export default function Calls() {
     <div className="max-w-[1400px] mx-auto animate-fade-in pb-12">
       <PageHeader
         title="Calls"
-        description="Call any estate manager or guard on AreaConnect. Admin calls are always free."
+        description="Call any site manager or guard on AreaConnect. Admin calls are always free."
         actions={(
           <button onClick={load} className="btn-outline gap-2" aria-label="Refresh">
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh
@@ -84,7 +84,7 @@ export default function Calls() {
       >
         <div className="overflow-x-auto -mx-1 px-1">
           <div className="tabs">
-            {[['managers', 'Estate managers'], ['guards', 'Guards'], ['recent', 'Recent']].map(([id, label]) => (
+            {[['managers', 'Site managers'], ['guards', 'Guards'], ['recent', 'Recent']].map(([id, label]) => (
               <button key={id} onClick={() => { setTab(id); setQ(''); }} className={`tab ${tab === id ? 'active' : ''}`}>
                 {label}
                 {id === 'recent' && missedIn > 0 && (
@@ -101,7 +101,7 @@ export default function Calls() {
           <div className="px-4 py-3 border-b border-[#E4E7EC] flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="relative flex-1 sm:max-w-sm">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
-              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or estate"
+              <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or site"
                 className="input-field pl-9" />
             </div>
             <div className="sm:ml-auto flex items-center gap-1.5 text-[12px] text-[#98A2B3]">
@@ -123,8 +123,8 @@ export default function Calls() {
             </div>
           ) : filtered.length === 0 ? (
             <Empty icon={Phone}
-              title={q ? `No match for “${q}”` : tab === 'guards' ? 'No guards yet' : 'No estate managers yet'}
-              hint={q ? 'Try a different name or estate.' : 'Contacts appear here once they join the platform.'} />
+              title={q ? `No match for “${q}”` : tab === 'guards' ? 'No guards yet' : 'No site managers yet'}
+              hint={q ? 'Try a different name or site.' : 'Contacts appear here once they join the platform.'} />
           ) : (
             <>
               {/* Desktop table */}
@@ -133,7 +133,7 @@ export default function Calls() {
                   <thead>
                     <tr>
                       <th className="text-left">Name</th>
-                      <th className="text-left">Estate</th>
+                      <th className="text-left">Site</th>
                       <th className="text-left">Role</th>
                       <th className="text-left">Status</th>
                       <th className="text-right">Action</th>

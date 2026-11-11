@@ -11,6 +11,7 @@ import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
 import { format, subMonths, startOfMonth } from 'date-fns';
 import { useAuth } from '../context/AuthContext';
+import { SITE_TYPES, SiteTypeBadge, siteTypeOf, TERMS } from '../components/estates/siteTypes';
 
 // Simple CSS column chart — no chart lib in this app.
 function ColumnChart({ data, color = '#059669', height = 160 }) {
@@ -95,13 +96,13 @@ export default function AdminDashboard() {
   const healthItems = [
     { label: 'Trials active',     value: subStats?.trial ?? 0,   icon: Clock,       good: (subStats?.trial ?? 0) === 0,   to: '/subscriptions', sub: 'Conversion opportunities' },
     { label: 'Expired / lapsed',  value: subStats?.expired ?? 0, icon: AlertCircle, good: (subStats?.expired ?? 0) === 0, to: '/operations',    sub: 'Need immediate action' },
-    { label: 'Unmanaged estates', value: unmanaged,              icon: Building2,   good: unmanaged === 0,                to: '/operations',    sub: 'No manager assigned' },
-    { label: 'Open alerts',       value: openAlerts,             icon: Bell,        good: openAlerts === 0,               to: '/analytics',     sub: 'Across all estates' },
+    { label: 'Unmanaged sites', value: unmanaged,              icon: Building2,   good: unmanaged === 0,                to: '/operations',    sub: 'No manager assigned' },
+    { label: 'Open alerts',       value: openAlerts,             icon: Bell,        good: openAlerts === 0,               to: '/analytics',     sub: 'Across all sites' },
   ];
 
   const quickActions = [
-    { to: '/onboarding',    icon: Plus,        label: 'Onboard estates',  sub: 'Register new communities' },
-    { to: '/estates',       icon: Building2,   label: 'All estates',      sub: 'Browse, filter and manage' },
+    { to: '/onboarding',    icon: Plus,        label: 'Onboard sites',  sub: 'Register new communities' },
+    { to: '/estates',       icon: Building2,   label: 'All sites',      sub: 'Browse, filter and manage' },
     { to: '/users',         icon: Users,       label: 'Users',            sub: 'Roles and accounts' },
     { to: '/analytics',     icon: BarChart2,   label: 'Analytics',        sub: 'KPIs, growth, trends' },
     { to: '/revenue',       icon: TrendingUp,  label: 'Revenue',          sub: 'MRR, ARR, financials' },
@@ -114,7 +115,7 @@ export default function AdminDashboard() {
     <div className="max-w-[1400px] mx-auto animate-fade-in">
       <PageHeader
         heading title={`Welcome back, ${firstName}`}
-        description={`Platform overview across all estates · ${format(new Date(), 'EEEE, MMMM d, yyyy')}`}
+        description={`Platform overview across all sites · ${format(new Date(), 'EEEE, MMMM d, yyyy')}`}
         actions={
           <>
             <Link to="/analytics" className="btn-outline gap-2"><BarChart2 size={14} /> Analytics</Link>
@@ -125,16 +126,16 @@ export default function AdminDashboard() {
       <div className="space-y-5">
         {/* KPIs */}
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Total estates"   value={estates.length} icon={Building2} color="green" hint={`${active} active · ${withManager} managed`} />
-          <StatCard label="Total residents" value={platformStats?.totalResidents ?? 0} icon={Users} color="blue" hint={`${(platformStats?.totalUnits ?? 0).toLocaleString()} units`} />
+          <StatCard label="Total sites"   value={estates.length} icon={Building2} color="green" hint={`${active} active · ${withManager} managed`} />
+          <StatCard label="Total members" value={platformStats?.totalResidents ?? 0} icon={Users} color="blue" hint={`${(platformStats?.totalUnits ?? 0).toLocaleString()} units`} />
           <StatCard label="Monthly recurring revenue" value={`₦${mrr.toLocaleString()}`} icon={TrendingUp} color="green" hint={`${subStats?.active ?? 0} paying subscriptions`} />
-          <StatCard label="Open alerts"     value={openAlerts} icon={Bell} color={openAlerts > 0 ? 'red' : 'amber'} hint="Across all estates" />
+          <StatCard label="Open alerts"     value={openAlerts} icon={Bell} color={openAlerts > 0 ? 'red' : 'amber'} hint="Across all sites" />
         </div>
 
         {platformStats && (
           <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
             <StatCard label="Total units"     value={platformStats.totalUnits ?? 0}    icon={Home}      color="blue" />
-            <StatCard label="Estate managers" value={platformStats.totalManagers ?? 0} icon={Briefcase} color="amber" />
+            <StatCard label="Site managers" value={platformStats.totalManagers ?? 0} icon={Briefcase} color="amber" />
             <StatCard label="Security staff"  value={platformStats.totalSecurity ?? 0} icon={Shield}    color="purple" />
             <StatCard label="Total visitors"  value={platformStats.totalVisitors ?? 0} icon={UserCheck} color="green" />
           </div>
@@ -145,11 +146,11 @@ export default function AdminDashboard() {
           <div className="card lg:col-span-2">
             <div className="card-header">
               <div>
-                <div className="card-title">Estates onboarded</div>
-                <div className="card-sub">New estates per month · last 6 months</div>
+                <div className="card-title">Sites onboarded</div>
+                <div className="card-sub">New sites per month · last 6 months</div>
               </div>
               <Link to="/estates" className="text-[12.5px] font-medium text-[#059669] hover:underline inline-flex items-center gap-1">
-                View estates <ArrowRight size={12} />
+                View sites <ArrowRight size={12} />
               </Link>
             </div>
             <div className="p-5">
@@ -198,6 +199,34 @@ export default function AdminDashboard() {
           </div>
         </div>
 
+        {/* Sites by type */}
+        <div className="card">
+          <div className="card-header">
+            <div>
+              <div className="card-title">Sites by type</div>
+              <div className="card-sub">Estates, campuses, hotels, industrial sites and hospitals on the platform</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
+            {SITE_TYPES.map((t, i) => {
+              const list = estates.filter((e) => siteTypeOf(e) === t.value);
+              const on = list.filter((e) => e.isActive).length;
+              const Icon = t.icon;
+              return (
+                <Link key={t.value} to={`/estates?type=${t.value}`}
+                  className={`p-4 flex items-center gap-3 hover:bg-[#F9FAFB] transition-colors border-[#F2F4F7] ${i ? 'border-l' : ''}`}>
+                  <span className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: t.bg, color: t.color }}><Icon size={16} /></span>
+                  <div className="min-w-0">
+                    <div className="text-[18px] font-semibold leading-none text-[#101828] tabular-nums">{list.length}</div>
+                    <div className="text-[12.5px] font-medium text-[#344054] mt-1 truncate">{TERMS[t.value].sites}</div>
+                    <div className="text-[11.5px] text-[#98A2B3] truncate">{on} active</div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Platform health */}
         <div className="card">
           <div className="card-header">
@@ -234,7 +263,7 @@ export default function AdminDashboard() {
         <div className="card overflow-hidden">
           <div className="card-header">
             <div>
-              <div className="card-title">Recent estates</div>
+              <div className="card-title">Recent sites</div>
               <div className="card-sub">Latest {Math.min(10, estates.length)} of {estates.length}</div>
             </div>
             <Link to="/estates" className="text-[12.5px] font-medium text-[#059669] hover:underline inline-flex items-center gap-1">
@@ -247,9 +276,9 @@ export default function AdminDashboard() {
               <div className="w-10 h-10 rounded-full bg-[#F2F4F7] flex items-center justify-center mx-auto mb-3">
                 <Building2 size={18} className="text-[#98A2B3]" />
               </div>
-              <p className="text-[13.5px] font-medium text-[#101828]">No estates yet</p>
-              <p className="text-[12.5px] text-[#98A2B3] mt-0.5 mb-4">Onboard your first estate to get started.</p>
-              <Link to="/onboarding" className="btn-primary inline-flex gap-2"><Plus size={14} /> Onboard estates</Link>
+              <p className="text-[13.5px] font-medium text-[#101828]">No sites yet</p>
+              <p className="text-[12.5px] text-[#98A2B3] mt-0.5 mb-4">Onboard your first site to get started.</p>
+              <Link to="/onboarding" className="btn-primary inline-flex gap-2"><Plus size={14} /> Onboard sites</Link>
             </div>
           ) : (
             <>
@@ -257,7 +286,7 @@ export default function AdminDashboard() {
                 <table className="table min-w-[720px]">
                   <thead>
                     <tr>
-                      <th>Estate</th>
+                      <th>Site</th>
                       <th>Manager</th>
                       <th>Location</th>
                       <th>Status</th>
@@ -274,7 +303,7 @@ export default function AdminDashboard() {
                             </div>
                             <div className="min-w-0">
                               <Link to={`/estates/${e._id}`} className="cell-strong hover:underline">{e.name}</Link>
-                              <div className="font-mono text-[11.5px] text-[#98A2B3] tracking-wider">{e.estateCode}</div>
+                              <div className="flex items-center gap-1.5"><span className="font-mono text-[11.5px] text-[#98A2B3] tracking-wider">{e.estateCode}</span><SiteTypeBadge type={siteTypeOf(e)} className="!text-[10px] !leading-4" /></div>
                             </div>
                           </div>
                         </td>

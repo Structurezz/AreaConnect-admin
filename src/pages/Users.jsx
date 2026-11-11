@@ -9,8 +9,8 @@ import StatCard from '../components/ui/StatCard';
 const ROLES = ['all', 'super_admin', 'estate_manager', 'resident', 'security'];
 const ROLE_META = {
   super_admin:    { label: 'Super Admin', badge: 'gray',   avBg: '#F2F4F7', avFg: '#344054' },
-  estate_manager: { label: 'Estate Mgr',  badge: 'green',  avBg: '#ECFDF3', avFg: '#067647' },
-  resident:       { label: 'Resident',    badge: 'blue',   avBg: '#EFF8FF', avFg: '#175CD3' },
+  estate_manager: { label: 'Site Mgr',  badge: 'green',  avBg: '#ECFDF3', avFg: '#067647' },
+  resident:       { label: 'Member',    badge: 'blue',   avBg: '#EFF8FF', avFg: '#175CD3' },
   security:       { label: 'Security',    badge: 'yellow', avBg: '#FFFAEB', avFg: '#B54708' },
 };
 const STATUS_LABELS = { all: 'All', active: 'Active', suspended: 'Suspended', 'pending-reset': 'Pending reset' };
@@ -223,7 +223,7 @@ export default function Users() {
         <StatCard label="Active"      value={activeCount}           icon={UserCheck}   color="green" />
         <StatCard label="Suspended"   value={suspendedCount}        icon={UserX}       color="red" />
         <StatCard label="Managers"    value={counts.estate_manager} icon={Briefcase}   color="green" />
-        <StatCard label="Residents"   value={counts.resident}       icon={Home}        color="blue" />
+        <StatCard label="Members"   value={counts.resident}       icon={Home}        color="blue" />
         <StatCard label="Security"    value={counts.security}       icon={ShieldCheck} color="amber" />
       </div>
 
@@ -248,7 +248,7 @@ export default function Users() {
             </div>
             <select className="input-field !w-auto min-w-[150px] !h-[34px] !text-[12.5px]"
               value={estateFilter} onChange={e => setEstateFilter(e.target.value)}>
-              <option value="all">All estates</option>
+              <option value="all">All sites</option>
               {estates.map(e => <option key={e._id} value={e._id}>{e.name}</option>)}
             </select>
             <select className="input-field !w-auto min-w-[130px] !h-[34px] !text-[12.5px]"
@@ -314,7 +314,7 @@ export default function Users() {
                   </th>
                   <th className="text-left">User</th>
                   <th className="text-left">Role</th>
-                  <th className="text-left">Estate / Unit</th>
+                  <th className="text-left">Site / Unit</th>
                   <th className="text-left">Phone</th>
                   <th className="text-left">Status</th>
                   <th className="text-left">Last seen</th>
@@ -471,13 +471,13 @@ export default function Users() {
                   onChange={e => setForm(p => ({ ...p, role: e.target.value }))}
                   className="input-field">
                   <option value="super_admin">Super Admin</option>
-                  <option value="estate_manager">Estate Manager</option>
-                  <option value="resident">Resident</option>
+                  <option value="estate_manager">Site Manager</option>
+                  <option value="resident">Member</option>
                   <option value="security">Security</option>
                 </select>
               </div>
               <div>
-                <label className="field-label">Estate</label>
+                <label className="field-label">Site</label>
                 <select value={form.estateId}
                   onChange={e => setForm(p => ({ ...p, estateId: e.target.value }))}
                   className="input-field">
@@ -519,13 +519,13 @@ export default function Users() {
                   <select value={editForm.role}
                     onChange={e => setEditForm(p => ({ ...p, role: e.target.value }))}
                     className="input-field">
-                    <option value="estate_manager">Estate Manager</option>
-                    <option value="resident">Resident</option>
+                    <option value="estate_manager">Site Manager</option>
+                    <option value="resident">Member</option>
                     <option value="security">Security</option>
                   </select>
                 </div>
                 <div>
-                  <label className="field-label">Estate</label>
+                  <label className="field-label">Site</label>
                   <select value={editForm.estateId}
                     onChange={e => setEditForm(p => ({ ...p, estateId: e.target.value }))}
                     className="input-field">

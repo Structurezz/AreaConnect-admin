@@ -86,10 +86,10 @@ function EstatePicker({ estates, subByEstate, value, onChange }) {
     <div className="rounded-xl border border-[#E4E7EC] overflow-hidden">
       <div className="flex items-center gap-2 px-3 h-10 border-b border-[#F2F4F7] bg-[#F9FAFB]">
         <Search size={14} className="text-[#98A2B3]" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${estates.length} estates`} className="flex-1 bg-transparent outline-none text-[13px]" />
+        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={`Search ${estates.length} sites`} className="flex-1 bg-transparent outline-none text-[13px]" />
       </div>
       <div className="max-h-[220px] overflow-y-auto divide-y divide-[#F2F4F7]">
-        {!list.length && <p className="px-3 py-4 text-[12.5px] text-[#98A2B3]">No estates match.</p>}
+        {!list.length && <p className="px-3 py-4 text-[12.5px] text-[#98A2B3]">No sites match.</p>}
         {list.map((e) => {
           const on = value === e._id;
           const sub = subByEstate[e._id];
@@ -170,16 +170,16 @@ export function AssignPlanDrawer({ estates, plans, subs, form, setForm, onSubmit
   const set = (k, v) => setForm({ ...form, [k]: v });
 
   return (
-    <Drawer title="Assign a plan" subtitle="Put an estate on a plan, choose how it's billed and when it starts." icon={CreditCard} onClose={onClose}
+    <Drawer title="Assign a plan" subtitle="Put a site on a plan, choose how it's billed and when it starts." icon={CreditCard} onClose={onClose}
       footer={<>
-        <span className="text-[12px] text-[#667085] mr-auto">{estate && plan ? <>{estate.name} → <b className="text-[#101828]">{plan.name}</b></> : 'Pick an estate and a plan'}</span>
+        <span className="text-[12px] text-[#667085] mr-auto">{estate && plan ? <>{estate.name} → <b className="text-[#101828]">{plan.name}</b></> : 'Pick a site and a plan'}</span>
         <button type="button" onClick={onClose} className="btn-outline">Cancel</button>
         <button type="submit" form="assign-plan-form" disabled={saving || !form.estateId || !form.planId} className="btn-primary">
           {saving ? <><RefreshCw size={14} className="animate-spin" /> Assigning…</> : <><Check size={14} /> Assign plan</>}
         </button>
       </>}>
       <form id="assign-plan-form" onSubmit={onSubmit}>
-        <Section step="1" icon={Building2} title="Estate" hint="Which estate is this subscription for?">
+        <Section step="1" icon={Building2} title="Site" hint="Which site is this subscription for?">
           <EstatePicker estates={estates} subByEstate={subByEstate} value={form.estateId} onChange={(v) => set('estateId', v)} />
           {existing && (
             <p className="mt-2 flex items-start gap-1.5 text-[12px] text-[#B54708]"><AlertTriangle size={13} className="mt-0.5 flex-shrink-0" />
@@ -187,19 +187,19 @@ export function AssignPlanDrawer({ estates, plans, subs, form, setForm, onSubmit
           )}
         </Section>
 
-        <Section step="2" icon={Layers} title="Plan" hint="Residents and units each plan allows are shown on the card.">
+        <Section step="2" icon={Layers} title="Plan" hint="Members and units each plan allows are shown on the card.">
           <PlanCards plans={plans} value={form.planId} onChange={(v) => set('planId', v)} cycle={form.cycle} />
         </Section>
 
         <Section step="3" icon={Receipt} title="Billing">
           <p className="text-[12px] font-medium text-[#344054] mb-1.5">How is it charged?</p>
           <Choice value={form.billingModel} onChange={(v) => setForm({ ...form, billingModel: v, cycle: v === 'per_resident' ? 'monthly' : form.cycle })} options={[
-            { v: 'flat', label: 'Flat fee', hint: 'One price for the estate', icon: Tag },
-            { v: 'per_resident', label: 'Per resident', hint: 'Price × active residents', icon: Users },
+            { v: 'flat', label: 'Flat fee', hint: 'One price for the site', icon: Tag },
+            { v: 'per_resident', label: 'Per member', hint: 'Price × active members', icon: Users },
           ]} />
           {perResident ? (
             <label className="block mt-3">
-              <span className="text-[12px] font-medium text-[#344054]">Resident count</span>
+              <span className="text-[12px] font-medium text-[#344054]">Member count</span>
               <input type="number" min="1" className="input-field mt-1.5" placeholder="e.g. 80" value={form.residentCount} onChange={(e) => set('residentCount', e.target.value)} />
             </label>
           ) : (
@@ -236,7 +236,7 @@ export function AssignPlanDrawer({ estates, plans, subs, form, setForm, onSubmit
 
         <Section icon={Receipt} title="Summary">
           <Summary rows={[
-            ['Estate', estate ? `${estate.name} · ${estate.estateCode}` : '—', Building2],
+            ['Site', estate ? `${estate.name} · ${estate.estateCode}` : '—', Building2],
             ['Plan', plan?.name || '—', Layers],
             ['Price', plan ? `${naira(price)}${perResident ? ' / month' : form.cycle === 'annual' ? ' / year' : ' / month'}` : '—', Tag],
             ['Status', form.status === 'trial' ? `${form.trialDays || 0}-day trial` : 'Active', Zap],
@@ -249,7 +249,7 @@ export function AssignPlanDrawer({ estates, plans, subs, form, setForm, onSubmit
 }
 
 /* ── Grant comp access ──────────────────────────────────────────────── */
-const REASONS = ['Launch promo', 'VIP', 'Beta tester', 'Partner estate', 'Goodwill'];
+const REASONS = ['Launch promo', 'VIP', 'Beta tester', 'Partner site', 'Goodwill'];
 const EXPIRY = [
   { v: '7', label: '7 days' }, { v: '30', label: '30 days' }, { v: '90', label: '90 days' },
   { v: 'custom', label: 'Pick date' }, { v: 'never', label: 'Never' },
@@ -266,16 +266,16 @@ export function GrantCompDrawer({ estates, plans, subs, form, setForm, onSubmit,
   const value = plan ? (form.cycle === 'annual' ? plan.price?.annual : plan.price?.monthly) : 0;
 
   return (
-    <Drawer title="Grant comp access" subtitle="Give an estate a plan for free — promos, VIPs, beta testers. It overrides billing until it ends." icon={Gift} tone="amber" onClose={onClose}
+    <Drawer title="Grant comp access" subtitle="Give a site a plan for free — promos, VIPs, beta testers. It overrides billing until it ends." icon={Gift} tone="amber" onClose={onClose}
       footer={<>
-        <span className="text-[12px] text-[#667085] mr-auto">{estate && plan ? <>{estate.name} gets <b className="text-[#101828]">{plan.name}</b> free</> : 'Pick an estate and a plan'}</span>
+        <span className="text-[12px] text-[#667085] mr-auto">{estate && plan ? <>{estate.name} gets <b className="text-[#101828]">{plan.name}</b> free</> : 'Pick a site and a plan'}</span>
         <button type="button" onClick={onClose} className="btn-outline">Cancel</button>
         <button type="submit" form="grant-comp-form" disabled={saving || !form.estateId || !form.planId} className="btn-primary">
           {saving ? <><RefreshCw size={14} className="animate-spin" /> Granting…</> : <><Sparkles size={14} /> Grant comp</>}
         </button>
       </>}>
       <form id="grant-comp-form" onSubmit={onSubmit}>
-        <Section step="1" icon={Building2} title="Estate" hint="The estate that gets free access">
+        <Section step="1" icon={Building2} title="Site" hint="The site that gets free access">
           <EstatePicker estates={estates} subByEstate={subByEstate} value={form.estateId} onChange={(v) => set('estateId', v)} />
         </Section>
 
@@ -321,7 +321,7 @@ export function GrantCompDrawer({ estates, plans, subs, form, setForm, onSubmit,
 
         <Section icon={Gift} title="Summary">
           <Summary tone="amber" rows={[
-            ['Estate', estate ? `${estate.name} · ${estate.estateCode}` : '—', Building2],
+            ['Site', estate ? `${estate.name} · ${estate.estateCode}` : '—', Building2],
             ['Manager', estate?.managerId?.name || '—', UserRound],
             ['Plan unlocked', plan?.name || '—', Layers],
             ['Value given', plan ? `${naira(value)} / ${form.cycle === 'annual' ? 'year' : 'month'}` : '—', Tag],

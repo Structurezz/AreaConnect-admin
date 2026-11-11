@@ -80,11 +80,11 @@ export default function Login() {
 
   return (
     <AuthShell
-      headline="Operate every estate on the network from one console."
+      headline="Operate every site on the network from one console."
       points={[
-        'Onboard estates, managers and subscriptions',
+        'Onboard sites, managers and subscriptions',
         'Monitor payments, payouts and platform health',
-        'Audit activity across residents and security',
+        'Audit activity across members and security',
       ]}
     >
       <div className="w-full max-w-[380px] animate-fade-in">

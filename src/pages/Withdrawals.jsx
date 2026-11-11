@@ -313,7 +313,7 @@ export default function Withdrawals() {
           </div>
           <div className="flex items-center gap-2 h-9 px-3 rounded-lg border border-[#D0D5DD] w-full md:w-80">
             <Search size={14} className="text-[#98A2B3]" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Manager, estate, reference, account" className="flex-1 min-w-0 bg-transparent outline-none text-[13px]" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Manager, site, reference, account" className="flex-1 min-w-0 bg-transparent outline-none text-[13px]" />
           </div>
         </div>
 
@@ -345,7 +345,7 @@ export default function Withdrawals() {
                         </span>
                         <div className="min-w-0 flex-1">
                           <p className="text-[13px] font-medium text-[#101828] truncate">
-                            {estate.name || (w.source === 'marketplace' ? 'Marketplace seller' : 'Estate')}
+                            {estate.name || (w.source === 'marketplace' ? 'Marketplace seller' : 'Site')}
                             {estate.estateCode && <span className="font-mono text-[11px] text-[#98A2B3] ml-1.5">{estate.estateCode}</span>}
                             <span className="font-normal text-[#667085]"> · {user.name || 'Manager'}</span>
                           </p>
@@ -432,7 +432,7 @@ export default function Withdrawals() {
             </button>
           </>}>
           <label className="field-label">Reason *</label>
-          <input className="input-field" placeholder="e.g. Mismatched account name, unverified estate"
+          <input className="input-field" placeholder="e.g. Mismatched account name, unverified site"
             value={rejectReason} onChange={e => setRejectReason(e.target.value)} required />
         </Modal>
       )}

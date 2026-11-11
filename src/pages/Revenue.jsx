@@ -319,7 +319,7 @@ export default function Revenue() {
                         <span className="block text-[14px] font-semibold text-[#101828]">{due ? format(due, 'd') : ''}</span>
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[12.5px] font-medium text-[#101828] truncate">{s.estateId?.name || 'Estate'}</p>
+                        <p className="text-[12.5px] font-medium text-[#101828] truncate">{s.estateId?.name || 'Site'}</p>
                         <p className="text-[11px] text-[#98A2B3] truncate">{s.planId?.name} · {s.paystackAuth?.authorizationCode ? 'Auto-debit card' : 'No card — invoice'}</p>
                       </div>
                       <span className="text-[12.5px] font-semibold text-[#101828] tabular-nums">{mask(fmt(s.cycle === 'annual' ? s.planId?.price?.annual : s.planId?.price?.monthly))}</span>
@@ -339,7 +339,7 @@ export default function Revenue() {
                   <Link key={s._id} to={s.estateId?._id ? `/estates/${s.estateId._id}` : '/subscriptions'} className="flex items-start gap-3 px-4 py-2.5 hover:bg-[#FFFBFA]" style={{ textDecoration: 'none' }}>
                     <span className="w-8 h-8 rounded-full bg-[#FEF3F2] text-[#D92D20] flex items-center justify-center flex-shrink-0"><CreditCard size={14} /></span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[12.5px] font-medium text-[#101828] truncate">{s.estateId?.name || 'Estate'}</p>
+                      <p className="text-[12.5px] font-medium text-[#101828] truncate">{s.estateId?.name || 'Site'}</p>
                       <p className="text-[11px] text-[#B42318] truncate">{s.lastRenewalError || 'Card declined'}</p>
                       <p className="text-[10.5px] text-[#98A2B3]">{s.renewalAttempts || 0} attempt{s.renewalAttempts === 1 ? '' : 's'}{s.lastRenewalAttemptAt ? ` · ${formatDistanceToNowStrict(new Date(s.lastRenewalAttemptAt))} ago` : ''}</p>
                     </div>
@@ -350,13 +350,13 @@ export default function Revenue() {
           </SideCard>
 
           <SideCard title="Top accounts" icon={Building2} count={paying.length}>
-            {!topAccounts.length ? <p className="px-4 py-6 text-center text-[12.5px] text-[#98A2B3]">No paying estates yet</p> : (
+            {!topAccounts.length ? <p className="px-4 py-6 text-center text-[12.5px] text-[#98A2B3]">No paying sites yet</p> : (
               <div className="divide-y divide-[#F2F4F7]">
                 {topAccounts.map((s, i) => (
                   <Link key={s._id} to={s.estateId?._id ? `/estates/${s.estateId._id}` : '/subscriptions'} className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F9FAFB]" style={{ textDecoration: 'none' }}>
                     <span className="w-6 text-[12px] font-semibold text-[#98A2B3] tabular-nums">{i + 1}</span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[12.5px] font-medium text-[#101828] truncate">{s.estateId?.name || 'Estate'}</p>
+                      <p className="text-[12.5px] font-medium text-[#101828] truncate">{s.estateId?.name || 'Site'}</p>
                       <p className="text-[11px] text-[#98A2B3]">{s.planId?.name} · {s.cycle}</p>
                     </div>
                     <span className="text-[12.5px] font-semibold text-[#067647] tabular-nums">{mask(fmt(s.mv))}<span className="text-[10.5px] text-[#98A2B3] font-normal">/mo</span></span>

@@ -74,7 +74,7 @@ export default function EstatesMap({ estates, selectedId, onSelect, height = 420
         title: e.name,
       });
       if (!single) {
-        m.bindTooltip(`<b>${esc(e.name)}</b><br><span style="color:#667085">${esc(e.counts?.residents ?? 0)} residents · ${esc(e.estateCode || '')}</span>`, { direction: 'top', offset: [0, -14] });
+        m.bindTooltip(`<b>${esc(e.name)}</b><br><span style="color:#667085">${esc(e.counts?.residents ?? 0)} members · ${esc(e.estateCode || '')}</span>`, { direction: 'top', offset: [0, -14] });
         m.on('click', () => onSelect?.(e));
       }
       m.addTo(layer);
@@ -98,7 +98,7 @@ export default function EstatesMap({ estates, selectedId, onSelect, height = 420
       {!located.length && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <span className="px-3 py-1.5 rounded-lg bg-white/95 border border-[#E4E7EC] text-[12.5px] text-[#475467] shadow-sm">
-            {single ? 'Location not geocoded yet' : 'No estates have map coordinates yet'}
+            {single ? 'Location not geocoded yet' : 'No sites have map coordinates yet'}
           </span>
         </div>
       )}

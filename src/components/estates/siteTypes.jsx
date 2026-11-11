@@ -11,9 +11,54 @@ export const SITE_TYPES = [
   { value: 'hospital',   label: 'Hospital',   hint: 'Patients & wards',         icon: Hospital,      color: '#C01048', bg: '#FFF1F3', border: '#FECDD6' },
 ];
 
+// Copy of server/utils/siteTypes.js → TERMS / MODULES / DEFAULT_MODULES —
+// keep in step. The admin shows each site in its own words.
+export const TERMS = {
+  estate:     { site: 'Estate',   sites: 'Estates',    member: 'Resident', members: 'Residents',        unit: 'Unit',       units: 'Units',        block: 'Block', manager: 'Estate manager',   dues: 'Estate bills' },
+  school:     { site: 'Campus',   sites: 'Campuses',   member: 'Student',  members: 'Students & staff', unit: 'Class',      units: 'Classes',      block: 'Block', manager: 'Administrator',    dues: 'School fees' },
+  university: { site: 'Campus',   sites: 'Campuses',   member: 'Student',  members: 'Students & staff', unit: 'Room',       units: 'Hostel rooms', block: 'Hall',  manager: 'Administrator',    dues: 'Hostel & fees' },
+  hotel:      { site: 'Property', sites: 'Properties', member: 'Guest',    members: 'Guests',           unit: 'Room',       units: 'Rooms',        block: 'Block', manager: 'Front desk',       dues: 'Bills' },
+  industrial: { site: 'Site',     sites: 'Sites',      member: 'Employee', members: 'Employees',        unit: 'Department', units: 'Departments',  block: 'Block', manager: 'Facility manager', dues: 'Charges' },
+  hospital:   { site: 'Hospital', sites: 'Hospitals',  member: 'Patient',  members: 'Patients & staff', unit: 'Ward',       units: 'Wards',        block: 'Block', manager: 'Administrator',    dues: 'Bills' },
+};
+
+export const MODULES = {
+  payments:    { label: 'Payments & dues',       description: 'Bills, dues and online payment' },
+  marketplace: { label: 'Marketplace',           description: 'Members buy and sell to each other' },
+  community:   { label: 'Community lounge',      description: 'Lounge, posts, polls, podcasts, DJ and the courtroom' },
+  events:      { label: 'Events',                description: 'Event board and RSVPs' },
+  neighbours:  { label: 'Directory & calls',     description: 'Members call and buzz each other' },
+  household:   { label: 'Family / household',    description: 'Members add family with limited access' },
+  gatelog:     { label: 'Deliveries & vehicles', description: 'Guards log deliveries and vehicles in and out' },
+  shifts:      { label: 'Staff shifts',          description: 'Shift hours that guards can check at the gate' },
+  stays:       { label: 'Guest stays',           description: 'Check-in / check-out dates; access ends at check-out' },
+  visiting:    { label: 'Visiting hours',        description: 'Guards are warned when visitors arrive outside visiting hours' },
+  requests:    { label: 'Requests',              description: 'Members send requests to the right staff' },
+  rollcall:    { label: 'Emergency roll-call',   description: 'See who is safe and who is missing in an evacuation' },
+};
+
+const ALL_ON = { payments: true, marketplace: true, community: true, events: true, neighbours: true, household: true };
+export const DEFAULT_MODULES = {
+  estate:     { ...ALL_ON, gatelog: false, shifts: false, stays: false, visiting: false, requests: false, rollcall: false },
+  school:     { ...ALL_ON, marketplace: false, neighbours: false, gatelog: false, shifts: true, stays: false, visiting: false, requests: true, rollcall: true },
+  university: { ...ALL_ON, household: false, gatelog: false, shifts: true, stays: false, visiting: true, requests: true, rollcall: true },
+  hotel:      { ...ALL_ON, payments: false, marketplace: false, community: false, neighbours: false, gatelog: false, shifts: true, stays: true, visiting: false, requests: true, rollcall: true },
+  industrial: { ...ALL_ON, payments: false, marketplace: false, household: false, gatelog: true, shifts: true, stays: false, visiting: false, requests: true, rollcall: true },
+  hospital:   { ...ALL_ON, payments: false, marketplace: false, community: false, events: false, neighbours: false, gatelog: false, shifts: true, stays: true, visiting: true, requests: true, rollcall: true },
+};
+
 const BY_VALUE = Object.fromEntries(SITE_TYPES.map((t) => [t.value, t]));
 export const siteTypeOf = (estate) => (BY_VALUE[estate?.site?.type] ? estate.site.type : 'estate');
 export const siteTypeInfo = (value) => BY_VALUE[value] || BY_VALUE.estate;
+export const termsFor = (estate) => TERMS[siteTypeOf(estate)];
+
+// Resolved modules: the type's defaults with this site's overrides on top.
+export function modulesFor(estate) {
+  const out = { ...DEFAULT_MODULES[siteTypeOf(estate)] };
+  const o = estate?.site?.modules || {};
+  for (const k of Object.keys(MODULES)) if (typeof o[k] === 'boolean') out[k] = o[k];
+  return out;
+}
 
 export function SiteTypeBadge({ type, className = '' }) {
   const t = siteTypeInfo(type);

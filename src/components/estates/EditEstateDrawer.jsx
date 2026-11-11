@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { X, Building2, MapPin, Phone, SlidersHorizontal, StickyNote, Power, Copy, Crosshair, RotateCcw, Check } from 'lucide-react';
 import { estateAPI } from '../../api';
 import { NG_STATES, ESTATE_TYPES } from '../onboarding/shared';
-import { SiteTypePicker, siteTypeOf } from './siteTypes';
+import { SiteTypePicker, siteTypeOf, TERMS } from './siteTypes';
 
 const SECTIONS = [
   { id: 'details',  label: 'Details',  icon: Building2 },
@@ -16,8 +16,8 @@ const SECTIONS = [
 ];
 
 const SETTINGS = [
-  { key: 'requireVisitorApproval', label: 'Visitors need resident approval', hint: 'Guards wait for the host to approve before letting a visitor in.' },
-  { key: 'marketplaceApproval',    label: 'Review marketplace listings',     hint: 'The manager approves listings before residents see them.' },
+  { key: 'requireVisitorApproval', label: 'Visitors need host approval', hint: 'Guards wait for the host to approve before letting a visitor in.' },
+  { key: 'marketplaceApproval',    label: 'Review marketplace listings',     hint: 'The manager approves listings before members see them.' },
   { key: 'allowGuestChat',         label: 'Allow guest chat',                hint: 'Visitors can message their host from the visitor pass.' },
 ];
 
@@ -113,6 +113,8 @@ export default function EditEstateDrawer({ estate, open, onClose, onSaved }) {
   const pinMoved = form?.pin && JSON.stringify(form.pin) !== JSON.stringify(initial?.pin);
   if (!open || !form) return null;
 
+  const T  = TERMS[form.siteType] || TERMS.estate;
+  const lc = (w) => w.toLowerCase();
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
   const jump = (id) => { setActive(id); bodyRef.current?.querySelector(`#sec-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
   const onScroll = () => {
@@ -144,7 +146,7 @@ export default function EditEstateDrawer({ estate, open, onClose, onSaved }) {
       if (pinMoved) payload.location = { lat: pin.lat, lng: pin.lng };
       const { data } = await estateAPI.update(estate._id, payload);
       if (data.geocode === 'failed') toast('Saved — the new address couldn’t be found on the map. Drop the pin manually.', { icon: '📍' });
-      else toast.success('Estate updated');
+      else toast.success(`${T.site} updated`);
       onSaved?.(data.data);
       onClose();
     } catch (err) {
@@ -163,8 +165,8 @@ export default function EditEstateDrawer({ estate, open, onClose, onSaved }) {
           <div className="flex items-start gap-3">
             <span className="w-10 h-10 rounded-lg bg-[#ECFDF3] text-[#067647] border border-[#ABEFC6] flex items-center justify-center text-[15px] font-semibold flex-shrink-0">{(form.name || '?')[0].toUpperCase()}</span>
             <div className="min-w-0 flex-1">
-              <p className="text-[11.5px] text-[#98A2B3]">Edit estate</p>
-              <h2 className="text-[17px] font-semibold text-[#101828] truncate">{form.name || 'Untitled estate'}</h2>
+              <p className="text-[11.5px] text-[#98A2B3]">Edit {lc(T.site)}</p>
+              <h2 className="text-[17px] font-semibold text-[#101828] truncate">{form.name || `Untitled ${lc(T.site)}`}</h2>
             </div>
             <button onClick={() => { navigator.clipboard?.writeText(estate.estateCode); toast.success('Code copied'); }}
               className="hidden sm:inline-flex items-center gap-1 font-mono text-[12px] text-[#475467] px-2 py-1 rounded-md border border-[#E4E7EC] hover:bg-[#F9FAFB]">{estate.estateCode} <Copy size={11} /></button>
@@ -184,9 +186,9 @@ export default function EditEstateDrawer({ estate, open, onClose, onSaved }) {
         <div ref={bodyRef} onScroll={onScroll} className="flex-1 overflow-y-auto px-6 pb-10">
           <section id="sec-details" className="pt-5">
             <h3 className="text-[14px] font-semibold text-[#101828]">Details</h3>
-            <p className="text-[12.5px] text-[#667085]">How the estate appears to residents, guards and in reports.</p>
+            <p className="text-[12.5px] text-[#667085]">How the {lc(T.site)} appears to {lc(T.members)}, guards and in reports.</p>
             <div className="mt-2">
-              <Row label="Estate name" hint="Shown across every app">
+              <Row label={`${T.site} name`} hint="Shown across every app">
                 <input className="input-field" value={form.name} onChange={(e) => set('name', e.target.value)} />
               </Row>
               <Row label="Site type" hint="Sets the words and default features every app uses">
@@ -195,17 +197,19 @@ export default function EditEstateDrawer({ estate, open, onClose, onSaved }) {
                   <p className="mt-1.5 text-[12px] text-[#B54708]">Members, guards and the manager will see the new wording and default modules once saved.</p>
                 )}
               </Row>
-              <Row label="Estate type">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {ESTATE_TYPES.map((t) => (
-                    <button key={t.value} type="button" onClick={() => set('estateType', t.value)}
-                      className={`px-3 py-2 rounded-lg border text-left text-[12.5px] transition-all ${form.estateType === t.value ? 'border-[#059669] bg-[#F6FEF9] text-[#101828] font-medium ring-2 ring-[#059669]/10' : 'border-[#E4E7EC] text-[#475467] hover:border-[#D0D5DD]'}`}>
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-              </Row>
-              <Row label="Planned units" hint="Total houses or flats when full">
+              {form.siteType === 'estate' && (
+                <Row label="Estate type">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {ESTATE_TYPES.map((t) => (
+                      <button key={t.value} type="button" onClick={() => set('estateType', t.value)}
+                        className={`px-3 py-2 rounded-lg border text-left text-[12.5px] transition-all ${form.estateType === t.value ? 'border-[#059669] bg-[#F6FEF9] text-[#101828] font-medium ring-2 ring-[#059669]/10' : 'border-[#E4E7EC] text-[#475467] hover:border-[#D0D5DD]'}`}>
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </Row>
+              )}
+              <Row label={`Planned ${lc(T.units)}`} hint={`Total ${lc(T.units)} when full`}>
                 <input type="number" min="0" className="input-field max-w-[200px]" value={form.unitCount} onChange={(e) => set('unitCount', e.target.value)} placeholder="e.g. 48" />
               </Row>
             </div>
@@ -246,8 +250,8 @@ export default function EditEstateDrawer({ estate, open, onClose, onSaved }) {
           </section>
 
           <section id="sec-contact" className="pt-8">
-            <h3 className="text-[14px] font-semibold text-[#101828]">Estate office contact</h3>
-            <p className="text-[12.5px] text-[#667085]">The estate’s own line — separate from the manager’s account.</p>
+            <h3 className="text-[14px] font-semibold text-[#101828]">{T.site} office contact</h3>
+            <p className="text-[12.5px] text-[#667085]">The {lc(T.site)}’s own line — separate from the {lc(T.manager)}’s account.</p>
             <div className="mt-2">
               <Row label="Phone"><input className="input-field" value={form.contactPhone} onChange={(e) => set('contactPhone', e.target.value)} placeholder="+234 …" /></Row>
               <Row label="Email"><input type="email" className="input-field" value={form.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} placeholder="office@estate.ng" /></Row>
@@ -269,8 +273,8 @@ export default function EditEstateDrawer({ estate, open, onClose, onSaved }) {
               <span className="flex items-start gap-3">
                 <Power size={16} className={`mt-0.5 ${form.isActive ? 'text-[#059669]' : 'text-[#D92D20]'}`} />
                 <span>
-                  <span className="block text-[13px] font-medium text-[#101828]">{form.isActive ? 'Estate is active' : 'Estate is deactivated'}</span>
-                  <span className="block text-[12px] text-[#667085]">Deactivated estates are hidden from residents and guards can’t log visitors.</span>
+                  <span className="block text-[13px] font-medium text-[#101828]">{form.isActive ? `${T.site} is active` : `${T.site} is deactivated`}</span>
+                  <span className="block text-[12px] text-[#667085]">Deactivated {lc(T.sites)} are hidden from {lc(T.members)} and guards can’t log visitors.</span>
                 </span>
               </span>
               <Switch checked={form.isActive} onChange={(v) => set('isActive', v)} />

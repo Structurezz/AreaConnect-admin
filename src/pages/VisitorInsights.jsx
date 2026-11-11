@@ -3,9 +3,9 @@ import { analyticsAPI } from '../api';
 import toast from 'react-hot-toast';
 import {
   Eye, Globe, Users, Smartphone, RefreshCw, Link2, Flag,
-  TrendingUp, Monitor, Tablet, Clock,
+  TrendingUp, Monitor, Tablet, Clock, ChevronDown, ChevronRight, Bot, ShieldAlert,
 } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
 
@@ -18,6 +18,103 @@ function CountryTag({ code }) {
     <span className="inline-flex items-center justify-center min-w-[24px] h-[18px] px-1 rounded border border-[#E4E7EC] bg-[#F9FAFB] text-[10px] font-semibold text-[#475467] uppercase tracking-wide">
       {code && code.length === 2 ? code : <Globe size={10} />}
     </span>
+  );
+}
+
+// IP geolocation is only as good as the IP: VPNs, proxies and datacenter
+// exits report the server's country, so flag those instead of trusting them.
+function Location({ v }) {
+  const masked = v.proxy || v.hosting;
+  if (!v.country) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[#98A2B3]">
+        <Flag size={11} /> {v.timezone || 'Unknown'}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex flex-col min-w-0">
+      <span className="inline-flex items-center gap-2">
+        <CountryTag code={v.countryCode} />
+        <span className="text-[#101828]">{v.city ? `${v.city}, ${v.country}` : v.country}</span>
+        {masked && (
+          <span className="badge badge-yellow inline-flex items-center gap-1" title={`IP belongs to ${v.isp || 'a VPN/datacenter'} — country may be wrong; timezone ${v.timezone || 'unknown'} is from the device`}>
+            <ShieldAlert size={10} /> VPN
+          </span>
+        )}
+      </span>
+      {v.timezone && <span className="text-[11px] text-[#98A2B3] mt-0.5">Device clock: {v.timezone}</span>}
+    </span>
+  );
+}
+
+function referrerHost(ref) {
+  return ref ? ref.replace(/^https?:\/\//, '').replace(/\/.*$/, '') : '';
+}
+
+function VisitorRow({ p }) {
+  const [open, setOpen] = useState(false);
+  const Icon = DEVICE_ICON[p.device] || Monitor;
+  const source = referrerHost(p.firstReferrer) || (p.utmSource ? `utm:${p.utmSource}` : 'Direct');
+  return (
+    <>
+      <tr className="cursor-pointer hover:bg-[#F9FAFB]" onClick={() => setOpen(o => !o)}>
+        <td className="whitespace-nowrap">
+          <span className="inline-flex items-center gap-1.5 text-[12.5px]">
+            {open ? <ChevronDown size={13} className="text-[#98A2B3]" /> : <ChevronRight size={13} className="text-[#98A2B3]" />}
+            {formatDistanceToNow(new Date(p.lastSeen), { addSuffix: true })}
+          </span>
+        </td>
+        <td><Location v={p} /></td>
+        <td className="tabular-nums whitespace-nowrap">
+          <span className="font-semibold text-[#101828]">{p.visits}</span> page{p.visits === 1 ? '' : 's'}
+          <span className="text-[#98A2B3]"> · {p.sessions} visit{p.sessions === 1 ? '' : 's'}</span>
+        </td>
+        <td className="max-w-[180px] truncate" title={p.firstReferrer || ''}>
+          {source === 'Direct' ? <span className="text-[#98A2B3]">Direct</span> : source}
+        </td>
+        <td>
+          <span className="inline-flex items-center gap-1.5 capitalize whitespace-nowrap">
+            <Icon size={13} className="text-[#98A2B3]" />
+            {p.device || 'desktop'} · {p.browser || 'Other'} · {p.os || 'Other'}
+          </span>
+          {p.isBot && <span className="badge badge-gray ml-1.5">bot</span>}
+        </td>
+      </tr>
+      {open && (
+        <tr className="bg-[#F9FAFB]">
+          <td colSpan={5} className="!py-4">
+            <div className="grid gap-4 md:grid-cols-[260px_1fr]">
+              <dl className="grid grid-cols-[96px_1fr] gap-x-3 gap-y-1.5 text-[12px]">
+                <dt className="text-[#98A2B3]">First seen</dt><dd className="text-[#101828]">{format(new Date(p.firstSeen), 'd MMM yyyy, HH:mm')}</dd>
+                <dt className="text-[#98A2B3]">Last seen</dt><dd className="text-[#101828]">{format(new Date(p.lastSeen), 'd MMM yyyy, HH:mm')}</dd>
+                <dt className="text-[#98A2B3]">Region</dt><dd className="text-[#101828]">{[p.city, p.region, p.country].filter(Boolean).join(', ') || '—'}</dd>
+                <dt className="text-[#98A2B3]">Network</dt><dd className="text-[#101828]">{p.isp || '—'}{(p.proxy || p.hosting) ? ' (VPN / datacenter)' : ''}</dd>
+                <dt className="text-[#98A2B3]">Timezone</dt><dd className="text-[#101828]">{p.timezone || '—'}</dd>
+                <dt className="text-[#98A2B3]">Language</dt><dd className="text-[#101828]">{p.language || '—'}</dd>
+                <dt className="text-[#98A2B3]">Screen</dt><dd className="text-[#101828]">{p.screen || '—'}</dd>
+                <dt className="text-[#98A2B3]">Referrer</dt><dd className="text-[#101828] break-all">{p.firstReferrer || 'Direct'}</dd>
+                {p.utmSource && <><dt className="text-[#98A2B3]">Campaign</dt><dd className="text-[#101828]">{p.utmSource}{p.utmCampaign ? ` · ${p.utmCampaign}` : ''}</dd></>}
+              </dl>
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-[#98A2B3] mb-2">Journey</div>
+                <ol className="space-y-1">
+                  {[...p.pages].reverse().map((pg, i, arr) => {
+                    const newSession = i > 0 && arr[i - 1].sessionId !== pg.sessionId;
+                    return (
+                      <li key={i} className={`flex items-center gap-3 text-[12px] ${newSession ? 'pt-2 mt-2 border-t border-[#E4E7EC]' : ''}`}>
+                        <span className="tabular-nums text-[#98A2B3] w-[110px] flex-shrink-0">{format(new Date(pg.at), 'd MMM, HH:mm')}</span>
+                        <span className="font-mono text-[#101828] truncate">{pg.path}</span>
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            </div>
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
@@ -77,18 +174,24 @@ function RankTable({ title, rows, nameKey, countKey = 'count', emptyText, render
 export default function VisitorInsights() {
   const [stats, setStats] = useState(null);
   const [recent, setRecent] = useState([]);
+  const [people, setPeople] = useState([]);
+  const [tab, setTab] = useState('people');
+  const [showBots, setShowBots] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
+    const bots = showBots ? { bots: 1 } : {};
     try {
-      const [s, r] = await Promise.all([
-        analyticsAPI.getStats(),
-        analyticsAPI.getRecent({ limit: 50 }),
+      const [s, r, p] = await Promise.all([
+        analyticsAPI.getStats(bots),
+        analyticsAPI.getRecent({ limit: 100, ...bots }),
+        analyticsAPI.getPeople({ days: 30, ...bots }),
       ]);
       setStats(s.data.data);
       setRecent(r.data.data);
+      setPeople(p.data.data);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'Failed to load visitor insights');
     } finally {
@@ -97,7 +200,7 @@ export default function VisitorInsights() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(true); }, [showBots]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="max-w-[1400px] mx-auto animate-fade-in pb-12">
@@ -105,9 +208,18 @@ export default function VisitorInsights() {
         title="Visitor insights"
         description="Who's visiting areaconnect.pro, in real time."
         actions={(
-          <button onClick={() => load(true)} className="btn-outline gap-2" disabled={refreshing}>
-            <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} /> Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowBots(b => !b)}
+              className={`btn-outline gap-2 ${showBots ? '!border-[#059669] !text-[#059669]' : ''}`}
+              title="Crawlers, link previews and headless browsers are hidden by default"
+            >
+              <Bot size={14} /> {showBots ? 'Showing bots' : 'Bots hidden'}
+            </button>
+            <button onClick={() => load(true)} className="btn-outline gap-2" disabled={refreshing}>
+              <RefreshCw size={14} className={refreshing ? 'animate-spin' : ''} /> Refresh
+            </button>
+          </div>
         )}
       />
 
@@ -138,6 +250,12 @@ export default function VisitorInsights() {
             <StatCard label="Last 30 days"    value={stats.totals.month} hint={`${fmt(stats.unique.month)} unique`} color="amber"  icon={Globe} />
             <StatCard label="All-time visits" value={stats.totals.all}   hint={`${fmt(stats.unique.all)} unique visitors`} color="purple" icon={Eye} />
           </div>
+
+          {!showBots && stats.bots?.month > 0 && (
+            <p className="text-[12px] text-[#98A2B3] -mt-1">
+              {fmt(stats.bots.month)} bot/crawler hits in the last 30 days are excluded from these numbers.
+            </p>
+          )}
 
           {/* Trend */}
           <div className="card overflow-hidden">
@@ -234,13 +352,23 @@ export default function VisitorInsights() {
             />
           </div>
 
-          {/* Recent visits */}
+          {/* Visitors / pageviews */}
           <div className="card overflow-hidden">
             <div className="card-header">
-              <h2 className="card-title">Recent visits</h2>
-              <span className="card-sub tabular-nums">{recent.length} shown</span>
+              <div className="flex items-center gap-1">
+                {[['people', `Visitors (${people.length})`], ['recent', 'Recent pageviews']].map(([k, label]) => (
+                  <button
+                    key={k}
+                    onClick={() => setTab(k)}
+                    className={`px-3 py-1.5 rounded-lg text-[13px] font-semibold ${tab === k ? 'bg-[#ECFDF3] text-[#059669]' : 'text-[#475467] hover:bg-[#F2F4F7]'}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <span className="card-sub">{tab === 'people' ? 'Last 30 days · tap a row for their journey' : `${recent.length} shown`}</span>
             </div>
-            {recent.length === 0 ? (
+            {(tab === 'people' ? people : recent).length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
                 <div className="w-9 h-9 rounded-full bg-[#F2F4F7] flex items-center justify-center mb-2.5">
                   <Clock size={16} className="text-[#98A2B3]" />
@@ -248,9 +376,26 @@ export default function VisitorInsights() {
                 <p className="text-[13px] font-semibold text-[#101828]">No visits recorded yet</p>
                 <p className="text-[12px] text-[#98A2B3]">Visits will appear here as they happen.</p>
               </div>
+            ) : tab === 'people' ? (
+              <div className="overflow-x-auto">
+                <table className="table min-w-[860px]">
+                  <thead>
+                    <tr>
+                      <th className="text-left">Last seen</th>
+                      <th className="text-left">Location</th>
+                      <th className="text-left">Activity</th>
+                      <th className="text-left">Came from</th>
+                      <th className="text-left">Device</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {people.map(p => <VisitorRow key={p.id} p={p} />)}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="table min-w-[720px]">
+                <table className="table min-w-[860px]">
                   <thead>
                     <tr>
                       <th className="text-left">When</th>
@@ -266,7 +411,7 @@ export default function VisitorInsights() {
                       return (
                         <tr key={v._id}>
                           <td className="whitespace-nowrap">
-                            <span className="inline-flex items-center gap-1.5 text-[12.5px]">
+                            <span className="inline-flex items-center gap-1.5 text-[12.5px]" title={format(new Date(v.visitedAt), 'd MMM yyyy, HH:mm:ss')}>
                               <Clock size={12} className="text-[#98A2B3]" />
                               {formatDistanceToNow(new Date(v.visitedAt), { addSuffix: true })}
                             </span>
@@ -275,27 +420,19 @@ export default function VisitorInsights() {
                           <td>
                             {v.referrer
                               ? <span className="truncate inline-block max-w-[180px] align-middle" title={v.referrer}>
-                                  {v.referrer.replace(/^https?:\/\//, '').replace(/\/.*$/, '')}
+                                  {referrerHost(v.referrer)}
                                 </span>
                               : v.utm?.source
                                 ? <span className="badge badge-yellow">utm:{v.utm.source}</span>
                                 : <span className="text-[#98A2B3]">Direct</span>}
                           </td>
-                          <td>
-                            {v.country
-                              ? <span className="inline-flex items-center gap-2">
-                                  <CountryTag code={v.countryCode} />
-                                  <span className="text-[#101828]">{v.city ? `${v.city}, ${v.country}` : v.country}</span>
-                                </span>
-                              : <span className="inline-flex items-center gap-1 text-[#98A2B3]">
-                                  <Flag size={11} /> {v.timezone || 'Unknown'}
-                                </span>}
-                          </td>
-                          <td>
+                          <td><Location v={v} /></td>
+                          <td title={v.userAgent}>
                             <span className="inline-flex items-center gap-1.5 capitalize whitespace-nowrap">
                               <Icon size={13} className="text-[#98A2B3]" />
-                              {v.device || 'desktop'} · {v.browser || 'Other'}
+                              {v.device || 'desktop'} · {v.browser || 'Other'} · {v.os || 'Other'}
                             </span>
+                            {v.isBot && <span className="badge badge-gray ml-1.5">bot</span>}
                           </td>
                         </tr>
                       );

@@ -15,10 +15,10 @@ export const NAV = [
     ],
   },
   {
-    section: 'Estates',
+    section: 'Sites',
     links: [
-      { to: '/estates',     icon: Building2,     label: 'All estates' },
-      { to: '/onboarding',  icon: Rocket,        label: 'Onboard estates' },
+      { to: '/estates',     icon: Building2,     label: 'All sites' },
+      { to: '/onboarding',  icon: Rocket,        label: 'Onboard sites' },
       { to: '/users',       icon: Users,         label: 'Users' },
       { to: '/operations',  icon: AlertTriangle, label: 'Operations' },
       { to: '/calls',       icon: PhoneCall,     label: 'Calls' },

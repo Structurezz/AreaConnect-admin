@@ -15,7 +15,7 @@ const FEATURE_GROUPS = [
   {
     label: 'Limits',
     items: [
-      { key: 'maxResidents', label: 'Max Residents', type: 'number' },
+      { key: 'maxResidents', label: 'Max Members', type: 'number' },
       { key: 'maxUnits', label: 'Max Units', type: 'number' },
       { key: 'maxVisitorsPerMonth', label: 'Visitors / Month', type: 'number' },
     ],
@@ -24,7 +24,7 @@ const FEATURE_GROUPS = [
     label: 'Core Features',
     items: [
       { key: 'visitorManagement', label: 'Visitor Management', icon: Users },
-      { key: 'residentManagement', label: 'Resident Management', icon: Users },
+      { key: 'residentManagement', label: 'Member Management', icon: Users },
       { key: 'unitManagement', label: 'Unit Management', icon: Home },
     ],
   },
@@ -46,9 +46,9 @@ const FEATURE_GROUPS = [
     ],
   },
   {
-    label: 'Entertainment (Resident Lounge)',
+    label: 'Entertainment (Member Lounge)',
     items: [
-      { key: 'residentLounge', label: 'Resident Lounge', icon: Music },
+      { key: 'residentLounge', label: 'Member Lounge', icon: Music },
       { key: 'musicPlayer', label: 'Music Player / Radio', icon: Music },
       { key: 'fridayNightFunTimes', label: 'Friday Night FunTimes', icon: Star },
       { key: 'eventBoard', label: 'Event Board', icon: Megaphone },
@@ -150,7 +150,7 @@ function PlanCard({ plan, onEdit }) {
           <div className="mt-1.5 text-[12px] text-[#475467] tabular-nums">
             {fmt(plan.price.annual)}{plan.price.annual > 0 && <span className="text-[#98A2B3]"> / year</span>}
             <span className="text-[#D0D5DD] mx-1.5">·</span>
-            {plan.price.perResident ? <>{fmt(plan.price.perResident)}<span className="text-[#98A2B3]"> / resident</span></> : <span className="text-[#98A2B3]">No per-resident billing</span>}
+            {plan.price.perResident ? <>{fmt(plan.price.perResident)}<span className="text-[#98A2B3]"> / member</span></> : <span className="text-[#98A2B3]">No per-member billing</span>}
           </div>
         </div>
 
@@ -302,7 +302,7 @@ export default function Plans() {
     <div className="max-w-[1400px] mx-auto animate-fade-in">
       <PageHeader
         title="Plans & Pricing"
-        description="Define subscription tiers, pricing and feature access for estates."
+        description="Define subscription tiers, pricing and feature access for every site."
         actions={<button onClick={openNew} className="btn-primary"><Plus size={15} /> New plan</button>}
       />
 
@@ -316,7 +316,7 @@ export default function Plans() {
             <CreditCard size={18} className="text-[#98A2B3]" />
           </div>
           <p className="text-[14px] font-semibold text-[#101828]">No plans yet</p>
-          <p className="text-[13px] text-[#475467] mt-0.5">Create your first subscription tier to start assigning estates.</p>
+          <p className="text-[13px] text-[#475467] mt-0.5">Create your first subscription tier to start assigning sites.</p>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4 items-start">
@@ -398,11 +398,11 @@ export default function Plans() {
                       onChange={e => setField('price.annual', parseInt(e.target.value) || 0)} />
                   </div>
                   <div className="col-span-2">
-                    <label className="field-label">Per-resident / month (₦ per resident)</label>
+                    <label className="field-label">Per-member / month (₦ per member)</label>
                     <input type="number" min="0" className="input-field tabular-nums" placeholder="e.g. 2000"
                       value={editing.price.perResident ?? 0}
                       onChange={e => setField('price.perResident', parseInt(e.target.value) || 0)} />
-                    <p className="field-hint">Leave 0 to disable per-resident billing for this plan.</p>
+                    <p className="field-hint">Leave 0 to disable per-member billing for this plan.</p>
                   </div>
                 </div>
               </div>

@@ -32,7 +32,7 @@ const CATS = [
   { id: 'payouts',     label: 'Payouts',     icon: Wallet },
   { id: 'marketplace', label: 'Marketplace', icon: ShoppingBag },
   { id: 'accounts',    label: 'Accounts',    icon: Users },
-  { id: 'estates',     label: 'Estates',     icon: Building2 },
+  { id: 'estates',     label: 'Sites',     icon: Building2 },
 ];
 
 const empty = { data: { data: null } };
@@ -145,7 +145,7 @@ export default function Operations() {
     });
     failed.forEach((s) => out.push({ id: `renew-${s._id}`, sev: 'critical', cat: 'billing', icon: CreditCard, title: 'Auto-renewal failed',
       estate: s.estateId?.name, at: s.lastRenewalAttemptAt, detail: `${s.lastRenewalError || 'Card declined'} · ${s.renewalAttempts || 1} attempt${s.renewalAttempts === 1 ? '' : 's'}`,
-      to: `/estates/${s.estateId?._id || s.estateId}`, cta: 'Open estate' }));
+      to: `/estates/${s.estateId?._id || s.estateId}`, cta: 'Open site' }));
     disputes.forEach((o) => out.push({ id: `disp-${o._id}`, sev: 'critical', cat: 'marketplace', icon: ShoppingBag, title: 'Marketplace dispute',
       estate: o.estateId?.name, at: o.disputedAt || o.updatedAt, detail: `${o.buyerId?.name || 'Buyer'} vs ${o.sellerId?.name || 'seller'} · ${naira(o.amount || o.total)} held in escrow${o.disputeReason ? ` · “${o.disputeReason}”` : ''}`,
       to: '/marketplace', cta: 'Review' }));
@@ -165,14 +165,14 @@ export default function Operations() {
       ] }));
     if (payStats?.pendingWithPaystackRef > 0) {
       out.push({ id: 'reconcile', sev: 'action', cat: 'billing', icon: Link2, title: `${payStats.pendingWithPaystackRef} dues payment${payStats.pendingWithPaystackRef === 1 ? '' : 's'} to reconcile`,
-        detail: 'Residents started paying on Paystack but the payment never confirmed. Reconcile or attach them.', to: '/finance?tab=transactions', cta: 'Reconcile' });
+        detail: 'Members started paying on Paystack but the payment never confirmed. Reconcile or attach them.', to: '/finance?tab=transactions', cta: 'Reconcile' });
     }
     subs.forEach((s) => {
       if (s.status === 'trial' && s.trialEndsAt) {
         const left = (new Date(s.trialEndsAt).getTime() - now) / 86400000;
         if (left >= 0 && left <= 3) out.push({ id: `trial-${s._id}`, sev: 'watch', cat: 'billing', icon: Hourglass, title: `Trial ends ${left < 1 ? 'today' : `in ${Math.ceil(left)} day${Math.ceil(left) === 1 ? '' : 's'}`}`,
           estate: s.estateId?.name, at: s.trialEndsAt, future: true, detail: `${s.planId?.name || 'Plan'} trial · ${s.paystackAuth?.authorizationCode ? 'card on file' : 'no card yet — follow up'}`,
-          to: `/estates/${s.estateId?._id || s.estateId}`, cta: 'Open estate' });
+          to: `/estates/${s.estateId?._id || s.estateId}`, cta: 'Open site' });
       }
       if (s.comp?.isActive && s.comp?.expiresAt) {
         const left = (new Date(s.comp.expiresAt).getTime() - now) / 86400000;
@@ -181,15 +181,15 @@ export default function Operations() {
       }
     });
     estates.filter((e) => e.isActive !== false).forEach((e) => {
-      if (!e.managerId) out.push({ id: `nomgr-${e._id}`, sev: 'watch', cat: 'estates', icon: UserX, title: 'Estate has no manager', estate: e.name, at: e.createdAt,
-        detail: `${e.counts?.residents || 0} residents with nobody managing them`, to: '/onboarding?method=portfolio', cta: 'Assign' });
+      if (!e.managerId) out.push({ id: `nomgr-${e._id}`, sev: 'watch', cat: 'estates', icon: UserX, title: 'Site has no manager', estate: e.name, at: e.createdAt,
+        detail: `${e.counts?.residents || 0} members with nobody managing them`, to: '/onboarding?method=portfolio', cta: 'Assign' });
       if (!e.subscription) out.push({ id: `nosub-${e._id}`, sev: 'watch', cat: 'billing', icon: Receipt, title: 'No subscription', estate: e.name, at: e.createdAt,
-        detail: 'Active estate without any plan — it isn’t being billed', to: '/finance?tab=billing', cta: 'Assign plan' });
+        detail: 'Active site without any plan — it isn’t being billed', to: '/finance?tab=billing', cta: 'Assign plan' });
       if (!e.location?.lat) out.push({ id: `nomap-${e._id}`, sev: 'watch', cat: 'estates', icon: MapPinOff, title: 'Not on the map', estate: e.name, at: e.createdAt,
         detail: `Address “${e.address || '—'}” couldn’t be placed — set a pin`, to: `/estates/${e._id}`, cta: 'Fix' });
     });
-    if (userStats?.noEstate > 0) out.push({ id: 'noestate', sev: 'watch', cat: 'accounts', icon: Users, title: `${userStats.noEstate} user${userStats.noEstate === 1 ? '' : 's'} not linked to an estate`,
-      detail: 'Signed up but never joined an estate — they can’t use the apps.', to: '/users', cta: 'View users' });
+    if (userStats?.noEstate > 0) out.push({ id: 'noestate', sev: 'watch', cat: 'accounts', icon: Users, title: `${userStats.noEstate} user${userStats.noEstate === 1 ? '' : 's'} not linked to a site`,
+      detail: 'Signed up but never joined a site — they can’t use the apps.', to: '/users', cta: 'View users' });
     if (onboarding?.pendingInvites > 0) out.push({ id: 'invites', sev: 'watch', cat: 'accounts', icon: Mail, title: `${onboarding.pendingInvites} invitation${onboarding.pendingInvites === 1 ? '' : 's'} awaiting sign-up`,
       detail: 'Managers you invited haven’t finished setting up yet — resend to nudge them.', to: '/onboarding?method=invite', cta: 'Invitations' });
 
@@ -217,17 +217,17 @@ export default function Operations() {
     { label: 'Card renewals', icon: CreditCard, status: (d.failed || []).length ? 'fail' : 'ok',
       value: `${(d.failed || []).length} failed`, hint: `${due} due in the next 7 days` },
     { label: 'Alert response', icon: Siren, status: !oldestAlert ? 'ok' : hoursSince(oldestAlert) > 2 ? 'fail' : 'warn',
-      value: oldestAlert ? `Oldest open ${ago(oldestAlert)}` : 'No open alerts', hint: `${(d.alerts || []).length} open across estates` },
+      value: oldestAlert ? `Oldest open ${ago(oldestAlert)}` : 'No open alerts', hint: `${(d.alerts || []).length} open across sites` },
     { label: 'Payout queue', icon: Wallet, status: !oldestPayout ? 'ok' : hoursSince(oldestPayout) > 24 ? 'fail' : 'warn',
       value: oldestPayout ? `Oldest ${ago(oldestPayout)}` : 'Empty', hint: d.balance?.queued ? `${naira(d.balance.queued.total)} queued` : '' },
     { label: 'Dues reconciliation', icon: Link2, status: (d.payStats?.pendingWithPaystackRef || 0) ? 'warn' : 'ok',
       value: `${d.payStats?.pendingWithPaystackRef || 0} stuck`, hint: `${d.payStats?.overdue || 0} overdue dues platform-wide` },
     { label: 'Manager coverage', icon: UserX, status: pct(est.filter((e) => e.managerId).length, est.length) === 100 ? 'ok' : 'warn',
-      value: `${pct(est.filter((e) => e.managerId).length, est.length)}%`, hint: `${est.filter((e) => !e.managerId).length} estates unmanaged` },
+      value: `${pct(est.filter((e) => e.managerId).length, est.length)}%`, hint: `${est.filter((e) => !e.managerId).length} sites unmanaged` },
     { label: 'Billing coverage', icon: Receipt, status: pct(est.filter((e) => e.subscription).length, est.length) === 100 ? 'ok' : 'warn',
-      value: `${pct(est.filter((e) => e.subscription).length, est.length)}%`, hint: `${est.filter((e) => !e.subscription).length} estates without a plan` },
+      value: `${pct(est.filter((e) => e.subscription).length, est.length)}%`, hint: `${est.filter((e) => !e.subscription).length} sites without a plan` },
     { label: 'Map coverage', icon: MapPinOff, status: pct(est.filter((e) => e.location?.lat).length, est.length) >= 90 ? 'ok' : 'warn',
-      value: `${pct(est.filter((e) => e.location?.lat).length, est.length)}%`, hint: `${est.filter((e) => !e.location?.lat).length} estates without a pin` },
+      value: `${pct(est.filter((e) => e.location?.lat).length, est.length)}%`, hint: `${est.filter((e) => !e.location?.lat).length} sites without a pin` },
   ];
   const STATUS = { ok: [CheckCircle2, 'text-[#067647]', 'OK'], warn: [CircleAlert, 'text-[#B54708]', 'Check'], fail: [XCircle, 'text-[#B42318]', 'Failing'] };
   const checksOk = checks.filter((c) => c.status === 'ok').length;
@@ -291,7 +291,7 @@ export default function Operations() {
             </span>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[12px] text-white/55 flex items-center gap-1.5"><Activity size={13} /> Operations centre · all estates</p>
+            <p className="text-[12px] text-white/55 flex items-center gap-1.5"><Activity size={13} /> Operations centre · all sites</p>
             <h2 className="mt-1 text-[22px] font-semibold tracking-tight" style={{ color: '#fff' }}>
               {score >= 85 ? <>Platform is <span style={{ color: scoreColor }}>healthy</span></> : score >= 60 ? <>Platform <span style={{ color: scoreColor }}>needs attention</span></> : <>Platform is <span style={{ color: scoreColor }}>at risk</span></>}
             </h2>
@@ -437,9 +437,9 @@ export default function Operations() {
 
           <div className="card overflow-hidden">
             <div className="card-header">
-              <div><div className="card-title flex items-center gap-2"><AlertTriangle size={15} className="text-[#F79009]" /> Estates needing attention</div><div className="card-sub">Ranked by open issues</div></div>
+              <div><div className="card-title flex items-center gap-2"><AlertTriangle size={15} className="text-[#F79009]" /> Sites needing attention</div><div className="card-sub">Ranked by open issues</div></div>
             </div>
-            {!hot.length ? <p className="px-4 py-6 text-center text-[12.5px] text-[#98A2B3]">Every estate is in good shape.</p> : (
+            {!hot.length ? <p className="px-4 py-6 text-center text-[12.5px] text-[#98A2B3]">Every site is in good shape.</p> : (
               <div className="divide-y divide-[#F2F4F7]">
                 {hot.map(({ e, issues }) => (
                   <Link key={e._id} to={`/estates/${e._id}`} className="flex items-center gap-3 px-4 py-2.5 hover:bg-[#F9FAFB]" style={{ textDecoration: 'none' }}>
@@ -466,7 +466,7 @@ export default function Operations() {
               {[
                 ['Paid MRR', naira(d.subStats?.mrrPaid ?? d.subStats?.mrr), 'text-[#067647]'],
                 ['Trial pipeline', `${naira(d.subStats?.trialPipelineMrr)} · ${d.subStats?.trial || 0} trials`, 'text-[#175CD3]'],
-                ['Comp given away', `${naira(d.subStats?.mrrComp)} · ${d.subStats?.activeComp || 0} estates`, 'text-[#B54708]'],
+                ['Comp given away', `${naira(d.subStats?.mrrComp)} · ${d.subStats?.activeComp || 0} sites`, 'text-[#B54708]'],
                 ['Renewals this week', `${(d.renewals || []).length} due`, 'text-[#101828]'],
                 ['Cancelled · 30 days', `${d.subStats?.cancelled30d || 0}`, 'text-[#101828]'],
               ].map(([k, v, c]) => (

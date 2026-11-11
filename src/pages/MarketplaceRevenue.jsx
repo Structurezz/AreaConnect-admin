@@ -65,7 +65,7 @@ export default function MarketplaceRevenue() {
     <div className="max-w-[1400px] mx-auto animate-fade-in pb-12">
       <PageHeader
         title="Marketplace revenue"
-        description={`${pct}% commission on every resident sale · paid through Paystack, held in escrow until delivery.`}
+        description={`${pct}% commission on every member sale · paid through Paystack, held in escrow until delivery.`}
         actions={<>
           <div className="tabs">
             {RANGES.map(([d, l]) => <button key={d} onClick={() => setDays(d)} className={`tab ${days === d ? 'active' : ''}`}>{l}</button>)}
@@ -115,14 +115,14 @@ export default function MarketplaceRevenue() {
         <div className="card min-w-0">
           <div className="card-header">
             <div>
-              <div className="card-title">Top estates</div>
+              <div className="card-title">Top sites</div>
               <div className="card-sub">Completed sales → our cut</div>
             </div>
           </div>
           {(sum?.byEstate || []).length === 0 ? <Empty icon={Building2} title="No sales yet" /> : (
             <table className="table">
               <thead>
-                <tr><th>Estate</th><th className="!text-right">Gross</th><th className="!text-right">Commission</th></tr>
+                <tr><th>Site</th><th className="!text-right">Gross</th><th className="!text-right">Commission</th></tr>
               </thead>
               <tbody>
                 {sum.byEstate.slice(0, 8).map((e) => (
@@ -159,7 +159,7 @@ export default function MarketplaceRevenue() {
             <table className="table min-w-[900px]">
               <thead>
                 <tr>
-                  <th>Order</th><th>Estate</th><th>Buyer → Seller</th>
+                  <th>Order</th><th>Site</th><th>Buyer → Seller</th>
                   <th className="!text-right">Amount</th><th className="!text-right">Our {pct}%</th><th className="!text-right">Seller</th>
                   <th>Status</th>
                 </tr>

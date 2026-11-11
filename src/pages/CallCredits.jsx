@@ -9,7 +9,7 @@ import PageHeader from '../components/ui/PageHeader';
 // resident of one or more estates. Server: controllers/creditAdminController.
 
 const QUICK = [10, 25, 50, 100];
-const ROLE_LABEL = { resident: 'Resident', estate_manager: 'Estate Manager', security: 'Security' };
+const ROLE_LABEL = { resident: 'Member', estate_manager: 'Site Manager', security: 'Security' };
 const newRequestId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
 
 function Initials({ name, photo }) {
@@ -85,7 +85,7 @@ export default function CallCredits() {
   const summary = useMemo(() => {
     if (tab === 'estates') {
       const names = estates.filter((e) => pickedEstates.has(e._id)).map((e) => e.name);
-      return `${recipientsCount} resident${recipientsCount === 1 ? '' : 's'} in ${names.length === 1 ? names[0] : `${names.length} estates`}`;
+      return `${recipientsCount} member${recipientsCount === 1 ? '' : 's'} in ${names.length === 1 ? names[0] : `${names.length} sites`}`;
     }
     const names = [...picked.values()].map((u) => u.name);
     return names.length <= 2 ? names.join(' and ') : `${names.slice(0, 2).join(', ')} and ${names.length - 2} more`;
@@ -117,11 +117,11 @@ export default function CallCredits() {
     <div className="max-w-[1400px] mx-auto animate-fade-in pb-12">
       <PageHeader
         title="Call credits"
-        description="Give bonus airtime to anyone, or to every resident of whole estates. 1 credit = 1 minute of neighbour calls; recipients get an in-app notification."
+        description="Give bonus airtime to anyone, or to every member of whole sites. 1 credit = 1 minute of neighbour calls; recipients get an in-app notification."
       >
         <div className="max-w-full overflow-x-auto">
           <div className="tabs">
-            {[['people', 'People', Users], ['estates', 'Estates', Building2], ['history', 'History', History]].map(([id, label, Icon]) => (
+            {[['people', 'People', Users], ['estates', 'Sites', Building2], ['history', 'History', History]].map(([id, label, Icon]) => (
               <button key={id} onClick={() => { setTab(id); setConfirming(false); }}
                 className={`tab inline-flex items-center gap-1.5 ${tab === id ? 'active' : ''}`}>
                 <Icon size={14} /> {label}
@@ -160,7 +160,7 @@ export default function CallCredits() {
                       <td>
                         <div className="cell-strong">
                           {g.recipients} {g.scope === 'estates' ? 'residents' : g.recipients === 1 ? 'person' : 'people'}
-                          <span className={`badge ${g.scope === 'estates' ? 'badge-blue' : 'badge-gray'} ml-2 align-middle`}>{g.scope === 'estates' ? 'Estates' : 'People'}</span>
+                          <span className={`badge ${g.scope === 'estates' ? 'badge-blue' : 'badge-gray'} ml-2 align-middle`}>{g.scope === 'estates' ? 'Sites' : 'People'}</span>
                         </div>
                         {(g.scope === 'estates' || g.note) && (
                           <div className="text-[12px] text-[#98A2B3] mt-0.5 max-w-[360px] truncate">
@@ -189,7 +189,7 @@ export default function CallCredits() {
                 <div className="px-4 py-3 border-b border-[#E4E7EC] space-y-2.5">
                   <div className="relative">
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
-                    <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone or estate"
+                    <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name, email, phone or site"
                       className="input-field pl-9 w-full" />
                     {searching && <RefreshCw size={13} className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[#98A2B3]" />}
                   </div>
@@ -228,11 +228,11 @@ export default function CallCredits() {
                   <span className="card-title">{estates.length} estates</span>
                   <button onClick={() => setPickedEstates(allEstatesPicked ? new Set() : new Set(estates.map((e) => e._id)))}
                     className="text-[12.5px] font-semibold text-[#059669] hover:text-[#047857]">
-                    {allEstatesPicked ? 'Clear all' : 'Select all estates'}
+                    {allEstatesPicked ? 'Clear all' : 'Select all sites'}
                   </button>
                 </div>
                 <div className="divide-y divide-[#F2F4F7]">
-                  {estates.length === 0 && <Empty icon={Building2} title="No estates" hint="Estates on the platform will appear here." />}
+                  {estates.length === 0 && <Empty icon={Building2} title="No sites" hint="Sites on the platform will appear here." />}
                   {estates.map((e) => {
                     const on = pickedEstates.has(e._id);
                     return (
@@ -300,7 +300,7 @@ export default function CallCredits() {
                   <Gift size={14} />
                   {recipientsCount
                     ? `Give to ${recipientsCount} ${tab === 'estates' ? (recipientsCount === 1 ? 'resident' : 'residents') : (recipientsCount === 1 ? 'person' : 'people')}`
-                    : tab === 'estates' ? 'Select estates' : 'Select people'}
+                    : tab === 'estates' ? 'Select sites' : 'Select people'}
                 </button>
               )}
             </div>

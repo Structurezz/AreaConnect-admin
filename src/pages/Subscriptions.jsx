@@ -214,7 +214,7 @@ export default function Subscriptions() {
   const handleGrantComp = async (e) => {
     e.preventDefault();
     if (!compForm.estateId || !compForm.planId) {
-      toast.error('Pick an estate and a plan');
+      toast.error('Pick a site and a plan');
       return;
     }
     setCompGranting(true);
@@ -240,7 +240,7 @@ export default function Subscriptions() {
   const handleRevokeComp = async (sub) => {
     const estateId = sub.estateId?._id || sub.estateId;
     if (!estateId) return;
-    if (!window.confirm(`Revoke comp access for ${sub.estateId?.name || 'this estate'}?`)) return;
+    if (!window.confirm(`Revoke comp access for ${sub.estateId?.name || 'this site'}?`)) return;
     setCompRevoking(estateId);
     try {
       await planAPI.revokeComp(estateId);
@@ -292,7 +292,7 @@ export default function Subscriptions() {
         <div className="absolute -right-16 -top-16 w-64 h-64 rounded-full border border-white/10 pointer-events-none" />
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-[12px] text-white/60 flex items-center gap-1.5"><CreditCard size={13} /> Estate subscriptions · billing</p>
+            <p className="text-[12px] text-white/60 flex items-center gap-1.5"><CreditCard size={13} /> Site subscriptions · billing</p>
             <p className="mt-4 text-[12.5px] text-white/70">Paid monthly recurring revenue</p>
             <p className="mt-1 text-[38px] leading-none font-semibold tracking-tight tabular-nums">₦{Math.round(paidMrr).toLocaleString()}</p>
             <p className="mt-2 text-[12px] text-white/55">₦{Math.round(paidMrr * 12).toLocaleString()} a year · {payingCount} paying estate{payingCount === 1 ? '' : 's'}</p>
@@ -360,7 +360,7 @@ export default function Subscriptions() {
           <div className="relative lg:ml-auto lg:w-72">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#98A2B3]" />
             <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Search estate, code, plan…"
+              placeholder="Search site, code, plan…"
               className="input-field pl-9" />
           </div>
         </div>
@@ -378,7 +378,7 @@ export default function Subscriptions() {
               {search || statusFilter !== 'all' ? 'No matching subscriptions' : 'No subscriptions yet'}
             </p>
             <p className="text-[12.5px] text-[#98A2B3] mt-0.5">
-              {search || statusFilter !== 'all' ? 'Try a different search or status filter.' : 'Assign a plan to an estate to get started.'}
+              {search || statusFilter !== 'all' ? 'Try a different search or status filter.' : 'Assign a plan to a site to get started.'}
             </p>
           </div>
         ) : (
@@ -386,7 +386,7 @@ export default function Subscriptions() {
             <table className="table min-w-[700px]">
               <thead>
                 <tr>
-                  <th className="text-left">Estate</th>
+                  <th className="text-left">Site</th>
                   <th className="text-left">Plan</th>
                   <th className="text-left hidden sm:table-cell">Cycle</th>
                   <th className="text-left hidden md:table-cell">Model</th>
@@ -453,7 +453,7 @@ export default function Subscriptions() {
                       </td>
                       <td className="hidden sm:table-cell capitalize">{sub.cycle}</td>
                       <td className="hidden md:table-cell">
-                        {sub.billingModel === 'per_resident' ? 'Per resident' : 'Flat fee'}
+                        {sub.billingModel === 'per_resident' ? 'Per member' : 'Flat fee'}
                       </td>
                       <td><StatusBadge status={sub.status} /></td>
                       <td className="hidden md:table-cell text-right tabular-nums whitespace-nowrap">
@@ -560,7 +560,7 @@ export default function Subscriptions() {
               <select className="input-field" value={editing.billingModel || 'flat'}
                 onChange={e => setEditing({ ...editing, billingModel: e.target.value })}>
                 <option value="flat">Flat fee</option>
-                <option value="per_resident">Per resident</option>
+                <option value="per_resident">Per member</option>
               </select>
             </div>
             <div>

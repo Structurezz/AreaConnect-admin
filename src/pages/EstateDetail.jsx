@@ -7,7 +7,8 @@ import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
 import GoogleMapEmbed, { mapsQuery } from '../components/estates/GoogleMapEmbed';
 import EditEstateDrawer from '../components/estates/EditEstateDrawer';
-import { SiteTypeBadge, siteTypeOf, siteTypeInfo } from '../components/estates/siteTypes';
+import { SiteTypeBadge, siteTypeOf, siteTypeInfo, termsFor } from '../components/estates/siteTypes';
+import SiteModulesCard from '../components/estates/SiteModulesCard';
 import {
   Building2, MapPin, User, Hash, Users, Home, Shield,
   CheckCircle, XCircle, ArrowLeft, Edit3, Copy, Calendar,
@@ -32,7 +33,7 @@ function unitDuesView(d = {}) {
     case 'clear': return { color: '#067647', label: 'All bills paid',
       detail: d.lastPaidAt ? `Last paid ${shortDay(d.lastPaidAt)} · ${naira(d.paidThisYear)} this year` : '' };
     case 'exempt': return { color: '#475467', label: 'Exempt', detail: '' };
-    case 'no_residents': return { color: '#98A2B3', label: 'No residents to bill', detail: '' };
+    case 'no_residents': return { color: '#98A2B3', label: 'No one to bill', detail: '' };
     default: return { color: '#98A2B3', label: 'No bills issued yet', detail: '' };
   }
 }
@@ -102,7 +103,7 @@ export default function EstateDetail() {
       setData(data.data);
       setSub(data.data.subscription || null);
     } catch {
-      toast.error('Failed to load estate');
+      toast.error('Failed to load site');
       navigate('/estates');
     } finally {
       setLoading(false);
@@ -117,7 +118,7 @@ export default function EstateDetail() {
     setToggling(true);
     try {
       await estateAPI.update(estateId, { isActive: !data.estate.isActive });
-      toast.success(data.estate.isActive ? 'Estate deactivated' : 'Estate activated');
+      toast.success(data.estate.isActive ? `${termsFor(data.estate).site} deactivated` : `${termsFor(data.estate).site} activated`);
       load();
     } catch { toast.error('Action failed'); }
     finally { setToggling(false); }
@@ -132,10 +133,13 @@ export default function EstateDetail() {
   const unitsByType       = units.reduce((acc, u) => { acc[u.type] = (acc[u.type] || 0) + 1; return acc; }, {});
   const activeStaff       = securityStaff.filter(s => s.isActive).length;
   const openAlerts        = alerts.filter(a => ['open', 'acknowledged'].includes(a.status));
+  const T  = termsFor(estate);
+  const lc = (w) => w.toLowerCase();
+  const unitLabel = (u) => `${u.block ? `${T.block} ${u.block} · ` : ''}${T.unit} ${u.unitNumber}`;
 
   const tabs = [
-    { id: 'residents',    label: 'Residents',     count: residents.length,     icon: Users    },
-    { id: 'units',        label: 'Units',         count: units.length,         icon: Home     },
+    { id: 'residents',    label: T.members,     count: residents.length,     icon: Users    },
+    { id: 'units',        label: T.units,         count: units.length,         icon: Home     },
     { id: 'security',     label: 'Security',      count: securityStaff.length, icon: Shield   },
     { id: 'visitors',     label: 'Visitors',      count: visitors.length,      icon: UserCheck },
     { id: 'alerts',       label: 'Alerts',        count: openAlerts.length,    icon: AlertTriangle },
@@ -152,7 +156,7 @@ export default function EstateDetail() {
     <div className="max-w-[1400px] mx-auto animate-fade-in">
       <button onClick={() => navigate('/estates')}
         className="inline-flex items-center gap-1.5 text-[12.5px] font-medium text-[#475467] hover:text-[#101828] mb-3 transition-colors">
-        <ArrowLeft size={14} /> All estates
+        <ArrowLeft size={14} /> All sites
       </button>
 
       <PageHeader heading
@@ -202,7 +206,7 @@ export default function EstateDetail() {
               {estate.isActive ? 'Deactivate' : 'Activate'}
             </button>
             <button onClick={openEdit} className="btn-primary gap-2">
-              <Edit3 size={14} /> Edit estate
+              <Edit3 size={14} /> Edit {lc(T.site)}
             </button>
           </>
         }
@@ -211,9 +215,9 @@ export default function EstateDetail() {
       <div className="space-y-5">
         {/* KPIs */}
         <div className="grid gap-3 grid-cols-2 lg:grid-cols-4">
-          <StatCard label="Residents" value={residents.length} icon={Users} color="green"
+          <StatCard label={T.members} value={residents.length} icon={Users} color="green"
             hint={`${activeResidents} active · ${residents.length - activeResidents} suspended`} />
-          <StatCard label="Occupied units" value={`${occupiedUnits}/${units.length}`} icon={Home} color="blue"
+          <StatCard label={`Occupied ${lc(T.units)}`} value={`${occupiedUnits}/${units.length}`} icon={Home} color="blue"
             hint={`${occupancyPct}% occupancy`} />
           <StatCard label="Security staff" value={securityStaff.length} icon={Shield} color="amber"
             hint={`${activeStaff} active`} />
@@ -229,7 +233,7 @@ export default function EstateDetail() {
               <GoogleMapEmbed estate={estate} height={300} zoom={estate.location?.lat ? 17 : 15} />
               {!estate.location?.lat && (
                 <span className="absolute left-3 top-3 px-2.5 py-1 rounded-md bg-white/95 border border-[#FEDF89] text-[11.5px] text-[#B54708] shadow-sm">
-                  Showing Google's best match for the address — set an exact pin in Edit estate
+                  Showing Google's best match for the address — set an exact pin in Edit {lc(T.site)}
                 </span>
               )}
             </div>
@@ -260,24 +264,26 @@ export default function EstateDetail() {
           <div className="card lg:col-span-2">
             <div className="card-header">
               <div>
-                <div className="card-title">Estate profile</div>
+                <div className="card-title">{T.site} profile</div>
                 <div className="card-sub">Details captured at onboarding</div>
               </div>
             </div>
             <dl className="p-5 grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-4">
-              <Field label="Estate code" icon={Hash}>
+              <Field label={`${T.site} code`} icon={Hash}>
                 <span className="font-mono tracking-wider font-semibold">{estate.estateCode}</span>
               </Field>
               <Field label="Site type" icon={siteTypeInfo(siteTypeOf(estate)).icon}>
                 <SiteTypeBadge type={siteTypeOf(estate)} />
               </Field>
-              <Field label="Estate type" icon={Building2}>
-                {estate.estateType ? <span className="capitalize">{estate.estateType}</span> : <Dash />}
-              </Field>
+              {siteTypeOf(estate) === 'estate' && (
+                <Field label="Estate type" icon={Building2}>
+                  {estate.estateType ? <span className="capitalize">{estate.estateType}</span> : <Dash />}
+                </Field>
+              )}
               <Field label="City / state" icon={MapPin}>
                 {location || <Dash />}
               </Field>
-              <Field label="Planned units" icon={Home}>
+              <Field label={`Planned ${lc(T.units)}`} icon={Home}>
                 {estate.unitCount ? <span className="tabular-nums">{Number(estate.unitCount).toLocaleString()}</span> : <Dash />}
               </Field>
               <Field label="Created" icon={Calendar}>
@@ -295,14 +301,14 @@ export default function EstateDetail() {
                 </Field>
               </div>
               <div className="col-span-2 md:col-span-3">
-                <Field label="Unit types" icon={Building2}>
+                <Field label={`${T.unit} types`} icon={Building2}>
                   {Object.keys(unitsByType).length > 0 ? (
                     <div className="flex flex-wrap gap-1.5">
                       {Object.entries(unitsByType).map(([type, count]) => (
                         <span key={type} className="badge badge-gray capitalize">{type}: {count}</span>
                       ))}
                     </div>
-                  ) : <span className="text-[#98A2B3]">No units</span>}
+                  ) : <span className="text-[#98A2B3]">No {lc(T.units)}</span>}
                 </Field>
               </div>
               {estate.adminNotes && (
@@ -321,13 +327,13 @@ export default function EstateDetail() {
             <div className="card-header">
               <div>
                 <div className="card-title">Contacts</div>
-                <div className="card-sub">Manager and estate office</div>
+                <div className="card-sub">{T.manager} and {lc(T.site)} office</div>
               </div>
             </div>
             <div className="p-5 space-y-5">
               <div>
                 <div className="text-[12px] font-medium text-[#98A2B3] flex items-center gap-1 mb-1.5">
-                  <User size={12} /> Estate manager
+                  <User size={12} /> {T.manager}
                 </div>
                 {estate.managerId ? (
                   <div className="space-y-1">
@@ -352,7 +358,7 @@ export default function EstateDetail() {
               </div>
               <div className="pt-4 border-t border-[#F2F4F7]">
                 <div className="text-[12px] font-medium text-[#98A2B3] flex items-center gap-1 mb-1.5">
-                  <Building2 size={12} /> Estate contact
+                  <Building2 size={12} /> {T.site} contact
                 </div>
                 {estate.contactPhone || estate.contactEmail ? (
                   <div className="space-y-1">
@@ -375,6 +381,8 @@ export default function EstateDetail() {
           </div>
         </div>
 
+        <SiteModulesCard estate={estate} onChange={(e) => setData((d) => ({ ...d, estate: { ...d.estate, site: e.site } }))} />
+
         {/* Tabs */}
         <div className="overflow-x-auto -mx-1 px-1">
           <div className="tabs">
@@ -396,22 +404,22 @@ export default function EstateDetail() {
           <div className="card overflow-hidden">
             <div className="card-header">
               <div>
-                <div className="card-title">Residents</div>
+                <div className="card-title">{T.members}</div>
                 <div className="card-sub">
                   {residents.length} total · {activeResidents} active · {residents.length - activeResidents} suspended
                 </div>
               </div>
             </div>
             {residents.length === 0 ? (
-              <Empty icon={Users} title="No residents yet" hint="Residents appear here once they join with the estate code." />
+              <Empty icon={Users} title={`No ${lc(T.members)} yet`} hint={`${T.members} appear here once they join with the ${lc(T.site)} code.`} />
             ) : (
               <div className="overflow-x-auto">
                 <table className="table min-w-[560px]">
                   <thead>
                     <tr>
-                      <th>Resident</th>
+                      <th>{T.member}</th>
                       <th className="hidden md:table-cell">Contact</th>
-                      <th className="hidden lg:table-cell">Unit</th>
+                      <th className="hidden lg:table-cell">{T.unit}</th>
                       <th className="hidden xl:table-cell">Joined</th>
                       <th>Status</th>
                     </tr>
@@ -442,8 +450,8 @@ export default function EstateDetail() {
                         </td>
                         <td className="hidden lg:table-cell">
                           {r.unitId
-                            ? <span className="text-[#101828]">{r.unitId.block ? `Block ${r.unitId.block} · ` : ''}Unit {r.unitId.unitNumber}</span>
-                            : <span className="text-[#98A2B3]">No unit</span>}
+                            ? <span className="text-[#101828]">{unitLabel(r.unitId)}</span>
+                            : <span className="text-[#98A2B3]">No {lc(T.unit)}</span>}
                         </td>
                         <td className="hidden xl:table-cell tabular-nums text-[#667085]">
                           {r.createdAt ? format(new Date(r.createdAt), 'MMM d, yyyy') : '—'}
@@ -471,7 +479,7 @@ export default function EstateDetail() {
               <div className="card">
                 <div className="card-header">
                   <div>
-                    <div className="card-title">Unit breakdown</div>
+                    <div className="card-title">{T.unit} breakdown</div>
                     <div className="card-sub">{occupiedUnits} of {units.length} occupied · {occupancyPct}% occupancy</div>
                   </div>
                 </div>
@@ -499,22 +507,22 @@ export default function EstateDetail() {
             <div className="card overflow-hidden">
               <div className="card-header">
                 <div>
-                  <div className="card-title">Units</div>
-                  <div className="card-sub">{units.length} units · dues position from residents' bills</div>
+                  <div className="card-title">{T.units}</div>
+                  <div className="card-sub">{units.length} {lc(T.units)} · dues position from {lc(T.members)}' bills</div>
                 </div>
               </div>
               {units.length === 0 ? (
-                <Empty icon={Home} title="No units added yet" hint="Units are created by the estate manager." />
+                <Empty icon={Home} title={`No ${lc(T.units)} added yet`} hint={`${T.units} are created by the ${lc(T.manager)}.`} />
               ) : (
                 <div className="overflow-x-auto">
                   <table className="table">
                     <thead>
                       <tr>
-                        <th>Unit</th>
+                        <th>{T.unit}</th>
                         <th>Type</th>
                         <th>Occupancy</th>
                         <th className="hidden sm:table-cell">Dues</th>
-                        <th className="hidden md:table-cell">Residents</th>
+                        <th className="hidden md:table-cell">{T.members}</th>
                         <th className="w-8"></th>
                       </tr>
                     </thead>
@@ -528,7 +536,7 @@ export default function EstateDetail() {
                           <Fragment key={u._id}>
                             <tr>
                               <td className="cell-strong whitespace-nowrap">
-                                {u.block ? `Block ${u.block} · ` : ''}Unit {u.unitNumber}
+                                {unitLabel(u)}
                               </td>
                               <td className="capitalize">{u.type}</td>
                               <td>
@@ -673,7 +681,7 @@ export default function EstateDetail() {
               </div>
             </div>
             {visitors.length === 0 ? (
-              <Empty icon={UserCheck} title="No visitor activity yet" hint="Visitor passes created by residents appear here." />
+              <Empty icon={UserCheck} title="No visitor activity yet" hint={`Visitor passes created by ${lc(T.members)} appear here.`} />
             ) : (
               <div className="overflow-x-auto">
                 <table className="table min-w-[600px]">
@@ -722,7 +730,7 @@ export default function EstateDetail() {
               </div>
             </div>
             {alerts.length === 0 ? (
-              <Empty icon={AlertTriangle} title="No security alerts" hint="Panic and incident alerts from this estate appear here." />
+              <Empty icon={AlertTriangle} title="No security alerts" hint={`Panic and incident alerts from this ${lc(T.site)} appear here.`} />
             ) : (
               <ul className="divide-y divide-[#F2F4F7]">
                 {alerts.map(a => (
@@ -742,7 +750,7 @@ export default function EstateDetail() {
                       {a.note && <div className="text-[13px] text-[#475467] mt-1">{a.note}</div>}
                       <div className="text-[12px] text-[#98A2B3] mt-1">
                         {a.residentId?.name && <>By {a.residentId.name} · </>}
-                        {a.unitId && <>Unit {a.unitId.unitNumber} · </>}
+                        {a.unitId && <>{T.unit} {a.unitId.unitNumber} · </>}
                         {formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}
                       </div>
                     </div>
@@ -759,17 +767,17 @@ export default function EstateDetail() {
             <div className="card-header">
               <div>
                 <div className="card-title">Payments</div>
-                <div className="card-sub">{payments.length} recent resident payments</div>
+                <div className="card-sub">{payments.length} recent {lc(T.member)} payments</div>
               </div>
             </div>
             {payments.length === 0 ? (
-              <Empty icon={CreditCard} title="No payments yet" hint="Resident dues payments appear here." />
+              <Empty icon={CreditCard} title="No payments yet" hint={`${T.member} payments (${lc(T.dues)}) appear here.`} />
             ) : (
               <div className="overflow-x-auto">
                 <table className="table min-w-[600px]">
                   <thead>
                     <tr>
-                      <th>Resident</th>
+                      <th>{T.member}</th>
                       <th>Schedule</th>
                       <th className="!text-right">Amount</th>
                       <th>Status</th>
@@ -811,7 +819,7 @@ export default function EstateDetail() {
               </div>
             </div>
             {announcements.length === 0 ? (
-              <Empty icon={Megaphone} title="No announcements posted" hint="Notices sent to residents appear here." />
+              <Empty icon={Megaphone} title="No announcements posted" hint={`Notices sent to ${lc(T.members)} appear here.`} />
             ) : (
               <ul className="divide-y divide-[#F2F4F7]">
                 {announcements.map(a => (
@@ -843,7 +851,7 @@ export default function EstateDetail() {
             {!subscription ? (
               <div className="card">
                 <Empty icon={CreditCard} title="No subscription"
-                  hint="This estate has not been assigned a subscription plan yet."
+                  hint={`This ${lc(T.site)} has not been assigned a subscription plan yet.`}
                   action={
                     <Link to="/subscriptions" className="btn-primary inline-flex gap-2">
                       <CreditCard size={14} /> Assign plan
@@ -968,8 +976,8 @@ export default function EstateDetail() {
                       {subscription.planId?.features?.maxResidents && (
                         <div className="mt-5 grid grid-cols-3 gap-3">
                           {[
-                            { label: 'Max residents', value: subscription.planId.features.maxResidents },
-                            { label: 'Max units',     value: subscription.planId.features.maxUnits },
+                            { label: `Max ${lc(T.members)}`, value: subscription.planId.features.maxResidents },
+                            { label: `Max ${lc(T.units)}`,     value: subscription.planId.features.maxUnits },
                             { label: 'Visitors / mo', value: subscription.planId.features.maxVisitorsPerMonth },
                           ].map(({ label, value }) => (
                             <div key={label} className="rounded-lg border border-[#E4E7EC] px-3 py-2.5">

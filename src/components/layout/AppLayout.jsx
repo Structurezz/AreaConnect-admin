@@ -7,8 +7,8 @@ import { estateAPI } from '../../api';
 
 const PAGES = NAV.flatMap(({ section, links }) => links.map((l) => ({ ...l, section })));
 const EXTRA_TITLES = [
-  [/^\/estates\/new/, 'Estates', 'Onboarding wizard'],
-  [/^\/estates\/[^/]+/, 'Estates', 'Estate details'],
+  [/^\/estates\/new/, 'Sites', 'Onboarding wizard'],
+  [/^\/estates\/[^/]+/, 'Sites', 'Site details'],
   [/^\/campaigns\/new/, 'Growth', 'New campaign'],
   [/^\/campaigns\/[^/]+/, 'Growth', 'Campaign'],
 ];
@@ -42,7 +42,7 @@ function CommandPalette({ open, onClose }) {
     const pages = PAGES.filter((p) => !term || `${p.label} ${p.section}`.toLowerCase().includes(term))
       .map((p) => ({ key: p.to, label: p.label, sub: p.section, Icon: p.icon, to: p.to }));
     const est = term ? (estates || []).filter((e) => `${e.name} ${e.estateCode || ''} ${e.address || ''}`.toLowerCase().includes(term)).slice(0, 6)
-      .map((e) => ({ key: e._id, label: e.name, sub: `Estate · ${e.estateCode || ''}`, Icon: Building2, to: `/estates/${e._id}` })) : [];
+      .map((e) => ({ key: e._id, label: e.name, sub: `Site · ${e.estateCode || ''}`, Icon: Building2, to: `/estates/${e._id}` })) : [];
     return [...est, ...pages].slice(0, 12);
   }, [q, estates]);
 
@@ -61,7 +61,7 @@ function CommandPalette({ open, onClose }) {
               if (e.key === 'Enter') go(results[i]);
               if (e.key === 'Escape') onClose();
             }}
-            placeholder="Search pages and estates…" className="flex-1 text-[14px] outline-none bg-transparent" />
+            placeholder="Search pages and sites…" className="flex-1 text-[14px] outline-none bg-transparent" />
           <button onClick={onClose} className="text-slate-400 hover:text-slate-700"><X size={16} /></button>
         </div>
         <div className="max-h-[50vh] overflow-y-auto py-1.5">
@@ -124,14 +124,14 @@ export default function AppLayout({ children }) {
           <button onClick={() => setPaletteOpen(true)}
             className="ml-auto hidden md:flex items-center gap-2 w-72 h-9 px-3 rounded-lg border text-[13px] text-slate-400 hover:border-slate-300 transition-colors"
             style={{ borderColor: 'var(--border-md)', background: '#F9FAFB' }}>
-            <Search size={14} /> <span className="flex-1 text-left">Search pages and estates…</span>
+            <Search size={14} /> <span className="flex-1 text-left">Search pages and sites…</span>
             <span className="text-[11px] px-1.5 rounded border border-slate-200 text-slate-400">⌘K</span>
           </button>
           <button onClick={() => setPaletteOpen(true)} className="md:hidden ml-auto p-2 rounded-lg text-slate-500 hover:bg-slate-100" aria-label="Search"><Search size={18} /></button>
 
           {!pathname.startsWith('/onboarding') && (
             <Link to="/onboarding" className="btn-primary !py-2" style={{ textDecoration: 'none' }}>
-              <Rocket size={14} /> <span className="hidden sm:inline">Onboard estates</span>
+              <Rocket size={14} /> <span className="hidden sm:inline">Onboard sites</span>
             </Link>
           )}
         </header>

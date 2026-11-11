@@ -57,8 +57,8 @@ export default function Analytics() {
   const fmtNGN = (n) => `₦${Number(n || 0).toLocaleString()}`;
 
   const kpis = [
-    { label: 'Total estates',    value: stats?.totalEstates ?? 0,    sub: `${stats?.activeEstates ?? 0} active`, icon: Building2,  color: 'amber' },
-    { label: 'Active residents', value: stats?.totalResidents ?? 0,  sub: `${totalPeople} total users`, icon: Users, color: 'blue' },
+    { label: 'Total sites',    value: stats?.totalEstates ?? 0,    sub: `${stats?.activeEstates ?? 0} active`, icon: Building2,  color: 'amber' },
+    { label: 'Active members', value: stats?.totalResidents ?? 0,  sub: `${totalPeople} total users`, icon: Users, color: 'blue' },
     { label: 'Paid MRR',         value: fmtNGN(paidMrr),             sub: compMrr ? `+${fmtNGN(compMrr)} gift` : 'live revenue', icon: TrendingUp, color: 'green' },
     { label: 'Visitors today',   value: stats?.visitorsToday ?? 0,   sub: `${stats?.visitorsWeek ?? 0} this week`, icon: UserCheck, color: 'blue' },
     { label: 'Payment volume 30d', value: fmtNGN(stats?.paymentVolume30d),  sub: `${fmtNGN(stats?.paymentVolume)} all-time`, icon: Wallet, color: 'green' },
@@ -74,8 +74,8 @@ export default function Analytics() {
   ];
 
   const userBreakdown = [
-    { label: 'Estate managers', value: stats?.totalManagers  ?? 0, color: '#059669',  icon: Building2 },
-    { label: 'Residents',       value: stats?.totalResidents ?? 0, color: '#2E90FA',  icon: Users     },
+    { label: 'Site managers', value: stats?.totalManagers  ?? 0, color: '#059669',  icon: Building2 },
+    { label: 'Members',       value: stats?.totalResidents ?? 0, color: '#2E90FA',  icon: Users     },
     { label: 'Security staff',  value: stats?.totalSecurity  ?? 0, color: '#F79009',  icon: Shield    },
     { label: 'Total visitors',  value: stats?.totalVisitors  ?? 0, color: '#7A5AF8',  icon: Eye       },
   ];
@@ -111,7 +111,7 @@ export default function Analytics() {
           <div className="card-header">
             <div>
               <h2 className="card-title">Subscription health</h2>
-              <p className="card-sub">Status of all estate subscriptions</p>
+              <p className="card-sub">Status of all site subscriptions</p>
             </div>
             <Link to="/subscriptions" className={linkCls}>Manage <ArrowRight size={12} /></Link>
           </div>
@@ -185,7 +185,7 @@ export default function Analytics() {
                   <CreditCard size={16} className="text-[#98A2B3]" />
                 </div>
                 <p className="text-[13px] font-semibold text-[#101828]">No subscription data yet</p>
-                <p className="text-[12px] text-[#98A2B3]">Plans will appear once estates subscribe.</p>
+                <p className="text-[12px] text-[#98A2B3]">Plans will appear once sites subscribe.</p>
               </div>
             )}
           </div>
@@ -209,7 +209,7 @@ export default function Analytics() {
         <div className="card-header">
           <div>
             <h2 className="card-title">User breakdown</h2>
-            <p className="card-sub">Across all estates</p>
+            <p className="card-sub">Across all sites</p>
           </div>
         </div>
         <div className="grid grid-cols-2 xl:grid-cols-4 divide-x divide-y xl:divide-y-0 divide-[#E4E7EC]">
@@ -237,7 +237,7 @@ export default function Analytics() {
           <div className="card overflow-hidden flex flex-col">
             <div className="card-header">
               <div>
-                <h2 className="card-title">Estate registrations</h2>
+                <h2 className="card-title">Site registrations</h2>
                 <p className="card-sub">Last 6 months</p>
               </div>
             </div>
@@ -307,7 +307,7 @@ export default function Analytics() {
             </div>
             <div className="grid grid-cols-2 divide-x divide-[#E4E7EC]">
               <div className="px-5 py-3">
-                <div className="text-[11.5px] text-[#98A2B3]">Paying estates</div>
+                <div className="text-[11.5px] text-[#98A2B3]">Paying sites</div>
                 <div className="text-[17px] font-semibold text-[#101828] tabular-nums">{subStats?.active ?? 0}</div>
               </div>
               <div className="px-5 py-3">
@@ -328,10 +328,10 @@ export default function Analytics() {
       <div className="card overflow-hidden">
         <div className="card-header">
           <div>
-            <h2 className="card-title">Estate activity</h2>
-            <p className="card-sub">Active vs inactive estates</p>
+            <h2 className="card-title">Site activity</h2>
+            <p className="card-sub">Active vs inactive sites</p>
           </div>
-          <Link to="/estates" className={linkCls}>All estates <ArrowRight size={12} /></Link>
+          <Link to="/estates" className={linkCls}>All sites <ArrowRight size={12} /></Link>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-[#E4E7EC] border-b border-[#E4E7EC]">
           {[

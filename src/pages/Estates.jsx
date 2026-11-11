@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { estateAPI } from '../api';
 import { Link, useNavigate } from 'react-router-dom';
 import EditEstateDrawer from '../components/estates/EditEstateDrawer';
-import { SITE_TYPES, SiteTypeBadge, siteTypeOf } from '../components/estates/siteTypes';
+import { SITE_TYPES, SiteTypeBadge, siteTypeOf, termsFor } from '../components/estates/siteTypes';
 import PageHeader from '../components/ui/PageHeader';
 import StatCard from '../components/ui/StatCard';
 import EstatesMap, { STATUS_COLOR, estateTone } from '../components/estates/EstatesMap';
@@ -128,15 +128,15 @@ function EstatePanel({ e, onClose, onEdit, onToggle, toggling }) {
           <GoogleMapEmbed key={e._id} estate={e} height={150} zoom={e.location?.lat ? 16 : 14} />
         </div>
         <div className="grid grid-cols-2 gap-2">
-          <Metric icon={UsersIcon} label="Residents" value={e.counts?.residents ?? 0} tone="#059669" />
-          <Metric icon={HomeIcon} label="Units" value={e.counts?.units ?? 0} sub={e.unitCount ? `${e.unitCount} planned` : null} tone="#2E90FA" />
+          <Metric icon={UsersIcon} label={termsFor(e).members} value={e.counts?.residents ?? 0} tone="#059669" />
+          <Metric icon={HomeIcon} label={termsFor(e).units} value={e.counts?.units ?? 0} sub={e.unitCount ? `${e.unitCount} planned` : null} tone="#2E90FA" />
           <Metric icon={DoorOpen} label="Visitors" value={e.counts?.visitorsWeek ?? 0} sub={`${e.counts?.visitorsToday ?? 0} today · 7 days`} tone="#7A5AF8" />
           <Metric icon={Bell} label="Open alerts" value={e.counts?.openAlerts ?? 0} tone={(e.counts?.openAlerts || 0) > 0 ? '#D92D20' : '#98A2B3'} />
         </div>
 
         {occ !== null && (
           <div>
-            <div className="flex justify-between text-[12px] mb-1"><span className="text-[#667085]">Occupancy (residents per unit)</span><span className="font-medium text-[#101828] tabular-nums">{occ}%</span></div>
+            <div className="flex justify-between text-[12px] mb-1"><span className="text-[#667085]">Occupancy ({termsFor(e).members.toLowerCase()} per {termsFor(e).unit.toLowerCase()})</span><span className="font-medium text-[#101828] tabular-nums">{occ}%</span></div>
             <div className="h-1.5 rounded-full bg-[#F2F4F7] overflow-hidden"><div className="h-full rounded-full bg-[#059669]" style={{ width: `${occ}%` }} /></div>
           </div>
         )}
@@ -201,7 +201,7 @@ function EstatePanel({ e, onClose, onEdit, onToggle, toggling }) {
       </div>
 
       <div className="p-3 border-t border-[#F2F4F7] grid grid-cols-[1fr_auto_auto] gap-2 bg-[#FCFCFD]">
-        <button onClick={() => navigate(`/estates/${e._id}`)} className="btn-primary justify-center">Open estate <ArrowRight size={13} /></button>
+        <button onClick={() => navigate(`/estates/${e._id}`)} className="btn-primary justify-center">Open site <ArrowRight size={13} /></button>
         <button onClick={() => onEdit(e)} className="btn-outline !px-2.5" title="Edit"><Edit3 size={14} /></button>
         <button onClick={(ev) => onToggle(e, ev)} disabled={toggling === e._id} className={`btn-outline !px-2.5 ${e.isActive ? 'hover:!text-[#B42318]' : 'hover:!text-[#067647]'}`} title={e.isActive ? 'Deactivate' : 'Activate'}>
           {toggling === e._id ? <RefreshCw size={14} className="animate-spin" /> : e.isActive ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
@@ -250,7 +250,7 @@ function NetworkPanel({ estates, tone, setTone }) {
                 <div className="mt-1 h-1.5 rounded-full bg-[#F2F4F7] overflow-hidden"><div className="h-full rounded-full bg-[#10B981]" style={{ width: `${(n / max) * 100}%` }} /></div>
               </div>
             ))}
-            {!byPlace.length && <p className="text-[12.5px] text-[#98A2B3]">No estates yet</p>}
+            {!byPlace.length && <p className="text-[12.5px] text-[#98A2B3]">No sites yet</p>}
           </div>
         </div>
       </div>
@@ -275,7 +275,7 @@ function EstateCard({ e, onSelect, selected }) {
         </div>
       </div>
       <div className="mt-3 grid grid-cols-4 gap-1 text-center">
-        {[['Residents', e.counts?.residents], ['Units', e.counts?.units], ['Visits 7d', e.counts?.visitorsWeek], ['Alerts', e.counts?.openAlerts]].map(([l, v]) => (
+        {[[termsFor(e).members, e.counts?.residents], [termsFor(e).units, e.counts?.units], ['Visits 7d', e.counts?.visitorsWeek], ['Alerts', e.counts?.openAlerts]].map(([l, v]) => (
           <div key={l} className="rounded-md bg-[#F9FAFB] py-1.5">
             <div className={`text-[14px] font-semibold tabular-nums ${l === 'Alerts' && v ? 'text-[#D92D20]' : 'text-[#101828]'}`}>{v ?? 0}</div>
             <div className="text-[10.5px] text-[#98A2B3]">{l}</div>
@@ -306,7 +306,8 @@ export default function AdminEstates() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [subFilter, setSubFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
-  const [siteFilter, setSiteFilter] = useState('all');
+  // /estates?type=hotel (from the dashboard's sites-by-type tiles) pre-filters the list
+  const [siteFilter, setSiteFilter] = useState(() => new URLSearchParams(window.location.search).get('type') || 'all');
   const [sortBy, setSortBy] = useState('new');
   const [tone, setTone] = useState(null);
   const [view, setView] = useState(() => { try { return localStorage.getItem('ac_estates_view') || 'table'; } catch { return 'table'; } });
@@ -319,7 +320,7 @@ export default function AdminEstates() {
     try {
       const { data } = await estateAPI.getOverview();
       setEstates(data.data);
-    } catch { toast.error('Failed to load estates'); }
+    } catch { toast.error('Failed to load sites'); }
     finally { setLoading(false); }
   };
   useEffect(() => { load(); }, []);
@@ -387,7 +388,7 @@ export default function AdminEstates() {
   return (
     <div className="max-w-[1400px] mx-auto">
       <PageHeader
-        description={`${counts.all} estates · ${counts.active} active · ${counts.unmanaged} without a manager`}
+        description={`${counts.all} sites · ${counts.active} active · ${counts.unmanaged} without a manager`}
         actions={
           <>
             <button onClick={load} className="btn-outline"><RefreshCw size={14} className={loading ? 'animate-spin' : ''} /> Refresh</button>
@@ -400,12 +401,12 @@ export default function AdminEstates() {
       />
 
       <div className="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-6 mb-5">
-        <StatCard label="Estates" value={counts.all} icon={Building2} color="green" hint={`${counts.active} active · ${totals.trials} on trial`} />
-        <StatCard label="Residents" value={totals.residents} icon={UsersIcon} color="blue" hint={`across ${counts.all} estates`} />
+        <StatCard label="Sites" value={counts.all} icon={Building2} color="green" hint={`${counts.active} active · ${totals.trials} on trial`} />
+        <StatCard label="Members" value={totals.residents} icon={UsersIcon} color="blue" hint={`across ${counts.all} sites`} />
         <StatCard label="Units" value={totals.units} icon={HomeIcon} color="purple" hint={totals.units ? `${Math.round((totals.residents / totals.units) * 100)}% occupied` : 'none registered'} />
         <StatCard label="Paid MRR" value={naira(totals.mrr)} icon={Wallet} color="green" hint="excludes trials & comp" />
         <StatCard label="Visitors · 7 days" value={totals.visitors} icon={DoorOpen} color="amber" />
-        <StatCard label="Open alerts" value={totals.alerts} icon={Bell} color={totals.alerts ? 'red' : 'green'} hint={counts.unmanaged ? `${counts.unmanaged} unmanaged estates` : 'all estates managed'} />
+        <StatCard label="Open alerts" value={totals.alerts} icon={Bell} color={totals.alerts ? 'red' : 'green'} hint={counts.unmanaged ? `${counts.unmanaged} unmanaged sites` : 'all sites managed'} />
       </div>
 
       {/* Map + side panel */}
@@ -414,7 +415,7 @@ export default function AdminEstates() {
           <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-[#F2F4F7]">
             <div className="flex items-center gap-2">
               <Navigation size={14} className="text-[#059669]" />
-              <h3 className="text-[14px] font-semibold text-[#101828]">Estate map</h3>
+              <h3 className="text-[14px] font-semibold text-[#101828]">Site map</h3>
               {tone && <span className="badge badge-gray">{TONE_LABEL[tone]}</span>}
             </div>
             <div className="hidden sm:flex items-center gap-3 text-[11.5px] text-[#667085]">
@@ -464,7 +465,7 @@ export default function AdminEstates() {
             <select className="input-field !w-auto !h-9 !py-0" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
               <option value="new">Newest</option>
               <option value="name">Name A–Z</option>
-              <option value="residents">Most residents</option>
+              <option value="residents">Most members</option>
               <option value="visitors7d">Most visitors (7d)</option>
               <option value="alerts">Most alerts</option>
               <option value="value">Highest value</option>
@@ -480,9 +481,9 @@ export default function AdminEstates() {
         ) : !filtered.length ? (
           <div className="py-14 text-center">
             <span className="mx-auto w-11 h-11 rounded-full bg-[#F2F4F7] text-[#667085] flex items-center justify-center"><Building2 size={18} /></span>
-            <p className="mt-3 text-[14px] font-semibold text-[#101828]">{hasFilters ? 'No estates match these filters' : 'No estates yet'}</p>
-            <p className="mt-1 text-[12.5px] text-[#667085]">{hasFilters ? 'Try clearing a filter.' : 'Onboard your first estate to see it here.'}</p>
-            {!hasFilters && <Link to="/onboarding" className="btn-primary mt-4 inline-flex">Onboard estates</Link>}
+            <p className="mt-3 text-[14px] font-semibold text-[#101828]">{hasFilters ? 'No sites match these filters' : 'No sites yet'}</p>
+            <p className="mt-1 text-[12.5px] text-[#667085]">{hasFilters ? 'Try clearing a filter.' : 'Onboard your first site to see it here.'}</p>
+            {!hasFilters && <Link to="/onboarding" className="btn-primary mt-4 inline-flex">Onboard sites</Link>}
           </div>
         ) : view === 'cards' ? (
           <div className="p-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -493,8 +494,8 @@ export default function AdminEstates() {
             <table className="table min-w-[1180px]">
               <thead>
                 <tr>
-                  <th>Estate</th><th>Location</th><th>Manager</th><th>Plan</th><th>Status</th>
-                  <th className="!text-right">Residents</th><th className="!text-right">Occupancy</th><th className="!text-right">Visitors 7d</th>
+                  <th>Site</th><th>Location</th><th>Manager</th><th>Plan</th><th>Status</th>
+                  <th className="!text-right">Members</th><th className="!text-right">Occupancy</th><th className="!text-right">Visitors 7d</th>
                   <th className="!text-right">Alerts</th><th className="!text-right">Value / mo</th><th>Joined</th><th />
                 </tr>
               </thead>

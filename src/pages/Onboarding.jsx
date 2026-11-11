@@ -10,10 +10,10 @@ import InviteManagers from '../components/onboarding/InviteManagers';
 import Portfolio from '../components/onboarding/Portfolio';
 
 const METHODS = [
-  { key: 'wizard',    icon: Wand2,           title: 'Guided setup',      desc: 'One estate with its full profile, manager and plan, step by step.', best: 'Signed deals' },
-  { key: 'bulk',      icon: FileSpreadsheet, title: 'Bulk import',       desc: 'Upload a CSV or paste from a spreadsheet to create many estates at once.', best: 'Partners & associations' },
+  { key: 'wizard',    icon: Wand2,           title: 'Guided setup',      desc: 'One site with its full profile, manager and plan, step by step.', best: 'Signed deals' },
+  { key: 'bulk',      icon: FileSpreadsheet, title: 'Bulk import',       desc: 'Upload a CSV or paste from a spreadsheet to create many sites at once.', best: 'Partners & associations' },
   { key: 'invite',    icon: Send,            title: 'Invite to self-onboard', desc: 'Email managers a pre-filled sign-up link; they finish the setup themselves.', best: 'Warm leads' },
-  { key: 'portfolio', icon: Briefcase,       title: 'Add to portfolio',  desc: 'Give an existing manager more estates, or hand over estates between managers.', best: 'Multi-estate managers' },
+  { key: 'portfolio', icon: Briefcase,       title: 'Add to portfolio',  desc: 'Give an existing manager more sites, or hand over sites between managers.', best: 'Multi-site managers' },
 ];
 
 const SOURCE = {
@@ -34,9 +34,9 @@ export default function Onboarding() {
 
   return (
     <div className="max-w-[1400px] mx-auto">
-      <PageHeader title="Onboard estates"
-        description="Bring estates onto AreaConnect four ways — set one up in detail, import many at once, invite managers to self-serve, or extend a manager's portfolio."
-        actions={<Link to="/estates" className="btn-outline" style={{ textDecoration: 'none' }}><Building2 size={14} /> All estates</Link>} />
+      <PageHeader title="Onboard sites"
+        description="Bring sites onto AreaConnect four ways — set one up in detail, import many at once, invite managers to self-serve, or extend a manager's portfolio."
+        actions={<Link to="/estates" className="btn-outline" style={{ textDecoration: 'none' }}><Building2 size={14} /> All sites</Link>} />
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-4 mb-6">
         <StatCard label="Onboarded · last 30 days" value={summary?.last30 ?? 0} icon={Building2} color="green"
@@ -76,12 +76,12 @@ export default function Onboarding() {
         <div className="card-header">
           <div>
             <h3 className="card-title flex items-center gap-2"><Clock size={15} className="text-[#98A2B3]" /> Recently onboarded</h3>
-            <p className="card-sub">The latest estates added to the platform, by any method</p>
+            <p className="card-sub">The latest sites added to the platform, by any method</p>
           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="table">
-            <thead><tr><th>Estate</th><th>Location</th><th>Manager</th><th>Method</th><th>Added</th><th /></tr></thead>
+            <thead><tr><th>Site</th><th>Location</th><th>Manager</th><th>Method</th><th>Added</th><th /></tr></thead>
             <tbody>
               {!summary && [0, 1, 2].map((i) => <tr key={i}><td colSpan={6}><div className="skeleton h-6" /></td></tr>)}
               {summary?.recent?.map((e) => {

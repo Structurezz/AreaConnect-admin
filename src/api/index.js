@@ -146,7 +146,8 @@ export const planAPI = {
 
 // Landing-site visitor analytics
 export const analyticsAPI = {
-  getStats:  ()           => api.get('/analytics/visitors/stats'),
+  getStats:  (params = {}) => api.get('/analytics/visitors/stats', { params }),
+  getPeople: (params = {}) => api.get('/analytics/visitors/people', { params }),
   getRecent: (params = {}) => api.get('/analytics/visitors/recent', { params }),
 };
 

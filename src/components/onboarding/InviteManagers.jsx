@@ -64,11 +64,11 @@ export default function InviteManagers({ onDone }) {
 
   return (
     <div className="space-y-5">
-      <SectionCard title="Invite managers to set up their own estate"
-        description="They get an email with a link to the manager sign-up page with their details filled in. Their estate starts on a 14-day trial when they finish.">
+      <SectionCard title="Invite managers to set up their own site"
+        description="They get an email with a link to the manager sign-up page with their details filled in. Their site starts on a 14-day trial when they finish.">
         <div className="space-y-2.5">
           <div className="hidden md:grid grid-cols-[1fr_1.3fr_1fr_1.2fr_1.4fr_32px] gap-2 text-[11.5px] font-medium text-[#667085] px-0.5">
-            <span>Name</span><span>Email *</span><span>Phone</span><span>Estate name</span><span>Estate address</span><span />
+            <span>Name</span><span>Email *</span><span>Phone</span><span>Site name</span><span>Site address</span><span />
           </div>
           {rows.map((r, i) => (
             <div key={i} className="grid gap-2 md:grid-cols-[1fr_1.3fr_1fr_1.2fr_1.4fr_32px] p-3 md:p-0 rounded-xl border md:border-0 border-[#E4E7EC]">
@@ -76,7 +76,7 @@ export default function InviteManagers({ onDone }) {
               <input className="input-field" placeholder="manager@email.com" type="email" value={r.email} onChange={(e) => set(i, 'email', e.target.value)}
                 onPaste={(e) => { const t = e.clipboardData.getData('text'); if (/[\n,;]/.test(t) && t.includes('@')) { e.preventDefault(); pasteMany(t); } }} />
               <input className="input-field" placeholder="+234 …" value={r.phone} onChange={(e) => set(i, 'phone', e.target.value)} />
-              <input className="input-field" placeholder="Estate name" value={r.estateName} onChange={(e) => set(i, 'estateName', e.target.value)} />
+              <input className="input-field" placeholder="Site name" value={r.estateName} onChange={(e) => set(i, 'estateName', e.target.value)} />
               <input className="input-field" placeholder="Address (optional)" value={r.estateAddress} onChange={(e) => set(i, 'estateAddress', e.target.value)} />
               <button type="button" className="h-10 flex items-center justify-center text-[#98A2B3] hover:text-[#D92D20] disabled:opacity-30" disabled={rows.length === 1}
                 onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))} aria-label="Remove"><Trash2 size={15} /></button>
@@ -89,7 +89,7 @@ export default function InviteManagers({ onDone }) {
         </div>
         <Field label="Personal note (optional)" className="mt-5" hint="Shown in the email above the button">
           <textarea className="input-field min-h-[70px]" value={note} onChange={(e) => setNote(e.target.value)} maxLength={600}
-            placeholder="Great speaking with you today — here's the link to get your estate set up." />
+            placeholder="Great speaking with you today — here's the link to get your site set up." />
         </Field>
         <div className="mt-5 pt-4 border-t border-[#F2F4F7] flex justify-end">
           <button className="btn-primary" disabled={sending} onClick={send}>
@@ -106,7 +106,7 @@ export default function InviteManagers({ onDone }) {
         </div>}>
         <div className="overflow-x-auto -m-5">
           <table className="table">
-            <thead><tr><th>Manager</th><th>Estate</th><th>Status</th><th>Sent</th><th className="text-right">Actions</th></tr></thead>
+            <thead><tr><th>Manager</th><th>Site</th><th>Status</th><th>Sent</th><th className="text-right">Actions</th></tr></thead>
             <tbody>
               {invites === null && <tr><td colSpan={5}><div className="skeleton h-8" /></td></tr>}
               {invites && !shown.length && <tr><td colSpan={5} className="text-center !py-10 text-[#98A2B3]"><Mail size={18} className="mx-auto mb-2" />No invitations here yet</td></tr>}
