@@ -180,7 +180,7 @@ export default function WizardFlow({ onDone }) {
               {mgr.tempPassword && (
                 <div className="mt-2 flex items-center justify-between rounded-lg bg-[#F9FAFB] border border-[#F2F4F7] px-2.5 py-1.5">
                   <span className="flex items-center gap-1.5 font-mono text-[13px] text-[#047857]"><KeyRound size={13} />{mgr.tempPassword}</span>
-                  <CopyButton text={`Email: ${mgr.email}\nTemporary password: ${mgr.tempPassword}\nLogin: https://areamanager.area-connector.com/login`} label="Copy login" />
+                  <CopyButton text={`Email: ${mgr.email}\nTemporary password: ${mgr.tempPassword}\nLogin: https://manager.area-connector.com/login`} label="Copy login" />
                 </div>
               )}
             </div>

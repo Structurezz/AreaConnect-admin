@@ -59,7 +59,7 @@ export default function Sidebar({ mobile = false, onClose }) {
       <Link to="/dashboard" onClick={onClose} className="flex items-center gap-2.5 px-4 h-14 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', textDecoration: 'none' }}>
         <span className="w-8 h-8 rounded-lg flex items-center justify-center text-[11px] font-extrabold text-white" style={{ background: 'linear-gradient(135deg,#10B981,#047857)' }}>AC</span>
         <span className="min-w-0 leading-tight">
-          <span className="block text-[14px] font-semibold text-white">Area<span style={{ color: '#34D399' }}>Connect</span></span>
+          <span className="block text-[14px] font-semibold text-white">Area<span style={{ color: '#34D399' }}>Connector</span></span>
           <span className="block text-[11px] text-[#667085]">Platform admin</span>
         </span>
       </Link>

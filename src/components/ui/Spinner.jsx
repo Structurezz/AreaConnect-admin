@@ -10,7 +10,7 @@ const BRAND = {
   "track": "#E4E7EC",
   "name": [
     "Area",
-    "Connect"
+    "Connector"
   ],
   "tagline": "Platform admin",
   "fallback": [

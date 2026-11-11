@@ -135,7 +135,7 @@ export function EmailPreview({ email = {}, content: k = {} }) {
       <div className="p-3">
         <div className="bg-white rounded-xl overflow-hidden">
           <div className="h-1" style={{ background: `linear-gradient(90deg, ${t.primary}, ${t.accent})` }} />
-          <div className="px-5 py-3 border-b border-[#F2F4F7] text-[15px] font-extrabold tracking-tight text-[#0F172A]">Area<span style={{ color: t.primary }}>Connect</span></div>
+          <div className="px-5 py-3 border-b border-[#F2F4F7] text-[15px] font-extrabold tracking-tight text-[#0F172A]">Area<span style={{ color: t.primary }}>Connector</span></div>
           <div className="px-5 py-4 text-[12.5px] max-h-[380px] overflow-y-auto">
             {email.htmlBody
               ? <div dangerouslySetInnerHTML={{ __html: email.htmlBody.replace(/\{\{name\}\}/g, 'Ada') }} />

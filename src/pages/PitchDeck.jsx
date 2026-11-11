@@ -163,7 +163,7 @@ const SLIDES = [
     title: 'Let\'s Transform Your Estate',
     subtitle: 'Join hundreds of Nigerian estates running on AreaConnector',
     ctas: [
-      { label: 'Get Started', href: 'https://areamanager.area-connector.com/register', primary: true },
+      { label: 'Get Started', href: 'https://manager.area-connector.com/register', primary: true },
       { label: 'Schedule a Demo',         href: 'mailto:hello@area-connector.com',                    primary: false },
     ],
     contact: {
@@ -292,7 +292,7 @@ function Slide({ slide }) {
         {s.badge}
       </div>
       <div style={{ fontSize:56, fontWeight:900, color:'#fff', letterSpacing:'-0.04em', lineHeight:1.1, marginBottom:8 }}>
-        Area<span style={{ color:'#10B981' }}>Connect</span>
+        Area<span style={{ color:'#10B981' }}>Connector</span>
       </div>
       <div style={{ fontSize:18, fontWeight:600, color:'rgba(255,255,255,0.6)', marginBottom:28, letterSpacing:'-0.01em' }}>{s.subtitle}</div>
       <div style={{ maxWidth:520, fontSize:15, color:'rgba(255,255,255,0.5)', lineHeight:1.8 }}>{s.body}</div>
