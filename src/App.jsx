@@ -21,6 +21,7 @@ import Finance from './pages/Finance';
 import AdminUsers from './pages/Users';
 import Operations from './pages/Operations';
 import PitchDeck from './pages/PitchDeck';
+import ProspectsDemo from './pages/ProspectsDemo';
 import Campaigns from './pages/Campaigns';
 import CampaignBuilder from './pages/CampaignBuilder';
 import DefaultTracks from './pages/DefaultTracks';
@@ -67,6 +68,7 @@ function AppRoutes() {
       <Route path="/users" element={<RequireAdmin><AdminUsers /></RequireAdmin>} />
       <Route path="/operations" element={<RequireAdmin><Operations /></RequireAdmin>} />
       <Route path="/pitch-deck" element={<RequireAdmin><PitchDeck /></RequireAdmin>} />
+      <Route path="/prospects-demo" element={<RequireAdmin><ProspectsDemo /></RequireAdmin>} />
       <Route path="/campaigns" element={<RequireAdmin><Campaigns /></RequireAdmin>} />
       <Route path="/campaigns/new" element={<RequireAdmin><CampaignBuilder /></RequireAdmin>} />
       <Route path="/campaigns/:id" element={<RequireAdmin><CampaignBuilder /></RequireAdmin>} />
